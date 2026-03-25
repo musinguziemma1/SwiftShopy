@@ -1,5 +1,5 @@
-import NextAuth from "next-auth";
-import Credentials from "next-auth/providers/credentials";
+import NextAuth, { NextAuthOptions } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
 import { z } from "zod";
 
 const loginSchema = z.object({
@@ -22,12 +22,13 @@ const DEMO_USERS = [
     email: "admin@swiftshopy.com",
     password: "admin123",
     role: "admin" as const,
+    storeSlug: null as null,
   },
 ];
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const authOptions: NextAuthOptions = {
   providers: [
-    Credentials({
+    CredentialsProvider({
       name: "Credentials",
       credentials: {
         email: { label: "Email", type: "email" },
@@ -77,4 +78,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   session: { strategy: "jwt" },
   secret: process.env.NEXTAUTH_SECRET ?? "swiftshopy-dev-secret-key-2024",
-});
+};
+
+export default NextAuth(authOptions);

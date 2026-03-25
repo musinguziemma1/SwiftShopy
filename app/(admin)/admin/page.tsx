@@ -77,7 +77,7 @@ interface AdminStats {
   commissionChange: number
 }
 
-export function AdminDashboard() {
+function AdminDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [activeTab, setActiveTab] = useState("overview")
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)

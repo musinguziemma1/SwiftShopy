@@ -72,7 +72,7 @@ interface SwiftShopyLandingProps {
 }
 
 // Main Component
-export function SwiftShopyLanding({ className = "" }: SwiftShopyLandingProps) {
+function SwiftShopyLanding({ className = "" }: SwiftShopyLandingProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [activeFaq, setActiveFaq] = useState<number | null>(null)
   const [showScrollTop, setShowScrollTop] = useState(false)

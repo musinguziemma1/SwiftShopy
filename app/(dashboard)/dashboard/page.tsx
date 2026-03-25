@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
+import NotificationsCenter from "@/components/ui/notifications-center";
 import {
   ShoppingCart, Package, DollarSign, TrendingUp, Users, Search,
   Settings, LogOut, Menu, X, Plus, Edit, Trash2, Eye, Download,
@@ -99,6 +100,7 @@ export default function SellerDashboardPage() {
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+              <NotificationsCenter />
               <button onClick={() => signOut({ callbackUrl: "/login" })} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 0.75rem", borderRadius: "0.5rem", border: "1px solid #e2e8f0", background: "transparent", cursor: "pointer", fontSize: "0.875rem", color: "#ef4444" }}>
                 <LogOut className="w-4 h-4" /> Sign Out
               </button>

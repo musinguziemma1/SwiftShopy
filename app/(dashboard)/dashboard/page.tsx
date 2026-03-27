@@ -16,7 +16,6 @@ import {
   Search as SearchIcon, RefreshCw, Link2, Smartphone, Globe,
   ChevronRight, Store, CreditCard, Upload, Save, Shield, Lock as LockIcon
 } from "lucide-react";
-import { useDashboardData } from "@/lib/hooks/useDashboardData";
 import { useSellerData, useStoreMutations, useProductMutations, useOrderMutations } from "@/lib/hooks/useSellerData";
 
 interface Product {
@@ -65,25 +64,19 @@ export default function SellerDashboardPage() {
   const { createProduct, updateProduct, deleteProduct, toggleProduct } = useProductMutations();
   const { updateOrderStatus } = useOrderMutations();
 
-  // Get store ID from session
-  const storeId = session?.user?.email === "seller@swiftshopy.com" ? "store1Id" : null;
-  
-  const { 
-    storeSummary, 
-    topProducts: convextopProducts, 
-    categorySales, 
-    dailySales,
-    isLoading
-  } = useDashboardData(storeId);
+  // Get seller store data from Convex (queries all stores, uses first one)
+  const { store, storeId, products: convexProducts, orders: convexOrders, isLoading } = useSellerData();
 
-  // Get seller store data from Convex
-  const { store, products: convexProducts, orders: convexOrders } = useSellerData(storeId);
+  // Calculate stats from real data
+  const totalRevenue = convexOrders?.filter(o => o.status === "paid").reduce((sum, o) => sum + o.total, 0) ?? 0;
+  const totalOrders = convexOrders?.length ?? 0;
+  const totalProducts = convexProducts?.length ?? 0;
 
-  // Use real data from Convex or fallback to mock data
+  // Use real data from Convex
   const stats: DashboardStats = {
-    totalRevenue: storeSummary?.totalRevenue ?? 45_230_000,
-    totalOrders: storeSummary?.totalOrders ?? 1_234,
-    totalProducts: convexProducts?.length ?? 0,
+    totalRevenue,
+    totalOrders,
+    totalProducts,
     totalCustomers: 5_678,
     revenueChange: 12.5,
     ordersChange: 8.3,

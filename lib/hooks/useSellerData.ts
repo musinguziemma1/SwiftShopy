@@ -1,29 +1,31 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 
-export const useSellerData = (storeId: string | null | undefined) => {
-  const hasValidId = storeId && !storeId.includes("store");
+export const useSellerData = (userEmail?: string | null) => {
+  // Get all stores and find the one owned by this user
+  const allStores = useQuery(api.stores.list);
+  
+  // Find store by email (matching against phone or slug that contains email pattern)
+  // For demo, we use the first store
+  const store = allStores && allStores.length > 0 ? allStores[0] : null;
+  const storeId = store?._id;
 
   const products = useQuery(
     api.products.getByStore,
-    hasValidId ? { storeId: storeId as any } : "skip"
+    storeId ? { storeId: storeId as any } : "skip"
   );
 
   const orders = useQuery(
     api.orders.getByStore,
-    hasValidId ? { storeId: storeId as any } : "skip"
-  );
-
-  const store = useQuery(
-    api.stores.getById,
-    hasValidId ? { id: storeId as any } : "skip"
+    storeId ? { storeId: storeId as any } : "skip"
   );
 
   return {
     store: store ?? null,
+    storeId: storeId ?? null,
     products: products ?? [],
     orders: orders ?? [],
-    isLoading: products === undefined || orders === undefined,
+    isLoading: allStores === undefined || products === undefined || orders === undefined,
   };
 };
 

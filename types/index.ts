@@ -252,3 +252,123 @@ export interface Report {
   generatedAt: number;
   generatedBy: string;
 }
+
+// ─── WhatsApp Integration ───────────────────────────────────
+export type WhatsAppMessageType = "text" | "image" | "audio" | "video" | "document" | "location" | "interactive";
+export type WhatsAppMessageDirection = "inbound" | "outbound";
+export type WhatsAppMessageStatus = "sent" | "delivered" | "read" | "failed";
+export type WhatsAppConversationStatus = "active" | "archived" | "blocked";
+export type WhatsAppTemplateCategory = "marketing" | "transactional" | "utility";
+export type WhatsAppTemplateStatus = "draft" | "pending" | "approved" | "rejected";
+export type WhatsAppPaymentLinkStatus = "pending" | "paid" | "expired" | "cancelled";
+
+export interface WhatsAppAccount {
+  _id: string;
+  storeId: string;
+  phoneNumberId: string;
+  businessAccountId: string;
+  businessPhone: string;
+  businessName: string;
+  accessToken: string;
+  webhookVerifyToken: string;
+  qrCode?: string;
+  qrCodeExpiresAt?: number;
+  isConnected: boolean;
+  lastSyncAt?: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface WhatsAppContact {
+  _id: string;
+  storeId: string;
+  waId: string;
+  phone: string;
+  name?: string;
+  profilePictureUrl?: string;
+  isBusiness: boolean;
+  lastSeenAt?: number;
+  tags: string[];
+  notes?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface WhatsAppConversation {
+  _id: string;
+  storeId: string;
+  contactId: string;
+  contact?: WhatsAppContact;
+  lastMessageAt: number;
+  lastMessagePreview: string;
+  unreadCount: number;
+  status: WhatsAppConversationStatus;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface WhatsAppMessage {
+  _id: string;
+  storeId: string;
+  conversationId: string;
+  contactId: string;
+  waMessageId: string;
+  direction: WhatsAppMessageDirection;
+  type: WhatsAppMessageType;
+  content: string;
+  mediaUrl?: string;
+  metadata?: Record<string, any>;
+  status: WhatsAppMessageStatus;
+  createdAt: number;
+}
+
+export interface WhatsAppQuickReply {
+  _id: string;
+  storeId: string;
+  title: string;
+  shortcut: string;
+  message: string;
+  category?: string;
+  usageCount: number;
+  isActive: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface WhatsAppTemplate {
+  _id: string;
+  storeId: string;
+  name: string;
+  category: WhatsAppTemplateCategory;
+  language: string;
+  content: string;
+  components?: Record<string, any>;
+  status: WhatsAppTemplateStatus;
+  usageCount: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface WhatsAppPaymentLink {
+  _id: string;
+  storeId: string;
+  conversationId?: string;
+  orderId?: string;
+  amount: number;
+  currency: string;
+  description: string;
+  paymentLink: string;
+  expiresAt: number;
+  status: WhatsAppPaymentLinkStatus;
+  createdAt: number;
+}
+
+export interface WhatsAppAnalytics {
+  totalMessages: number;
+  inbound: number;
+  outbound: number;
+  activeConversations: number;
+  totalConversations: number;
+  avgResponseTime: number; // in seconds
+  responseRate: number; // percentage
+}

@@ -36,6 +36,7 @@ export const update = mutation({
     price: v.optional(v.number()),
     image: v.optional(v.string()),
     stock: v.optional(v.number()),
+    category: v.optional(v.string()),
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, { id, ...updates }) => ctx.db.patch(id, updates),
@@ -44,4 +45,24 @@ export const update = mutation({
 export const remove = mutation({
   args: { id: v.id("products") },
   handler: async (ctx, { id }) => ctx.db.delete(id),
+});
+
+export const toggleActive = mutation({
+  args: { id: v.id("products"), isActive: v.boolean() },
+  handler: async (ctx, { id, isActive }) => ctx.db.patch(id, { isActive }),
+});
+
+export const updateStock = mutation({
+  args: { id: v.id("products"), stock: v.number() },
+  handler: async (ctx, { id, stock }) => ctx.db.patch(id, { stock }),
+});
+
+export const incrementSales = mutation({
+  args: { id: v.id("products"), quantity: v.number() },
+  handler: async (ctx, { id, quantity }) => {
+    const product = await ctx.db.get(id);
+    if (product) {
+      await ctx.db.patch(id, { sales: (product.sales || 0) + quantity, stock: Math.max(0, product.stock - quantity) });
+    }
+  },
 });

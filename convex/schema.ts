@@ -208,4 +208,124 @@ export default defineSchema({
   })
     .index("by_category", ["category"])
     .index("by_key", ["key"]),
+
+  // ─── WhatsApp Integration ───────────────────────────────────
+  whatsapp_accounts: defineTable({
+    storeId: v.id("stores"),
+    phoneNumberId: v.string(),
+    businessAccountId: v.string(),
+    businessPhone: v.string(),
+    businessName: v.string(),
+    accessToken: v.string(),
+    webhookVerifyToken: v.string(),
+    qrCode: v.optional(v.string()),
+    qrCodeExpiresAt: v.optional(v.number()),
+    isConnected: v.boolean(),
+    lastSyncAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_store", ["storeId"])
+    .index("by_phone", ["businessPhone"])
+    .index("by_connected", ["isConnected"]),
+
+  whatsapp_contacts: defineTable({
+    storeId: v.id("stores"),
+    waId: v.string(),
+    phone: v.string(),
+    name: v.optional(v.string()),
+    profilePictureUrl: v.optional(v.string()),
+    isBusiness: v.boolean(),
+    lastSeenAt: v.optional(v.number()),
+    tags: v.array(v.string()),
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_store", ["storeId"])
+    .index("by_waId", ["waId"])
+    .index("by_phone", ["phone"]),
+
+  whatsapp_conversations: defineTable({
+    storeId: v.id("stores"),
+    contactId: v.id("whatsapp_contacts"),
+    lastMessageAt: v.number(),
+    lastMessagePreview: v.string(),
+    unreadCount: v.number(),
+    status: v.union(v.literal("active"), v.literal("archived"), v.literal("blocked")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_store", ["storeId"])
+    .index("by_contact", ["contactId"])
+    .index("by_lastMessageAt", ["lastMessageAt"])
+    .index("by_status", ["status"]),
+
+  whatsapp_messages: defineTable({
+    storeId: v.id("stores"),
+    conversationId: v.id("whatsapp_conversations"),
+    contactId: v.id("whatsapp_contacts"),
+    waMessageId: v.string(),
+    direction: v.union(v.literal("inbound"), v.literal("outbound")),
+    type: v.union(v.literal("text"), v.literal("image"), v.literal("audio"), v.literal("video"), v.literal("document"), v.literal("location"), v.literal("interactive")),
+    content: v.string(),
+    mediaUrl: v.optional(v.string()),
+    metadata: v.optional(v.any()),
+    status: v.union(v.literal("sent"), v.literal("delivered"), v.literal("read"), v.literal("failed")),
+    createdAt: v.number(),
+  })
+    .index("by_store", ["storeId"])
+    .index("by_conversation", ["conversationId"])
+    .index("by_contact", ["contactId"])
+    .index("by_waMessageId", ["waMessageId"])
+    .index("by_direction", ["direction"])
+    .index("by_date", ["createdAt"]),
+
+  whatsapp_quick_replies: defineTable({
+    storeId: v.id("stores"),
+    title: v.string(),
+    shortcut: v.string(),
+    message: v.string(),
+    category: v.optional(v.string()),
+    usageCount: v.number(),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_store", ["storeId"])
+    .index("by_shortcut", ["shortcut"])
+    .index("by_active", ["isActive"]),
+
+  whatsapp_templates: defineTable({
+    storeId: v.id("stores"),
+    name: v.string(),
+    category: v.union(v.literal("marketing"), v.literal("transactional"), v.literal("utility")),
+    language: v.string(),
+    content: v.string(),
+    components: v.optional(v.any()),
+    status: v.union(v.literal("draft"), v.literal("pending"), v.literal("approved"), v.literal("rejected")),
+    usageCount: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_store", ["storeId"])
+    .index("by_status", ["status"])
+    .index("by_category", ["category"]),
+
+  whatsapp_payment_links: defineTable({
+    storeId: v.id("stores"),
+    conversationId: v.optional(v.id("whatsapp_conversations")),
+    orderId: v.optional(v.id("orders")),
+    amount: v.number(),
+    currency: v.string(),
+    description: v.string(),
+    paymentLink: v.string(),
+    expiresAt: v.number(),
+    status: v.union(v.literal("pending"), v.literal("paid"), v.literal("expired"), v.literal("cancelled")),
+    createdAt: v.number(),
+  })
+    .index("by_store", ["storeId"])
+    .index("by_order", ["orderId"])
+    .index("by_status", ["status"])
+    .index("by_date", ["createdAt"]),
 });

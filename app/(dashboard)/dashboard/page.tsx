@@ -17,6 +17,7 @@ import {
   ChevronRight, Store, CreditCard, Upload, Save, Shield, Lock as LockIcon
 } from "lucide-react";
 import { useDashboardData } from "@/lib/hooks/useDashboardData";
+import { useSellerData, useStoreMutations, useProductMutations, useOrderMutations } from "@/lib/hooks/useSellerData";
 
 interface Product {
   id: string; name: string; price: number; stock: number; sales: number;
@@ -24,7 +25,7 @@ interface Product {
 }
 interface Order {
   id: string; customer: string; amount: number;
-  status: "pending" | "paid" | "failed"; date: string; items: number;
+  status: "pending" | "paid" | "failed" | "cancelled"; date: string; items: number;
 }
 interface DashboardStats {
   totalRevenue: number; totalOrders: number; totalProducts: number;
@@ -46,46 +47,157 @@ export default function SellerDashboardPage() {
   const [settingsSubTab, setSettingsSubTab] = useState("store");
   const [storeForm, setStoreForm] = useState({
     name: "Nakato Styles", slug: "nakato-styles", phone: "+256772100001",
-    email: "seller@swiftshopy.com", description: "Trendy African fashion, handbags & accessories for the modern Ugandan woman.",
+    description: "Trendy African fashion, handbags & accessories for the modern Ugandan woman.",
     currency: "UGX", timezone: "Africa/Kampala"
   });
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<string | null>(null);
+  const [showAddProduct, setShowAddProduct] = useState(false);
+  const [newProduct, setNewProduct] = useState({ name: "", price: 0, stock: 0, category: "", description: "" });
 
-  // Get store ID from session (in a real app, this would come from the user's store)
+  // Mutations
+  const { updateStore } = useStoreMutations();
+  const { createProduct, updateProduct, deleteProduct, toggleProduct } = useProductMutations();
+  const { updateOrderStatus } = useOrderMutations();
+
+  // Get store ID from session
   const storeId = session?.user?.email === "seller@swiftshopy.com" ? "store1Id" : null;
   
   const { 
     storeSummary, 
-    topProducts, 
+    topProducts: convextopProducts, 
     categorySales, 
     dailySales,
     isLoading
   } = useDashboardData(storeId);
 
-   // Use real data from Convex or fallback to mock data if not available
-   const stats: DashboardStats = {
-     totalRevenue: storeSummary?.totalRevenue ?? 45_230_000,
-     totalOrders: storeSummary?.totalOrders ?? 1_234,
-     totalProducts: storeSummary?.totalProducts ?? 89,
-     totalCustomers: 5_678, // This would come from a users query in a real app
-     revenueChange: 12.5, // This would come from analytics in a real app
-     ordersChange: 8.3,   // This would come from analytics in a real app
-     productsChange: -2.4, // This would come from analytics in a real app
-     customersChange: 15.7, // This would come from analytics in a real app
-   };
+  // Get seller store data from Convex
+  const { store, products: convexProducts, orders: convexOrders } = useSellerData(storeId);
 
-  const products: Product[] = [
-    { id: "1", name: "Premium Wireless Headphones", price: 250_000, stock: 45, sales: 234, image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=100&h=100&fit=crop", category: "Electronics" },
-    { id: "2", name: "Smart Watch Series 5", price: 450_000, stock: 23, sales: 189, image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100&h=100&fit=crop", category: "Electronics" },
-    { id: "3", name: "Designer Handbag", price: 180_000, stock: 67, sales: 156, image: "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=100&h=100&fit=crop", category: "Fashion" },
-    { id: "4", name: "Running Shoes Pro", price: 120_000, stock: 89, sales: 312, image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=100&h=100&fit=crop", category: "Fashion" },
-  ];
+  // Use real data from Convex or fallback to mock data
+  const stats: DashboardStats = {
+    totalRevenue: storeSummary?.totalRevenue ?? 45_230_000,
+    totalOrders: storeSummary?.totalOrders ?? 1_234,
+    totalProducts: convexProducts?.length ?? 0,
+    totalCustomers: 5_678,
+    revenueChange: 12.5,
+    ordersChange: 8.3,
+    productsChange: -2.4,
+    customersChange: 15.7,
+  };
 
-  const orders: Order[] = [
-    { id: "ORD-001", customer: "Sarah Nakato", amount: 450_000, status: "paid", date: "2024-01-15", items: 2 },
-    { id: "ORD-002", customer: "David Okello", amount: 250_000, status: "pending", date: "2024-01-15", items: 1 },
-    { id: "ORD-003", customer: "Grace Nambi", amount: 680_000, status: "paid", date: "2024-01-14", items: 3 },
-    { id: "ORD-004", customer: "John Mwesigwa", amount: 120_000, status: "failed", date: "2024-01-14", items: 1 },
-  ];
+  // Map Convex products to display format
+  const products: Product[] = convexProducts?.map(p => ({
+    id: p._id,
+    name: p.name,
+    price: p.price,
+    stock: p.stock,
+    sales: p.sales ?? 0,
+    image: p.image ?? "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=100&h=100&fit=crop",
+    category: p.category ?? "General",
+  })) ?? [];
+
+  // Map Convex orders to display format
+  const orders: Order[] = convexOrders?.map(o => ({
+    id: o.orderNumber,
+    customer: o.customerName,
+    amount: o.total,
+    status: o.status,
+    date: new Date(o.createdAt ?? o._creationTime).toLocaleDateString(),
+    items: o.items.length,
+  })) ?? [];
+
+  // Update store info in Convex
+  const handleSaveStore = async () => {
+    if (!store?._id) return;
+    setSaving(true);
+    try {
+      await updateStore({
+        id: store._id,
+        name: storeForm.name,
+        description: storeForm.description,
+        phone: storeForm.phone,
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (e) {
+      console.error("Failed to update store:", e);
+    }
+    setSaving(false);
+  };
+
+  // Handle product operations
+  const handleCreateProduct = async () => {
+    if (!store?._id) return;
+    try {
+      await createProduct({
+        storeId: store._id,
+        name: newProduct.name,
+        price: newProduct.price,
+        stock: newProduct.stock,
+        category: newProduct.category,
+        description: newProduct.description,
+      });
+      setShowAddProduct(false);
+      setNewProduct({ name: "", price: 0, stock: 0, category: "", description: "" });
+    } catch (e) {
+      console.error("Failed to create product:", e);
+    }
+  };
+
+  const handleUpdateProduct = async (id: string, data: Partial<Product>) => {
+    try {
+      await updateProduct({
+        id: id as any,
+        name: data.name,
+        price: data.price,
+        stock: data.stock,
+        category: data.category,
+      });
+      setEditingProduct(null);
+    } catch (e) {
+      console.error("Failed to update product:", e);
+    }
+  };
+
+  const handleDeleteProduct = async (id: string) => {
+    try {
+      await deleteProduct({ id: id as any });
+    } catch (e) {
+      console.error("Failed to delete product:", e);
+    }
+  };
+
+  const handleToggleProduct = async (id: string, isActive: boolean) => {
+    try {
+      await toggleProduct({ id: id as any, isActive });
+    } catch (e) {
+      console.error("Failed to toggle product:", e);
+    }
+  };
+
+  const handleUpdateOrderStatus = async (id: string, status: "pending" | "paid" | "failed" | "cancelled") => {
+    try {
+      await updateOrderStatus({ id: id as any, status });
+    } catch (e) {
+      console.error("Failed to update order:", e);
+    }
+  };
+
+  // Load store data into form
+  useEffect(() => {
+    if (store) {
+      setStoreForm({
+        name: store.name ?? "Nakato Styles",
+        slug: store.slug ?? "nakato-styles",
+        phone: store.phone ?? "+256772100001",
+        description: store.description ?? "",
+        currency: "UGX",
+        timezone: "Africa/Kampala",
+      });
+    }
+  }, [store]);
 
   const fmt = (n: number) => `UGX ${n.toLocaleString()}`;
 
@@ -402,17 +514,77 @@ export default function SellerDashboardPage() {
                   <h1 className="text-2xl font-bold mb-1">Products</h1>
                   <p className="text-muted-foreground">Manage your product catalog</p>
                 </div>
-                <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-indigo-600 text-white rounded-lg font-medium hover:scale-105 transition-all shadow-lg">
+                <button onClick={() => setShowAddProduct(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-indigo-600 text-white rounded-lg font-medium hover:scale-105 transition-all shadow-lg">
                   <Plus className="w-4 h-4" /> Add Product
                 </button>
               </div>
 
-              {/* Inventory Alerts */}
+              {/* Add Product Modal */}
+              <AnimatePresence>
+                {showAddProduct && (
+                  <>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                      onClick={() => setShowAddProduct(false)} className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
+                    <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
+                      className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg glass rounded-2xl z-50 p-6">
+                      <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xl font-bold">Add New Product</h3>
+                        <button onClick={() => setShowAddProduct(false)} className="p-2 hover:bg-accent/50 rounded-lg"><X className="w-5 h-5" /></button>
+                      </div>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Product Name</label>
+                          <input type="text" value={newProduct.name} onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                            placeholder="Enter product name"
+                            className="w-full px-4 py-2.5 bg-accent/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Price (UGX)</label>
+                            <input type="number" value={newProduct.price} onChange={(e) => setNewProduct({ ...newProduct, price: parseInt(e.target.value) })}
+                              placeholder="0" className="w-full px-4 py-2.5 bg-accent/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Stock</label>
+                            <input type="number" value={newProduct.stock} onChange={(e) => setNewProduct({ ...newProduct, stock: parseInt(e.target.value) })}
+                              placeholder="0" className="w-full px-4 py-2.5 bg-accent/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Category</label>
+                          <select value={newProduct.category} onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
+                            className="w-full px-4 py-2.5 bg-accent/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50">
+                            <option value="">Select category</option>
+                            <option value="Fashion">Fashion</option>
+                            <option value="Electronics">Electronics</option>
+                            <option value="Food">Food</option>
+                            <option value="Home">Home</option>
+                            <option value="Beauty">Beauty</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Description</label>
+                          <textarea rows={3} value={newProduct.description} onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                            placeholder="Product description"
+                            className="w-full px-4 py-2.5 bg-accent/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none" />
+                        </div>
+                        <button onClick={handleCreateProduct}
+                          className="w-full py-3 bg-gradient-to-r from-primary to-indigo-600 text-white rounded-xl font-medium hover:opacity-90 transition-opacity">
+                          Create Product
+                        </button>
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+
+              {/* Inventory Alerts - Dynamic based on products */}
               <div className="grid grid-cols-3 gap-4 mb-8">
                 {[
-                  { label: "Low Stock", count: 12, desc: "Products below 5 units", color: "border-amber-500/30 bg-amber-500/10", icon: "text-amber-500" },
-                  { label: "Out of Stock", count: 3, desc: "Products unavailable", color: "border-red-500/30 bg-red-500/10", icon: "text-red-500" },
-                  { label: "Well Stocked", count: 74, desc: "Products in good stock", color: "border-green-500/30 bg-green-500/10", icon: "text-green-500" },
+                  { label: "Low Stock", count: products.filter(p => p.stock > 0 && p.stock <= 5).length, desc: "Products below 5 units", color: "border-amber-500/30 bg-amber-500/10", icon: "text-amber-500" },
+                  { label: "Out of Stock", count: products.filter(p => p.stock === 0).length, desc: "Products unavailable", color: "border-red-500/30 bg-red-500/10", icon: "text-red-500" },
+                  { label: "Well Stocked", count: products.filter(p => p.stock > 5).length, desc: "Products in good stock", color: "border-green-500/30 bg-green-500/10", icon: "text-green-500" },
                 ].map((a, i) => (
                   <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
                     className={`p-4 rounded-xl border-2 ${a.color} cursor-pointer`}>
@@ -443,9 +615,12 @@ export default function SellerDashboardPage() {
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">Sales: {product.sales}</span>
                       <div className="flex gap-1">
-                        <button className="p-2 rounded-lg hover:bg-accent transition-colors"><Eye className="w-4 h-4" /></button>
-                        <button className="p-2 rounded-lg hover:bg-accent transition-colors"><Edit className="w-4 h-4" /></button>
-                        <button className="p-2 rounded-lg hover:bg-red-500/10 text-red-500"><Trash2 className="w-4 h-4" /></button>
+                        <button onClick={() => handleToggleProduct(product.id, true)}
+                          className="p-2 rounded-lg hover:bg-accent transition-colors"><Eye className="w-4 h-4" /></button>
+                        <button onClick={() => setEditingProduct(product.id)}
+                          className="p-2 rounded-lg hover:bg-accent transition-colors"><Edit className="w-4 h-4" /></button>
+                        <button onClick={() => handleDeleteProduct(product.id)}
+                          className="p-2 rounded-lg hover:bg-red-500/10 text-red-500"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </div>
                   </motion.div>
@@ -991,8 +1166,7 @@ export default function SellerDashboardPage() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium mb-2">Email</label>
-                          <input type="email" value={storeForm.email}
-                            onChange={(e) => setStoreForm({ ...storeForm, email: e.target.value })}
+                          <input type="email" defaultValue="seller@swiftshopy.com"
                             className="w-full px-4 py-2.5 bg-accent/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
                         </div>
                         <div className="sm:col-span-2">
@@ -1025,8 +1199,20 @@ export default function SellerDashboardPage() {
                         </div>
                       </div>
                       <div className="flex justify-end mt-6">
-                        <button className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-primary to-indigo-600 text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity">
-                          <Save className="w-4 h-4" /> Save Changes
+                        {saved && (
+                          <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }}
+                            className="mr-4 flex items-center gap-2 text-green-500 text-sm">
+                            <Check className="w-4 h-4" /> Saved!
+                          </motion.div>
+                        )}
+                        <button onClick={handleSaveStore} disabled={saving}
+                          className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-primary to-indigo-600 text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
+                          {saving ? (
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          ) : (
+                            <Save className="w-4 h-4" />
+                          )}
+                          {saving ? "Saving..." : "Save Changes"}
                         </button>
                       </div>
                     </div>
@@ -1073,7 +1259,7 @@ export default function SellerDashboardPage() {
                         </div>
                         <div className="flex justify-between p-3 bg-accent/50 rounded-lg">
                           <span className="text-muted-foreground">Email</span>
-                          <span className="font-medium truncate ml-2">{storeForm.email}</span>
+                          <span className="font-medium truncate ml-2">seller@swiftshopy.com</span>
                         </div>
                         <div className="flex justify-between p-3 bg-accent/50 rounded-lg">
                           <span className="text-muted-foreground">Currency</span>

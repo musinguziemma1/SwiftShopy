@@ -55,6 +55,10 @@ export default function SellerDashboardPage() {
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [newProduct, setNewProduct] = useState({ name: "", price: 0, stock: 0, category: "", description: "" });
+  const [productsPage, setProductsPage] = useState(1);
+  const [ordersPage, setOrdersPage] = useState(1);
+  const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
+  const itemsPerPage = 8;
 
   // Mutations
   const { updateStore } = useStoreMutations();
@@ -527,19 +531,19 @@ export default function SellerDashboardPage() {
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                       onClick={() => setShowAddProduct(false)} className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
                     <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
-                      className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg glass rounded-2xl z-50 p-6">
-                      <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-xl font-bold">Add New Product</h3>
+                      className="fixed inset-4 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-lg glass rounded-2xl z-50 p-4 sm:p-6 overflow-y-auto sm:max-h-[90vh] max-h-[calc(100vh-2rem)]">
+                      <div className="flex justify-between items-center mb-4 sm:mb-6">
+                        <h3 className="text-lg sm:text-xl font-bold">Add New Product</h3>
                         <button onClick={() => setShowAddProduct(false)} className="p-2 hover:bg-accent/50 rounded-lg"><X className="w-5 h-5" /></button>
                       </div>
-                      <div className="space-y-4">
+                      <div className="space-y-3 sm:space-y-4">
                         <div>
                           <label className="block text-sm font-medium mb-2">Product Name</label>
                           <input type="text" value={newProduct.name} onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
                             placeholder="Enter product name"
                             className="w-full px-4 py-2.5 bg-accent/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 gap-3 sm:gap-4">
                           <div>
                             <label className="block text-sm font-medium mb-2">Price (UGX)</label>
                             <input type="number" value={newProduct.price} onChange={(e) => setNewProduct({ ...newProduct, price: parseInt(e.target.value) })}
@@ -599,8 +603,8 @@ export default function SellerDashboardPage() {
               </div>
 
               <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {products.map((product, i) => (
-                  <motion.div key={product.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
+                {products.slice((productsPage - 1) * itemsPerPage, productsPage * itemsPerPage).map((product, i) => (
+                  <motion.div key={product.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
                     whileHover={{ scale: 1.02, y: -5 }}
                     className="p-4 glass rounded-xl cursor-pointer">
                     <div className="relative mb-4">
@@ -626,6 +630,32 @@ export default function SellerDashboardPage() {
                   </motion.div>
                 ))}
               </div>
+
+              {/* Products Pagination */}
+              {products.length > itemsPerPage && (
+                <div className="flex items-center justify-between mt-6 pt-4 border-t border-border/50">
+                  <p className="text-sm text-muted-foreground">
+                    Showing {((productsPage - 1) * itemsPerPage) + 1}-{Math.min(productsPage * itemsPerPage, products.length)} of {products.length}
+                  </p>
+                  <div className="flex gap-2">
+                    <button onClick={() => setProductsPage(p => Math.max(1, p - 1))} disabled={productsPage === 1}
+                      className="px-3 py-1.5 text-sm rounded-lg border border-border hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed">
+                      Prev
+                    </button>
+                    {Array.from({ length: Math.ceil(products.length / itemsPerPage) }, (_, i) => (
+                      <button key={i + 1} onClick={() => setProductsPage(i + 1)}
+                        className={`px-3 py-1.5 text-sm rounded-lg border ${productsPage === i + 1 ? "bg-primary text-white border-primary" : "border-border hover:bg-accent"}`}>
+                        {i + 1}
+                      </button>
+                    ))}
+                    <button onClick={() => setProductsPage(p => Math.min(Math.ceil(products.length / itemsPerPage), p + 1))}
+                      disabled={productsPage === Math.ceil(products.length / itemsPerPage)}
+                      className="px-3 py-1.5 text-sm rounded-lg border border-border hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed">
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -636,9 +666,25 @@ export default function SellerDashboardPage() {
                 <h1 className="text-2xl font-bold mb-1">Orders</h1>
                 <p className="text-muted-foreground">Track and manage customer orders</p>
               </div>
+
+              {/* Order Stats */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                {[
+                  { label: "Pending", count: orders.filter(o => o.status === "pending").length, color: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" },
+                  { label: "Paid", count: orders.filter(o => o.status === "paid").length, color: "bg-green-500/10 text-green-500 border-green-500/20" },
+                  { label: "Failed", count: orders.filter(o => o.status === "failed").length, color: "bg-red-500/10 text-red-500 border-red-500/20" },
+                  { label: "Total", count: orders.length, color: "bg-primary/10 text-primary border-primary/20" },
+                ].map((s, i) => (
+                  <div key={i} className={`p-4 rounded-xl border ${s.color}`}>
+                    <div className="text-2xl font-bold">{s.count}</div>
+                    <div className="text-sm">{s.label}</div>
+                  </div>
+                ))}
+              </div>
+
               <div className="glass rounded-xl p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                  <div className="flex gap-2 flex-wrap">
                     <button className="flex items-center gap-2 px-4 py-2 glass rounded-lg hover:bg-accent/50 transition-all text-sm">
                       <Filter className="w-4 h-4" /> Filter
                     </button>
@@ -650,7 +696,9 @@ export default function SellerDashboardPage() {
                     <Download className="w-4 h-4" /> Export
                   </button>
                 </div>
-                <div className="overflow-x-auto">
+
+                {/* Desktop Table */}
+                <div className="hidden sm:block overflow-x-auto">
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-border/50">
@@ -660,8 +708,8 @@ export default function SellerDashboardPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {orders.map((order, i) => (
-                        <motion.tr key={order.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
+                      {orders.slice((ordersPage - 1) * itemsPerPage, ordersPage * itemsPerPage).map((order, i) => (
+                        <motion.tr key={order.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
                           className="border-b border-border/30 hover:bg-accent/30 transition-colors">
                           <td className="py-4 px-4 text-sm font-medium">{order.id}</td>
                           <td className="py-4 px-4 text-sm">{order.customer}</td>
@@ -684,6 +732,54 @@ export default function SellerDashboardPage() {
                     </tbody>
                   </table>
                 </div>
+
+                {/* Mobile Cards */}
+                <div className="sm:hidden space-y-3">
+                  {orders.slice((ordersPage - 1) * itemsPerPage, ordersPage * itemsPerPage).map((order, i) => (
+                    <motion.div key={order.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                      className="p-4 rounded-xl border border-border/50 hover:bg-accent/30 transition-colors">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <div className="font-medium text-sm">{order.id}</div>
+                          <div className="text-xs text-muted-foreground">{order.customer}</div>
+                        </div>
+                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${statusColor(order.status)}`}>
+                          {statusIcon(order.status)} {order.status}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="font-bold">{fmt(order.amount)}</span>
+                        <span className="text-muted-foreground">{order.date}</span>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                {orders.length > itemsPerPage && (
+                  <div className="flex items-center justify-between mt-6 pt-4 border-t border-border/50">
+                    <p className="text-sm text-muted-foreground">
+                      Showing {((ordersPage - 1) * itemsPerPage) + 1}-{Math.min(ordersPage * itemsPerPage, orders.length)} of {orders.length}
+                    </p>
+                    <div className="flex gap-2">
+                      <button onClick={() => setOrdersPage(p => Math.max(1, p - 1))} disabled={ordersPage === 1}
+                        className="px-3 py-1.5 text-sm rounded-lg border border-border hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed">
+                        Prev
+                      </button>
+                      {Array.from({ length: Math.ceil(orders.length / itemsPerPage) }, (_, i) => (
+                        <button key={i + 1} onClick={() => setOrdersPage(i + 1)}
+                          className={`px-3 py-1.5 text-sm rounded-lg border ${ordersPage === i + 1 ? "bg-primary text-white border-primary" : "border-border hover:bg-accent"}`}>
+                          {i + 1}
+                        </button>
+                      ))}
+                      <button onClick={() => setOrdersPage(p => Math.min(Math.ceil(orders.length / itemsPerPage), p + 1))}
+                        disabled={ordersPage === Math.ceil(orders.length / itemsPerPage)}
+                        className="px-3 py-1.5 text-sm rounded-lg border border-border hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed">
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
@@ -1438,15 +1534,15 @@ export default function SellerDashboardPage() {
                   onClick={() => setShowLinkModal(false)} className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
                 <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                  className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md glass rounded-2xl z-50 p-6">
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xl font-bold">Link WhatsApp Business</h3>
+                  className="fixed inset-4 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-md glass rounded-2xl z-50 p-4 sm:p-6 overflow-y-auto max-h-[calc(100vh-2rem)]">
+                  <div className="flex justify-between items-center mb-4 sm:mb-6">
+                    <h3 className="text-lg sm:text-xl font-bold">Link WhatsApp Business</h3>
                     <button onClick={() => setShowLinkModal(false)} className="p-2 hover:bg-accent/50 rounded-lg transition-colors">
                       <X className="w-5 h-5" />
                     </button>
                   </div>
-                  <div className="text-center mb-6">
-                    <div className="inline-flex items-center justify-center w-48 h-48 bg-white rounded-2xl border-2 border-border/50 mb-4 p-4">
+                  <div className="text-center mb-4 sm:mb-6">
+                    <div className="inline-flex items-center justify-center w-36 h-36 sm:w-48 sm:h-48 bg-white rounded-2xl border-2 border-border/50 mb-4 p-4">
                       <div className="w-full h-full bg-[repeating-conic-gradient(#000_0%_25%,#fff_0%_50%)] bg-[length:16px_16px] rounded-lg" />
                     </div>
                     <p className="text-sm text-muted-foreground mb-2">Scan this QR code with your WhatsApp Business app</p>
@@ -1459,7 +1555,7 @@ export default function SellerDashboardPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-2">Enter Phone Number</label>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                       <input type="tel" placeholder="+256 XXX XXX XXX"
                         className="flex-1 px-4 py-2.5 bg-accent/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50" />
                       <button className="px-4 py-2.5 bg-green-500 text-white rounded-xl text-sm font-medium hover:bg-green-600 transition-colors">
@@ -1480,23 +1576,23 @@ export default function SellerDashboardPage() {
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowShareModal(false)} className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md glass rounded-2xl z-50 p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold">Share Your Store</h3>
+              className="fixed inset-4 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-md glass rounded-2xl z-50 p-4 sm:p-6 overflow-y-auto max-h-[calc(100vh-2rem)]">
+              <div className="flex justify-between items-center mb-4 sm:mb-6">
+                <h3 className="text-lg sm:text-xl font-bold">Share Your Store</h3>
                 <button onClick={() => setShowShareModal(false)} className="p-2 hover:bg-accent/50 rounded-lg transition-colors"><X className="w-5 h-5" /></button>
               </div>
-              <div className="mb-6">
+              <div className="mb-4 sm:mb-6">
                 <label className="block text-sm font-medium mb-2">Store Link</label>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <input type="text" readOnly value="https://swiftshopy.com/shop/your-store" className="flex-1 px-4 py-2 glass rounded-lg text-sm" />
-                  <button onClick={() => navigator.clipboard.writeText("https://swiftshopy.com/shop/your-store")} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-indigo-600 text-white rounded-lg text-sm font-medium hover:scale-105 transition-all">
+                  <button onClick={() => navigator.clipboard.writeText("https://swiftshopy.com/shop/your-store")} className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-indigo-600 text-white rounded-lg text-sm font-medium hover:scale-105 transition-all">
                     <Copy className="w-4 h-4" /> Copy
                   </button>
                 </div>
               </div>
               <div className="text-center">
-                <div className="inline-flex items-center justify-center w-48 h-48 bg-muted rounded-xl border-2 border-border/50 mb-4">
-                  <QrCode className="w-24 h-24 text-muted-foreground" />
+                <div className="inline-flex items-center justify-center w-36 h-36 sm:w-48 sm:h-48 bg-muted rounded-xl border-2 border-border/50 mb-4">
+                  <QrCode className="w-16 h-16 sm:w-24 sm:h-24 text-muted-foreground" />
                 </div>
                 <p className="text-sm text-muted-foreground">Scan to visit your store</p>
               </div>
@@ -1511,31 +1607,31 @@ export default function SellerDashboardPage() {
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowStorePreview(false)} className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-3xl max-h-[90vh] glass rounded-2xl z-50 overflow-hidden">
+              className="fixed inset-2 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-3xl sm:max-h-[90vh] glass rounded-2xl z-50 overflow-hidden">
               <div className="p-4 border-b border-border/50 flex justify-between items-center bg-accent/30">
                 <div className="flex items-center gap-3">
                   <Eye className="w-5 h-5 text-primary" />
                   <div>
-                    <h3 className="font-semibold">Store Preview</h3>
-                    <p className="text-xs text-muted-foreground">How customers see your store</p>
+                    <h3 className="font-semibold text-sm sm:text-base">Store Preview</h3>
+                    <p className="text-xs text-muted-foreground hidden sm:block">How customers see your store</p>
                   </div>
                 </div>
                 <button onClick={() => setShowStorePreview(false)} className="p-2 hover:bg-accent/50 rounded-lg transition-colors"><X className="w-5 h-5" /></button>
               </div>
-              <div className="p-8 overflow-y-auto max-h-[calc(90vh-5rem)] bg-accent/20">
-                <div className="text-center mb-8">
-                  <div className="w-20 h-20 bg-gradient-to-br from-primary to-indigo-600 rounded-full mx-auto mb-4 flex items-center justify-center">
-                    <ShoppingCart className="w-10 h-10 text-white" />
+              <div className="p-4 sm:p-8 overflow-y-auto max-h-[calc(100vh-8rem)] sm:max-h-[calc(90vh-5rem)] bg-accent/20">
+                <div className="text-center mb-6 sm:mb-8">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-primary to-indigo-600 rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <ShoppingCart className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
                   </div>
-                  <h1 className="text-3xl font-bold mb-2">SwiftShopy Store</h1>
-                  <p className="text-muted-foreground">Premium products at affordable prices</p>
+                  <h1 className="text-xl sm:text-3xl font-bold mb-2">SwiftShopy Store</h1>
+                  <p className="text-sm sm:text-base text-muted-foreground">Premium products at affordable prices</p>
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {products.slice(0,3).map((p, i) => (
-                    <div key={i} className="p-4 glass rounded-xl">
-                      <img src={p.image} alt={p.name} className="w-full h-32 object-cover rounded-lg mb-4" />
-                      <h4 className="font-medium mb-2 truncate">{p.name}</h4>
-                      <div className="text-lg font-bold text-primary mb-4">{fmt(p.price)}</div>
+                    <div key={i} className="p-3 sm:p-4 glass rounded-xl">
+                      <img src={p.image} alt={p.name} className="w-full h-24 sm:h-32 object-cover rounded-lg mb-3 sm:mb-4" />
+                      <h4 className="font-medium mb-2 truncate text-sm sm:text-base">{p.name}</h4>
+                      <div className="text-base sm:text-lg font-bold text-primary mb-3 sm:mb-4">{fmt(p.price)}</div>
                       <div className="grid grid-cols-2 gap-2">
                         <button className="py-2 bg-green-500 text-white rounded-lg text-xs font-medium">Order</button>
                         <button className="py-2 bg-primary text-white rounded-lg text-xs font-medium">Pay Now</button>

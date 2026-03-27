@@ -547,6 +547,64 @@ export const getWhatsAppAnalytics = query({
   },
 });
 
+// ─── Update Message Status by WA Message ID ──────────────────
+export const updateMessageStatusByWamid = mutation({
+  args: {
+    waMessageId: v.string(),
+    status: v.union(v.literal("sent"), v.literal("delivered"), v.literal("read"), v.literal("failed")),
+  },
+  handler: async (ctx, args) => {
+    const message = await ctx.db.query("whatsapp_messages")
+      .withIndex("by_waMessageId", q => q.eq("waMessageId", args.waMessageId))
+      .first();
+    
+    if (message) {
+      await ctx.db.patch(message._id, { status: args.status });
+    }
+  },
+});
+
+// ─── Get WhatsApp Analytics (alias) ─────────────────────────
+export const getAnalytics = query({
+  args: { storeId: v.id("stores"), days: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const days = args.days || 30;
+    const startDate = Date.now() - days * 24 * 60 * 60 * 1000;
+    
+    const messages = await ctx.db.query("whatsapp_messages")
+      .withIndex("by_store", q => q.eq("storeId", args.storeId))
+      .collect();
+    
+    const recentMessages = messages.filter(m => m.createdAt >= startDate);
+    
+    const conversations = await ctx.db.query("whatsapp_conversations")
+      .withIndex("by_store", q => q.eq("storeId", args.storeId))
+      .collect();
+    
+    const inbound = recentMessages.filter(m => m.direction === "inbound").length;
+    const outbound = recentMessages.filter(m => m.direction === "outbound").length;
+    
+    return {
+      totalMessages: recentMessages.length,
+      inbound,
+      outbound,
+      activeConversations: conversations.filter(c => c.status === "active").length,
+      totalConversations: conversations.length,
+      avgResponseTime: 0,
+      responseRate: 0,
+    };
+  },
+});
+
+// ─── List all tickets (for testing) ───────────────────────────
+export const listTickets = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const tickets = await ctx.db.query("support_tickets").collect();
+    return tickets.slice(0, args.limit || 10);
+  },
+});
+
 // ─── Webhook Verification ──────────────────────────────────
 export const verifyWebhook = query({
   args: { mode: v.string(), token: v.string(), challenge: v.optional(v.string()) },

@@ -165,6 +165,78 @@ export const seedAll = mutation({
        isActive: true,
      });
 
+     const p19 = await ctx.db.insert("products", {
+       storeId: store1Id,
+       name: "African Print Headwrap",
+       description: "Beautiful Ankara headwrap, can be styled multiple ways. Vibrant colors.",
+       price: 25000,
+       image: "https://images.unsplash.com/photo-1589156280159-27698a70f29e?w=400&h=400&fit=crop",
+       stock: 50,
+       sales: 320,
+       category: "Fashion",
+       isActive: true,
+     });
+
+     const p20 = await ctx.db.insert("products", {
+       storeId: store1Id,
+       name: "Handmade Bracelet Set",
+       description: "Set of 5 handmade beaded bracelets. Mix and match colors.",
+       price: 15000,
+       image: "https://images.unsplash.com/photo-1573408301185-9146fe634ad0?w=400&h=400&fit=crop",
+       stock: 100,
+       sales: 450,
+       category: "Fashion",
+       isActive: true,
+     });
+
+     const p21 = await ctx.db.insert("products", {
+       storeId: store1Id,
+       name: "Kikoy Sarong Wrap",
+       description: "Authentic Kenyan kikoy sarong, multi-purpose wrap, lightweight cotton.",
+       price: 35000,
+       image: "https://images.unsplash.com/photo-1558171813-4c088753af8f?w=400&h=400&fit=crop",
+       stock: 30,
+       sales: 89,
+       category: "Fashion",
+       isActive: true,
+     });
+
+     const p22 = await ctx.db.insert("products", {
+       storeId: store1Id,
+       name: "Beaded Choker Necklace",
+       description: "Handcrafted beaded choker with traditional patterns, adjustable size.",
+       price: 28000,
+       image: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400&h=400&fit=crop",
+       stock: 35,
+       sales: 127,
+       category: "Fashion",
+       isActive: true,
+     });
+
+     const p23 = await ctx.db.insert("products", {
+       storeId: store1Id,
+       name: "Woven Tote Bag",
+       description: "Sisal woven tote bag, eco-friendly, spacious interior, leather handles.",
+       price: 95000,
+       image: "https://images.unsplash.com/photo-1544816155-12df9643f363?w=400&h=400&fit=crop",
+       stock: 15,
+       sales: 62,
+       category: "Fashion",
+       isActive: true,
+     });
+
+     const p24 = await ctx.db.insert("products", {
+       storeId: store1Id,
+       name: "Cashmere Blend Scarf",
+       description: "Luxurious cashmere blend scarf, ultra-soft, perfect for cool evenings.",
+       price: 65000,
+       image: "https://images.unsplash.com/photo-1520903920243-00d872a2d1c9?w=400&h=400&fit=crop",
+       stock: 22,
+       sales: 78,
+       category: "Fashion",
+       isActive: true,
+     });
+
      // Store 2 — Mugisha Electronics
      const p7 = await ctx.db.insert("products", {
        storeId: store2Id,
@@ -365,7 +437,74 @@ export const seedAll = mutation({
        createdAt: Date.now() - 4 * 24 * 60 * 60 * 1000, // 4 days ago
      });
 
-    // Store 2 orders
+     const o13Id = await ctx.db.insert("orders", {
+       storeId: store1Id,
+       orderNumber: "SS-00105",
+       customerName: "Esther Kigozi",
+       customerPhone: "+256711700005",
+       items: [
+         { productId: p19.toString(), productName: "African Print Headwrap", price: 25000, quantity: 2, total: 50000 },
+         { productId: p20.toString(), productName: "Handmade Bracelet Set", price: 15000, quantity: 3, total: 45000 },
+       ],
+       subtotal: 95000,
+       total: 95000,
+       status: "paid",
+       createdAt: Date.now() - 3 * 24 * 60 * 60 * 1000,
+     });
+
+     const o14Id = await ctx.db.insert("orders", {
+       storeId: store1Id,
+       orderNumber: "SS-00106",
+       customerName: "Florence Nabukenya",
+       customerPhone: "+256752800006",
+       items: [{ productId: p21.toString(), productName: "Kikoy Sarong Wrap", price: 35000, quantity: 1, total: 35000 }],
+       subtotal: 35000,
+       total: 35000,
+       status: "pending",
+       createdAt: Date.now() - 2 * 24 * 60 * 60 * 1000,
+     });
+
+     const o15Id = await ctx.db.insert("orders", {
+       storeId: store1Id,
+       orderNumber: "SS-00107",
+       customerName: "Rehema Namutebi",
+       customerPhone: "+256703900007",
+       items: [
+         { productId: p22.toString(), productName: "Beaded Choker Necklace", price: 28000, quantity: 2, total: 56000 },
+         { productId: p1.toString(), productName: "Ankara Print Wrap Dress", price: 85000, quantity: 1, total: 85000 },
+       ],
+       subtotal: 141000,
+       total: 141000,
+       status: "paid",
+       createdAt: Date.now() - 1 * 24 * 60 * 60 * 1000,
+     });
+
+     const o16Id = await ctx.db.insert("orders", {
+       storeId: store1Id,
+       orderNumber: "SS-00108",
+       customerName: "Samuel Obbo",
+       customerPhone: "+256776000008",
+       items: [{ productId: p23.toString(), productName: "Woven Tote Bag", price: 95000, quantity: 1, total: 95000 }],
+       subtotal: 95000,
+       total: 95000,
+       status: "pending",
+       createdAt: Date.now() - 6 * 60 * 60 * 1000,
+     });
+
+     const o17Id = await ctx.db.insert("orders", {
+       storeId: store1Id,
+       orderNumber: "SS-00109",
+       customerName: "Jovia Nalwoga",
+       customerPhone: "+256704100009",
+       items: [{ productId: p24.toString(), productName: "Cashmere Blend Scarf", price: 65000, quantity: 2, total: 130000 }],
+       subtotal: 130000,
+       total: 130000,
+       status: "failed",
+       notes: "Payment timed out",
+       createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000,
+     });
+
+     // Store 2 orders
      const o5Id = await ctx.db.insert("orders", {
        storeId: store2Id,
        orderNumber: "SS-00201",
@@ -409,20 +548,44 @@ export const seedAll = mutation({
 
      const o8Id = await ctx.db.insert("orders", {
        storeId: store2Id,
-       orderNumber: "SS-00204",
-       customerName: "Harriet Kyomuhendo",
-       customerPhone: "+256700500004",
-       items: [
-         { productId: p10.toString(), productName: "Phone Screen Protector (Universal)", price: 8000, quantity: 3, total: 24000 },
-         { productId: p11.toString(), productName: "Laptop Cooling Pad", price: 55000, quantity: 1, total: 55000 },
-       ],
-       subtotal: 79000,
-       total: 79000,
+       orderNumber: "SS-00203",
+       customerName: "Olive Kirabo",
+       customerPhone: "+256703300003",
+       items: [{ productId: p11.toString(), productName: "USB-C Fast Charger (65W)", price: 85000, quantity: 2, total: 170000 }],
+       subtotal: 170000,
+       total: 170000,
        status: "paid",
-       createdAt: Date.now() - 8 * 24 * 60 * 60 * 1000, // 8 days ago
+       createdAt: Date.now() - 2 * 24 * 60 * 60 * 1000,
      });
 
-    // Store 3 orders
+     const o18Id = await ctx.db.insert("orders", {
+       storeId: store2Id,
+       orderNumber: "SS-00204",
+       customerName: "Patrick Byaruhanga",
+       customerPhone: "+256752400004",
+       items: [
+         { productId: p8.toString(), productName: "Wireless Earbuds Pro", price: 95000, quantity: 1, total: 95000 },
+         { productId: p12.toString(), productName: "Bluetooth Speaker", price: 150000, quantity: 1, total: 150000 },
+       ],
+       subtotal: 245000,
+       total: 245000,
+       status: "pending",
+       createdAt: Date.now() - 1 * 24 * 60 * 60 * 1000,
+     });
+
+     const o19Id = await ctx.db.insert("orders", {
+       storeId: store2Id,
+       orderNumber: "SS-00205",
+       customerName: "Norah Kigongo",
+       customerPhone: "+256704500005",
+       items: [{ productId: p13.toString(), productName: "20000mAh Power Bank", price: 75000, quantity: 1, total: 75000 }],
+       subtotal: 75000,
+       total: 75000,
+       status: "paid",
+       createdAt: Date.now() - 6 * 60 * 60 * 1000,
+     });
+
+     // Store 3 orders
      const o9Id = await ctx.db.insert("orders", {
        storeId: store3Id,
        orderNumber: "SS-00301",

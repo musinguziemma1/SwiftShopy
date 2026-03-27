@@ -1,5 +1,6 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 import { z } from "zod";
 
 const loginSchema = z.object({
@@ -28,6 +29,10 @@ const DEMO_USERS = [
 
 export const authOptions: NextAuthOptions = {
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+    }),
     CredentialsProvider({
       name: "Credentials",
       credentials: {
@@ -55,11 +60,16 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id;
         token.role = (user as any).role;
         token.storeSlug = (user as any).storeSlug ?? null;
+      }
+      if (account?.provider === "google") {
+        const demoUser = DEMO_USERS.find((u) => u.email === token.email);
+        token.role = demoUser?.role ?? "seller";
+        token.storeSlug = demoUser?.storeSlug ?? null;
       }
       return token;
     },

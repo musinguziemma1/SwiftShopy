@@ -31,6 +31,29 @@ export const getAll = query({
   },
 });
 
+export const list = query({
+  args: {},
+  handler: async (ctx) => ctx.db.query("orders").collect(),
+});
+
+export const getByDateRange = query({
+  args: {
+    startDate: v.number(),
+    endDate: v.optional(v.number()),
+    limit: v.optional(v.number())
+  },
+  handler: async (ctx, { startDate, endDate, limit = 50 }) => {
+    let query = ctx.db.query("orders");
+    if (startDate) {
+      query = query.filter(q => q.gte(q.field("createdAt"), startDate));
+    }
+    if (endDate) {
+      query = query.filter(q => q.lte(q.field("createdAt"), endDate));
+    }
+    return await query.order("desc").take(limit || 50);
+  },
+});
+
 export const create = mutation({
   args: {
     storeId: v.id("stores"),
@@ -48,7 +71,7 @@ export const create = mutation({
     total: v.number(),
     notes: v.optional(v.string()),
   },
-  handler: async (ctx, args) => ctx.db.insert("orders", { ...args, status: "pending" }),
+  handler: async (ctx, args) => ctx.db.insert("orders", { ...args, status: "pending", createdAt: Date.now() }),
 });
 
 export const updateStatus = mutation({

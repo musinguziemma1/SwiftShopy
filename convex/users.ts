@@ -24,11 +24,16 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const existing = await ctx.db.query("users").withIndex("by_email", q => q.eq("email", args.email)).first();
     if (existing) throw new Error("Email already registered");
-    return await ctx.db.insert("users", { ...args, isActive: true });
+    return await ctx.db.insert("users", { ...args, isActive: true, joinDate: Date.now() });
   },
 });
 
 export const getAll = query({
+  args: {},
+  handler: async (ctx) => ctx.db.query("users").collect(),
+});
+
+export const list = query({
   args: {},
   handler: async (ctx) => ctx.db.query("users").collect(),
 });

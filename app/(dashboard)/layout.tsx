@@ -6,10 +6,12 @@ import { useEffect } from "react";
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const role = (session?.user as any)?.role;
 
   useEffect(() => {
     if (status === "unauthenticated") router.replace("/login");
-  }, [status, router]);
+    if (status === "authenticated" && role === "admin") router.replace("/admin");
+  }, [status, role, router]);
 
   if (status === "loading") {
     return (

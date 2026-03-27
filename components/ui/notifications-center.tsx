@@ -73,11 +73,11 @@ const iconMap = {
 }
 
 const colorMap = {
-  order: { bg: "rgba(59,130,246,0.1)", color: "#3b82f6" },
-  seller: { bg: "rgba(168,85,247,0.1)", color: "#a855f7" },
-  payment: { bg: "rgba(34,197,94,0.1)", color: "#22c55e" },
-  alert: { bg: "rgba(239,68,68,0.1)", color: "#ef4444" },
-  system: { bg: "rgba(234,179,8,0.1)", color: "#eab308" },
+  order: { bg: "bg-blue-500/20", color: "text-blue-500" },
+  seller: { bg: "bg-purple-500/20", color: "text-purple-500" },
+  payment: { bg: "bg-green-500/20", color: "text-green-500" },
+  alert: { bg: "bg-red-500/20", color: "text-red-500" },
+  system: { bg: "bg-amber-500/20", color: "text-amber-500" },
 }
 
 export function NotificationsCenter() {
@@ -101,43 +101,20 @@ export function NotificationsCenter() {
   }
 
   return (
-    <div style={{ position: "relative" }}>
+    <div className="relative">
       {/* Bell Button */}
       <button
         onClick={() => setOpen(!open)}
-        style={{
-          position: "relative",
-          padding: "0.5rem",
-          borderRadius: "0.5rem",
-          border: "none",
-          background: open ? "#f1f5f9" : "transparent",
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
+        className={`relative p-2 rounded-lg transition-colors ${
+          open ? "bg-accent/50" : "hover:bg-accent/30"
+        }`}
       >
-        <Bell className="w-5 h-5" style={{ color: "#374151" }} />
+        <Bell className="w-5 h-5 text-foreground" />
         {unreadCount > 0 && (
           <motion.span
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            style={{
-              position: "absolute",
-              top: "0.25rem",
-              right: "0.25rem",
-              width: "1rem",
-              height: "1rem",
-              backgroundColor: "#ef4444",
-              borderRadius: "9999px",
-              fontSize: "0.625rem",
-              fontWeight: 700,
-              color: "#ffffff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              lineHeight: 1,
-            }}
+            className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs font-bold text-white flex items-center justify-center"
           >
             {unreadCount > 9 ? "9+" : unreadCount}
           </motion.span>
@@ -151,11 +128,7 @@ export function NotificationsCenter() {
             {/* Backdrop */}
             <div
               onClick={() => setOpen(false)}
-              style={{
-                position: "fixed",
-                inset: 0,
-                zIndex: 60,
-              }}
+              className="fixed inset-0 z-60"
             />
 
             <motion.div
@@ -163,72 +136,30 @@ export function NotificationsCenter() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.95 }}
               transition={{ duration: 0.15 }}
-              style={{
-                position: "absolute",
-                top: "calc(100% + 0.5rem)",
-                right: 0,
-                width: "22rem",
-                backgroundColor: "#ffffff",
-                border: "1px solid #e2e8f0",
-                borderRadius: "0.75rem",
-                boxShadow: "0 20px 40px rgba(0,0,0,0.15)",
-                zIndex: 70,
-                overflow: "hidden",
-              }}
+              className="absolute top-full right-0 mt-2 w-80 glass rounded-xl shadow-elevated z-70 overflow-hidden"
             >
               {/* Header */}
-              <div
-                style={{
-                  padding: "1rem 1.25rem",
-                  borderBottom: "1px solid #e2e8f0",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <h3 style={{ fontWeight: 600, fontSize: "0.9375rem" }}>Notifications</h3>
+              <div className="p-4 border-b border-border/50 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-sm">Notifications</h3>
                   {unreadCount > 0 && (
-                    <span
-                      style={{
-                        padding: "0.125rem 0.5rem",
-                        backgroundColor: "rgba(147,51,234,0.1)",
-                        color: "#9333ea",
-                        borderRadius: "9999px",
-                        fontSize: "0.75rem",
-                        fontWeight: 600,
-                      }}
-                    >
+                    <span className="px-2 py-0.5 bg-purple-500/20 text-purple-500 rounded-full text-xs font-semibold">
                       {unreadCount} new
                     </span>
                   )}
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <div className="flex items-center gap-2">
                   {unreadCount > 0 && (
                     <button
                       onClick={markAllRead}
-                      style={{
-                        fontSize: "0.75rem",
-                        color: "#9333ea",
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        fontWeight: 500,
-                      }}
+                      className="text-xs text-purple-500 hover:underline font-medium"
                     >
                       Mark all read
                     </button>
                   )}
                   <button
                     onClick={() => setOpen(false)}
-                    style={{
-                      padding: "0.25rem",
-                      border: "none",
-                      background: "transparent",
-                      cursor: "pointer",
-                      color: "#94a3b8",
-                      borderRadius: "0.375rem",
-                    }}
+                    className="p-1 hover:bg-accent/50 rounded transition-colors text-muted-foreground"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -236,17 +167,10 @@ export function NotificationsCenter() {
               </div>
 
               {/* Notifications List */}
-              <div style={{ maxHeight: "24rem", overflowY: "auto" }}>
+              <div className="max-h-80 overflow-y-auto">
                 {notifications.length === 0 ? (
-                  <div
-                    style={{
-                      padding: "3rem 1.25rem",
-                      textAlign: "center",
-                      color: "#94a3b8",
-                      fontSize: "0.875rem",
-                    }}
-                  >
-                    <Bell className="w-8 h-8" style={{ margin: "0 auto 0.75rem", opacity: 0.3 }} />
+                  <div className="p-12 text-center text-muted-foreground text-sm">
+                    <Bell className="w-8 h-8 mx-auto mb-3 opacity-30" />
                     <div>No notifications</div>
                   </div>
                 ) : (
@@ -260,116 +184,43 @@ export function NotificationsCenter() {
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 10 }}
                         onClick={() => markRead(notif.id)}
-                        style={{
-                          display: "flex",
-                          alignItems: "flex-start",
-                          gap: "0.75rem",
-                          padding: "0.875rem 1.25rem",
-                          borderBottom: "1px solid #f1f5f9",
-                          cursor: "pointer",
-                          backgroundColor: notif.read ? "transparent" : "rgba(147,51,234,0.02)",
-                          transition: "background-color 0.15s",
-                        }}
+                        className={`flex items-start gap-3 p-4 border-b border-border/30 cursor-pointer transition-colors ${
+                          notif.read ? "" : "bg-purple-500/5"
+                        } hover:bg-accent/30`}
                       >
                         {/* Icon */}
-                        <div
-                          style={{
-                            width: "2.25rem",
-                            height: "2.25rem",
-                            borderRadius: "0.5rem",
-                            backgroundColor: colors.bg,
-                            color: colors.color,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            flexShrink: 0,
-                          }}
-                        >
+                        <div className={`w-9 h-9 rounded-lg ${colors.bg} ${colors.color} flex items-center justify-center shrink-0`}>
                           {iconMap[notif.type]}
                         </div>
 
                         {/* Content */}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "space-between",
-                              marginBottom: "0.125rem",
-                            }}
-                          >
-                            <p
-                              style={{
-                                fontSize: "0.8125rem",
-                                fontWeight: notif.read ? 500 : 700,
-                                color: "#0f172a",
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                maxWidth: "12rem",
-                              }}
-                            >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-0.5">
+                            <p className={`text-sm truncate max-w-[12rem] ${
+                              notif.read ? "font-medium" : "font-bold text-foreground"
+                            }`}>
                               {notif.title}
                             </p>
-                            <span
-                              style={{
-                                fontSize: "0.6875rem",
-                                color: "#94a3b8",
-                                flexShrink: 0,
-                                marginLeft: "0.5rem",
-                              }}
-                            >
+                            <span className="text-xs text-muted-foreground shrink-0 ml-2">
                               {notif.time}
                             </span>
                           </div>
-                          <p
-                            style={{
-                              fontSize: "0.75rem",
-                              color: "#64748b",
-                              lineHeight: 1.5,
-                              overflow: "hidden",
-                              display: "-webkit-box",
-                              WebkitLineClamp: 2,
-                              WebkitBoxOrient: "vertical",
-                            }}
-                          >
+                          <p className="text-xs text-muted-foreground line-clamp-2">
                             {notif.message}
                           </p>
                         </div>
 
                         {/* Unread dot + dismiss */}
-                        <div
-                          style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            gap: "0.5rem",
-                            flexShrink: 0,
-                          }}
-                        >
+                        <div className="flex flex-col items-center gap-2 shrink-0">
                           {!notif.read && (
-                            <div
-                              style={{
-                                width: "0.5rem",
-                                height: "0.5rem",
-                                backgroundColor: "#9333ea",
-                                borderRadius: "9999px",
-                              }}
-                            />
+                            <div className="w-2 h-2 bg-purple-500 rounded-full" />
                           )}
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
                               dismiss(notif.id)
                             }}
-                            style={{
-                              padding: "0.125rem",
-                              border: "none",
-                              background: "transparent",
-                              cursor: "pointer",
-                              color: "#cbd5e1",
-                              borderRadius: "0.25rem",
-                            }}
+                            className="p-1 hover:bg-accent/50 rounded text-muted-foreground/50 hover:text-muted-foreground transition-colors"
                           >
                             <X className="w-3 h-3" />
                           </button>
@@ -381,39 +232,11 @@ export function NotificationsCenter() {
               </div>
 
               {/* Footer */}
-              <div
-                style={{
-                  padding: "0.75rem 1.25rem",
-                  borderTop: "1px solid #e2e8f0",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <button
-                  style={{
-                    fontSize: "0.8125rem",
-                    fontWeight: 500,
-                    color: "#9333ea",
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                  }}
-                >
+              <div className="p-3 border-t border-border/50 flex items-center justify-between">
+                <button className="text-sm font-medium text-purple-500 hover:underline">
                   View all notifications
                 </button>
-                <button
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.375rem",
-                    fontSize: "0.75rem",
-                    color: "#64748b",
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                  }}
-                >
+                <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
                   <Settings className="w-3.5 h-3.5" />
                   Preferences
                 </button>

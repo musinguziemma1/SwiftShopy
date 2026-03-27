@@ -29,6 +29,11 @@ export const getAll = query({
   },
 });
 
+export const list = query({
+  args: {},
+  handler: async (ctx) => ctx.db.query("stores").collect(),
+});
+
 export const create = mutation({
   args: {
     userId: v.id("users"),
@@ -57,4 +62,9 @@ export const update = mutation({
     banner: v.optional(v.string()),
   },
   handler: async (ctx, { id, ...updates }) => ctx.db.patch(id, updates),
+});
+
+export const updateStatus = mutation({
+  args: { id: v.id("stores"), isActive: v.boolean() },
+  handler: async (ctx, { id, isActive }) => ctx.db.patch(id, { isActive }),
 });

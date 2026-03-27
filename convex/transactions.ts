@@ -37,6 +37,11 @@ export const getAll = query({
   },
 });
 
+export const list = query({
+  args: {},
+  handler: async (ctx) => ctx.db.query("transactions").collect(),
+});
+
 export const updateStatus = mutation({
   args: {
     id: v.id("transactions"),

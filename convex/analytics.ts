@@ -60,3 +60,53 @@ export const getDailySales = query({
     return Object.entries(map).map(([date, v]) => ({ date, ...v })).sort((a, b) => a.date.localeCompare(b.date));
   },
 });
+
+export const getTopSellingProducts = query({
+  args: { storeId: v.id("stores"), limit: v.optional(v.number()) },
+  handler: async (ctx, { storeId, limit = 5 }) => {
+    const products = await ctx.db.query("products")
+      .withIndex("by_store", q => q.eq("storeId", storeId))
+      .filter(q => q.eq(q.field("isActive"), true))
+      .collect();
+    
+    return products
+      .sort((a, b) => (b.sales ?? 0) - (a.sales ?? 0))
+      .slice(0, limit)
+      .map(p => ({
+        id: p._id,
+        name: p.name,
+        sales: p.sales ?? 0,
+        revenue: (p.sales ?? 0) * p.price,
+        image: p.image,
+        price: p.price
+      }));
+  },
+});
+
+export const getSalesByCategory = query({
+  args: { storeId: v.id("stores") },
+  handler: async (ctx, { storeId }) => {
+    const products = await ctx.db.query("products")
+      .withIndex("by_store", q => q.eq("storeId", storeId))
+      .filter(q => q.eq(q.field("isActive"), true))
+      .collect();
+    
+    const categoryMap: Record<string, { sales: number; revenue: number }> = {};
+    
+    for (const product of products) {
+      const category = product.category || "Uncategorized";
+      if (!categoryMap[category]) {
+        categoryMap[category] = { sales: 0, revenue: 0 };
+      }
+      categoryMap[category].sales += product.sales ?? 0;
+      categoryMap[category].revenue += (product.sales ?? 0) * product.price;
+    }
+    
+    return Object.entries(categoryMap).map(([category, data]) => ({
+      category,
+      sales: data.sales,
+      revenue: data.revenue,
+      percentage: data.sales > 0 ? (data.sales / products.reduce((sum, p) => sum + (p.sales ?? 0), 0)) * 100 : 0
+    }));
+  },
+});

@@ -1,17 +1,22 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import NotificationsCenter from "@/components/ui/notifications-center";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
   ShoppingCart, Package, DollarSign, TrendingUp, Users, Search,
   Settings, LogOut, Menu, X, Plus, Edit, Trash2, Eye, Download,
   Filter, Calendar, ArrowUpRight, ArrowDownRight, MoreVertical,
   Check, Clock, XCircle, MessageSquare, BarChart3, PieChart,
-  Activity, Star, AlertCircle, Copy, QrCode, ExternalLink, Share2, Zap
+  Activity, Star, AlertCircle, Copy, QrCode, ExternalLink, Share2, Zap,
+  Send, Paperclip, Image as ImageIcon, Phone, Video, MoreHorizontal,
+  Search as SearchIcon, RefreshCw, Link2, Smartphone, Globe,
+  ChevronRight, Store, CreditCard, Upload, Save, Shield, Lock as LockIcon
 } from "lucide-react";
+import { useDashboardData } from "@/lib/hooks/useDashboardData";
 
 interface Product {
   id: string; name: string; price: number; stock: number; sales: number;
@@ -34,11 +39,39 @@ export default function SellerDashboardPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showStorePreview, setShowStorePreview] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [whatsappSubTab, setWhatsappSubTab] = useState("conversations");
+  const [selectedChat, setSelectedChat] = useState<string | null>("1");
+  const [chatMessage, setChatMessage] = useState("");
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [settingsSubTab, setSettingsSubTab] = useState("store");
+  const [storeForm, setStoreForm] = useState({
+    name: "Nakato Styles", slug: "nakato-styles", phone: "+256772100001",
+    email: "seller@swiftshopy.com", description: "Trendy African fashion, handbags & accessories for the modern Ugandan woman.",
+    currency: "UGX", timezone: "Africa/Kampala"
+  });
 
-  const stats: DashboardStats = {
-    totalRevenue: 45_230_000, totalOrders: 1_234, totalProducts: 89, totalCustomers: 5_678,
-    revenueChange: 12.5, ordersChange: 8.3, productsChange: -2.4, customersChange: 15.7,
-  };
+  // Get store ID from session (in a real app, this would come from the user's store)
+  const storeId = session?.user?.email === "seller@swiftshopy.com" ? "store1Id" : null;
+  
+  const { 
+    storeSummary, 
+    topProducts, 
+    categorySales, 
+    dailySales,
+    isLoading
+  } = useDashboardData(storeId);
+
+   // Use real data from Convex or fallback to mock data if not available
+   const stats: DashboardStats = {
+     totalRevenue: storeSummary?.totalRevenue ?? 45_230_000,
+     totalOrders: storeSummary?.totalOrders ?? 1_234,
+     totalProducts: storeSummary?.totalProducts ?? 89,
+     totalCustomers: 5_678, // This would come from a users query in a real app
+     revenueChange: 12.5, // This would come from analytics in a real app
+     ordersChange: 8.3,   // This would come from analytics in a real app
+     productsChange: -2.4, // This would come from analytics in a real app
+     customersChange: 15.7, // This would come from analytics in a real app
+   };
 
   const products: Product[] = [
     { id: "1", name: "Premium Wireless Headphones", price: 250_000, stock: 45, sales: 234, image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=100&h=100&fit=crop", category: "Electronics" },
@@ -77,34 +110,35 @@ export default function SellerDashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#f8fafc" }}>
+    <div className="min-h-screen bg-background">
       {/* Top Nav */}
-      <nav style={{ position: "fixed", top: 0, width: "100%", backgroundColor: "#ffffff", borderBottom: "1px solid #e2e8f0", zIndex: 50 }}>
-        <div style={{ padding: "0 1.5rem" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: "4rem" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-              <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ padding: "0.5rem", borderRadius: "0.5rem", border: "none", background: "transparent", cursor: "pointer" }}>
+      <nav className="fixed top-0 w-full glass border-b border-border/50 z-50">
+        <div className="px-6">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-4">
+              <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 rounded-lg hover:bg-accent/50 transition-colors">
                 <Menu className="w-5 h-5" />
               </button>
-              <Link href="/" style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}>
-                <div style={{ width: "2rem", height: "2rem", background: "linear-gradient(135deg, #3b82f6, #2563eb)", borderRadius: "0.5rem", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Zap className="w-4 h-4" style={{ color: "#ffffff" }} />
+              <Link href="/" className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-primary to-indigo-600 rounded-lg flex items-center justify-center shadow-lg">
+                  <Zap className="w-4 h-4 text-white" />
                 </div>
-                <span style={{ fontSize: "1.125rem", fontWeight: 700, background: "linear-gradient(to right, #3b82f6, #2563eb)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>SwiftShopy</span>
+                <span className="text-lg font-bold text-gradient">SwiftShopy</span>
               </Link>
             </div>
 
-            <div style={{ flex: 1, maxWidth: "28rem", margin: "0 2rem", position: "relative" }}>
-              <Search style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", width: "1rem", height: "1rem", color: "#64748b" }} />
-              <input type="text" placeholder="Search products, orders..." style={{ width: "100%", paddingLeft: "2.5rem", paddingRight: "1rem", paddingTop: "0.5rem", paddingBottom: "0.5rem", backgroundColor: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: "0.5rem", fontSize: "0.875rem", outline: "none" }} />
+            <div className="flex-1 max-w-xl mx-6 relative hidden md:block">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input type="text" placeholder="Search products, orders..." className="w-full pl-10 pr-4 py-2 glass rounded-lg border border-border/50 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <div className="flex items-center gap-3">
+              <ThemeToggle />
               <NotificationsCenter />
-              <button onClick={() => signOut({ callbackUrl: "/login" })} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 0.75rem", borderRadius: "0.5rem", border: "1px solid #e2e8f0", background: "transparent", cursor: "pointer", fontSize: "0.875rem", color: "#ef4444" }}>
-                <LogOut className="w-4 h-4" /> Sign Out
+              <button onClick={() => signOut({ callbackUrl: "/login" })} className="flex items-center gap-2 px-3 py-2 glass rounded-lg hover:bg-accent/50 transition-all text-sm text-red-500 hover:text-red-600">
+                <LogOut className="w-4 h-4" /> <span className="hidden sm:inline">Sign Out</span>
               </button>
-              <div style={{ width: "2.25rem", height: "2.25rem", borderRadius: "9999px", backgroundColor: "#dbeafe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", fontWeight: 700, color: "#2563eb" }}>
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center text-sm font-bold text-white shadow-lg">
                 {session?.user?.name?.slice(0, 2).toUpperCase() || "US"}
               </div>
             </div>
@@ -113,57 +147,39 @@ export default function SellerDashboardPage() {
       </nav>
 
       {/* Sidebar */}
-      <aside style={{
-        position: "fixed", top: "4rem", left: 0,
-        height: "calc(100vh - 4rem)",
-        width: sidebarOpen ? "16rem" : "5rem",
-        backgroundColor: "#ffffff",
-        borderRight: "1px solid #e2e8f0",
-        transition: "width 0.3s",
-        zIndex: 40,
-        overflowY: "auto",
-        overflowX: "hidden",
-      }}>
-        <div style={{ padding: "1rem" }}>
+      <aside className={`fixed top-16 left-0 h-[calc(100vh-4rem)] glass border-r border-border/50 transition-all duration-300 z-40 overflow-y-auto ${sidebarOpen ? "w-64" : "w-20"}`}>
+        <div className="p-4">
           {navItems.map((item) => (
-            <button key={item.id} onClick={() => setActiveTab(item.id)} style={{
-              width: "100%", display: "flex", alignItems: "center",
-              gap: "0.75rem", padding: "0.625rem 0.75rem",
-              borderRadius: "0.5rem", border: "none", cursor: "pointer",
-              backgroundColor: activeTab === item.id ? "#3b82f6" : "transparent",
-              color: activeTab === item.id ? "#ffffff" : "#374151",
-              marginBottom: "0.25rem", transition: "all 0.15s",
-              justifyContent: sidebarOpen ? "flex-start" : "center",
-            }}>
+            <button key={item.id} onClick={() => setActiveTab(item.id)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl mb-2 transition-all ${
+              activeTab === item.id
+                ? "bg-gradient-to-r from-primary to-indigo-600 text-primary-foreground shadow-lg"
+                : "hover:bg-accent/50 text-foreground"
+            }`}>
               {item.icon}
-              {sidebarOpen && <span style={{ fontSize: "0.875rem", fontWeight: 500 }}>{item.label}</span>}
+              {sidebarOpen && <span className="text-sm font-medium">{item.label}</span>}
             </button>
           ))}
-          <div style={{ borderTop: "1px solid #e2e8f0", marginTop: "1rem", paddingTop: "1rem" }}>
-            <button onClick={() => setActiveTab("settings")} style={{
-              width: "100%", display: "flex", alignItems: "center",
-              gap: "0.75rem", padding: "0.625rem 0.75rem",
-              borderRadius: "0.5rem", border: "none", cursor: "pointer",
-              backgroundColor: activeTab === "settings" ? "#3b82f6" : "transparent",
-              color: activeTab === "settings" ? "#ffffff" : "#374151",
-              transition: "all 0.15s",
-              justifyContent: sidebarOpen ? "flex-start" : "center",
-            }}>
+          <div className="border-t border-border/50 mt-4 pt-4">
+            <button onClick={() => setActiveTab("settings")} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+              activeTab === "settings"
+                ? "bg-gradient-to-r from-primary to-indigo-600 text-primary-foreground shadow-lg"
+                : "hover:bg-accent/50 text-foreground"
+            }`}>
               <Settings className="w-5 h-5" />
-              {sidebarOpen && <span style={{ fontSize: "0.875rem", fontWeight: 500 }}>Settings</span>}
+              {sidebarOpen && <span className="text-sm font-medium">Settings</span>}
             </button>
           </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main style={{ paddingTop: "4rem", marginLeft: sidebarOpen ? "16rem" : "5rem", transition: "margin-left 0.3s" }}>
-        <div style={{ padding: "1.5rem 2rem" }}>
+      <main className={`pt-16 transition-all duration-300 ${sidebarOpen ? "ml-64" : "ml-20"}`}>
+        <div className="p-6">
 
           {/* Quick Actions Bar */}
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
-            style={{ marginBottom: "1.5rem", padding: "1rem", borderRadius: "0.75rem", border: "1px solid #e2e8f0", backgroundColor: "#ffffff" }}>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", alignItems: "center" }}>
+            className="mb-6 p-4 glass rounded-xl">
+            <div className="flex flex-wrap gap-3 items-center">
               {[
                 { label: "Add Product", icon: <Plus className="w-4 h-4" />, primary: true },
                 { label: "Share Store", icon: <Share2 className="w-4 h-4" />, onClick: () => setShowShareModal(true) },
@@ -171,14 +187,11 @@ export default function SellerDashboardPage() {
                 { label: "Payments", icon: <DollarSign className="w-4 h-4" /> },
                 { label: "Reports", icon: <Download className="w-4 h-4" /> },
               ].map((btn, i) => (
-                <button key={i} onClick={btn.onClick} style={{
-                  display: "flex", alignItems: "center", gap: "0.5rem",
-                  padding: "0.5rem 1rem", borderRadius: "0.5rem", border: "1px solid #e2e8f0",
-                  backgroundColor: btn.primary ? "#3b82f6" : "#ffffff",
-                  color: btn.primary ? "#ffffff" : "#374151",
-                  fontSize: "0.875rem", fontWeight: 500, cursor: "pointer",
-                  transition: "all 0.15s",
-                }}>
+                <button key={i} onClick={btn.onClick} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:scale-105 ${
+                  btn.primary
+                    ? "bg-gradient-to-r from-primary to-indigo-600 text-primary-foreground shadow-lg"
+                    : "glass hover:bg-accent/50"
+                }`}>
                   {btn.icon} {btn.label}
                 </button>
               ))}
@@ -188,186 +201,194 @@ export default function SellerDashboardPage() {
           {/* Overview Tab */}
           {activeTab === "overview" && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-              <div style={{ marginBottom: "2rem" }}>
-                <h1 style={{ fontSize: "1.875rem", fontWeight: 700, marginBottom: "0.5rem" }}>Dashboard Overview</h1>
-                <p style={{ color: "#64748b" }}>Welcome back, {session?.user?.name?.split(" ")[0]}! Here&apos;s what&apos;s happening with your store.</p>
+              <div className="mb-8">
+                <h1 className="text-2xl font-bold mb-1">Dashboard Overview</h1>
+                <p className="text-muted-foreground">Welcome back, {session?.user?.name?.split(" ")[0]}! Here&apos;s what&apos;s happening with your store.</p>
               </div>
 
               {/* Today's Summary */}
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                style={{ marginBottom: "2rem", padding: "1.5rem", borderRadius: "0.75rem", border: "2px solid rgba(59,130,246,0.2)", background: "linear-gradient(135deg, rgba(59,130,246,0.05), rgba(99,102,241,0.05))" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
-                  <h3 style={{ fontSize: "1.125rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                    <Activity className="w-5 h-5" style={{ color: "#3b82f6" }} /> Today&apos;s Summary
+                className="mb-6 p-6 glass rounded-xl border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-indigo-500/5">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-primary" /> Today&apos;s Summary
                   </h3>
-                  <span style={{ fontSize: "0.875rem", color: "#64748b" }}>{new Date().toLocaleDateString("en-UG", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</span>
+                  <span className="text-sm text-muted-foreground">{new Date().toLocaleDateString("en-UG", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</span>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem" }}>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {[
-                    { label: "Sales Today", value: "UGX 450,000", icon: <DollarSign className="w-5 h-5" />, bg: "#dcfce7", color: "#16a34a" },
-                    { label: "Orders", value: "12", badge: "3 pending", icon: <ShoppingCart className="w-5 h-5" />, bg: "#dbeafe", color: "#2563eb" },
-                    { label: "New Customers", value: "5", icon: <Users className="w-5 h-5" />, bg: "#f3e8ff", color: "#7c3aed" },
-                    { label: "Messages", value: "8", badge: "unread", icon: <MessageSquare className="w-5 h-5" />, bg: "#ffedd5", color: "#ea580c" },
+                    { label: "Sales Today", value: "UGX 450,000", icon: <DollarSign className="w-5 h-5" />, bg: "bg-green-500/20", color: "text-green-500" },
+                    { label: "Orders", value: "12", badge: "3 pending", icon: <ShoppingCart className="w-5 h-5" />, bg: "bg-blue-500/20", color: "text-blue-500" },
+                    { label: "New Customers", value: "5", icon: <Users className="w-5 h-5" />, bg: "bg-purple-500/20", color: "text-purple-500" },
+                    { label: "Messages", value: "8", badge: "unread", icon: <MessageSquare className="w-5 h-5" />, bg: "bg-orange-500/20", color: "text-orange-500" },
                   ].map((item, i) => (
                     <motion.div key={i} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.1 }}
-                      style={{ padding: "1rem", borderRadius: "0.5rem", backgroundColor: "#ffffff", border: "1px solid #e2e8f0", cursor: "pointer" }}>
-                      <div style={{ width: "2.5rem", height: "2.5rem", borderRadius: "0.5rem", backgroundColor: item.bg, color: item.color, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "0.75rem" }}>
+                      className="p-4 rounded-xl glass hover:shadow-smooth transition-all cursor-pointer">
+                      <div className={`w-10 h-10 rounded-lg ${item.bg} ${item.color} flex items-center justify-center mb-3`}>
                         {item.icon}
                       </div>
-                      <div style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.25rem" }}>{item.value}</div>
-                      <div style={{ fontSize: "0.875rem", color: "#64748b" }}>{item.label}</div>
-                      {item.badge && <span style={{ display: "inline-block", marginTop: "0.5rem", padding: "0.125rem 0.5rem", backgroundColor: "#f1f5f9", borderRadius: "9999px", fontSize: "0.75rem" }}>{item.badge}</span>}
+                      <div className="text-2xl font-bold mb-1">{item.value}</div>
+                      <div className="text-sm text-muted-foreground">{item.label}</div>
+                      {item.badge && <span className="inline-block mt-2 px-2 py-0.5 bg-muted rounded-full text-xs">{item.badge}</span>}
                     </motion.div>
                   ))}
                 </div>
               </motion.div>
 
               {/* Stats Grid */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1.5rem", marginBottom: "2rem" }}>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 {[
-                  { title: "Total Revenue", value: fmt(stats.totalRevenue), change: stats.revenueChange, color: "#22c55e" },
-                  { title: "Total Orders", value: stats.totalOrders.toLocaleString(), change: stats.ordersChange, color: "#3b82f6" },
-                  { title: "Total Products", value: stats.totalProducts.toString(), change: stats.productsChange, color: "#a855f7" },
-                  { title: "Total Customers", value: stats.totalCustomers.toLocaleString(), change: stats.customersChange, color: "#f97316" },
+                  { title: "Total Revenue", value: fmt(stats.totalRevenue), change: stats.revenueChange, color: "from-green-500 to-emerald-500" },
+                  { title: "Total Orders", value: stats.totalOrders.toLocaleString(), change: stats.ordersChange, color: "from-blue-500 to-indigo-500" },
+                  { title: "Total Products", value: stats.totalProducts.toString(), change: stats.productsChange, color: "from-purple-500 to-pink-500" },
+                  { title: "Total Customers", value: stats.totalCustomers.toLocaleString(), change: stats.customersChange, color: "from-orange-500 to-amber-500" },
                 ].map((s, i) => (
-                  <motion.div key={i} whileHover={{ scale: 1.03, y: -4 }} style={{ padding: "1.5rem", borderRadius: "0.75rem", border: "1px solid #e2e8f0", backgroundColor: "#ffffff", cursor: "pointer" }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
-                      <div style={{ width: "3rem", height: "3rem", borderRadius: "0.5rem", backgroundColor: s.color, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <DollarSign className="w-6 h-6" style={{ color: "#ffffff" }} />
+                  <motion.div key={i} whileHover={{ scale: 1.02, y: -4 }} className="p-5 glass rounded-xl cursor-pointer">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center`}>
+                        <DollarSign className="w-6 h-6 text-white" />
                       </div>
-                      <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.875rem", fontWeight: 500, color: s.change >= 0 ? "#22c55e" : "#ef4444" }}>
+                      <span className={`flex items-center gap-1 text-sm font-medium ${s.change >= 0 ? "text-green-500" : "text-red-500"}`}>
                         {s.change >= 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
                         {Math.abs(s.change)}%
                       </span>
                     </div>
-                    <div style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.25rem" }}>{s.value}</div>
-                    <div style={{ fontSize: "0.875rem", color: "#64748b" }}>{s.title}</div>
+                    <div className="text-2xl font-bold mb-1">{s.value}</div>
+                    <div className="text-sm text-muted-foreground">{s.title}</div>
                   </motion.div>
                 ))}
               </div>
 
               {/* Sales Goals */}
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-                style={{ marginBottom: "2rem", padding: "1.5rem", borderRadius: "0.75rem", border: "1px solid #e2e8f0", backgroundColor: "#ffffff" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
-                  <h3 style={{ fontSize: "1.125rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                    <TrendingUp className="w-5 h-5" style={{ color: "#3b82f6" }} /> Sales Goals
+                className="mb-6 p-6 glass rounded-xl">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-primary" /> Sales Goals
                   </h3>
-                  <button style={{ fontSize: "0.875rem", color: "#3b82f6", background: "none", border: "none", cursor: "pointer" }}>Edit Goals</button>
+                  <button className="text-sm text-primary hover:underline">Edit Goals</button>
                 </div>
-                {[
-                  { period: "Daily Goal", target: 1_000_000, current: 450_000, pct: 45 },
-                  { period: "Weekly Goal", target: 5_000_000, current: 3_200_000, pct: 64 },
-                  { period: "Monthly Goal", target: 20_000_000, current: 12_500_000, pct: 62.5 },
-                ].map((g, i) => (
-                  <div key={i} style={{ marginBottom: "1.5rem" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
-                      <span style={{ fontSize: "0.875rem", fontWeight: 500 }}>{g.period}</span>
-                      <span style={{ fontSize: "0.875rem", color: "#64748b" }}>{fmt(g.current)} / {fmt(g.target)}</span>
+                <div className="space-y-6">
+                  {[
+                    { period: "Daily Goal", target: 1_000_000, current: 450_000, pct: 45 },
+                    { period: "Weekly Goal", target: 5_000_000, current: 3_200_000, pct: 64 },
+                    { period: "Monthly Goal", target: 20_000_000, current: 12_500_000, pct: 62.5 },
+                  ].map((g, i) => (
+                    <div key={i}>
+                      <div className="flex justify-between mb-2">
+                        <span className="text-sm font-medium">{g.period}</span>
+                        <span className="text-sm text-muted-foreground">{fmt(g.current)} / {fmt(g.target)}</span>
+                      </div>
+                      <div className="h-3 bg-muted rounded-full overflow-hidden">
+                        <motion.div initial={{ width: 0 }} animate={{ width: `${g.pct}%` }} transition={{ duration: 0.8, delay: 0.4 + i * 0.1 }}
+                          className="h-full bg-gradient-to-r from-primary to-indigo-500 rounded-full" />
+                      </div>
+                      <div className="flex justify-between mt-2">
+                        <span className="text-xs text-muted-foreground">{g.pct}% complete</span>
+                        <span className="text-xs font-medium text-primary">{fmt(g.target - g.current)} to go</span>
+                      </div>
                     </div>
-                    <div style={{ height: "0.75rem", backgroundColor: "#f1f5f9", borderRadius: "9999px", overflow: "hidden" }}>
-                      <motion.div initial={{ width: 0 }} animate={{ width: `${g.pct}%` }} transition={{ duration: 0.8, delay: 0.4 + i * 0.1 }}
-                        style={{ height: "100%", background: "linear-gradient(to right, #3b82f6, #6366f1)", borderRadius: "9999px" }} />
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: "0.25rem" }}>
-                      <span style={{ fontSize: "0.75rem", color: "#64748b" }}>{g.pct}% complete</span>
-                      <span style={{ fontSize: "0.75rem", fontWeight: 500, color: "#3b82f6" }}>{fmt(g.target - g.current)} to go</span>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </motion.div>
 
               {/* Charts */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginBottom: "2rem" }}>
+              <div className="grid md:grid-cols-2 gap-6 mb-6">
                 {/* Revenue Chart */}
-                <div style={{ padding: "1.5rem", borderRadius: "0.75rem", border: "1px solid #e2e8f0", backgroundColor: "#ffffff" }}>
-                  <h3 style={{ fontSize: "1.125rem", fontWeight: 600, marginBottom: "1.5rem" }}>Revenue Overview</h3>
-                  <div style={{ height: "16rem", display: "flex", alignItems: "flex-end", gap: "0.5rem", justifyContent: "space-between" }}>
+                <div className="p-6 glass rounded-xl">
+                  <h3 className="text-lg font-semibold mb-6">Revenue Overview</h3>
+                  <div className="h-64 flex items-end gap-2 justify-between">
                     {[65,45,78,52,90,67,85,72,95,80,88,92].map((h, i) => (
                       <motion.div key={i} initial={{ height: 0 }} animate={{ height: `${h}%` }} transition={{ duration: 0.5, delay: i * 0.05 }}
-                        style={{ flex: 1, background: "linear-gradient(to top, #3b82f6, #6366f1)", borderRadius: "0.25rem 0.25rem 0 0", cursor: "pointer" }} />
+                        className="flex-1 bg-gradient-to-t from-primary to-indigo-500 rounded-t cursor-pointer hover:opacity-80 transition-opacity" />
                     ))}
                   </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: "0.75rem" }}>
+                  <div className="flex justify-between mt-4 text-xs text-muted-foreground">
                     {["J","F","M","A","M","J","J","A","S","O","N","D"].map((m, i) => (
-                      <span key={i} style={{ fontSize: "0.75rem", color: "#94a3b8" }}>{m}</span>
+                      <span key={i}>{m}</span>
                     ))}
                   </div>
                 </div>
 
                 {/* Category Chart */}
-                <div style={{ padding: "1.5rem", borderRadius: "0.75rem", border: "1px solid #e2e8f0", backgroundColor: "#ffffff" }}>
-                  <h3 style={{ fontSize: "1.125rem", fontWeight: 600, marginBottom: "1.5rem" }}>Sales by Category</h3>
-                  {[
-                    { name: "Electronics", value: 45, color: "#3b82f6" },
-                    { name: "Fashion", value: 30, color: "#a855f7" },
-                    { name: "Food & Beverage", value: 15, color: "#22c55e" },
-                    { name: "Beauty", value: 10, color: "#ec4899" },
-                  ].map((c, i) => (
-                    <div key={c.name} style={{ marginBottom: "1rem" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
-                        <span style={{ fontSize: "0.875rem", fontWeight: 500 }}>{c.name}</span>
-                        <span style={{ fontSize: "0.875rem", color: "#64748b" }}>{c.value}%</span>
+                <div className="p-6 glass rounded-xl">
+                  <h3 className="text-lg font-semibold mb-6">Sales by Category</h3>
+                  <div className="space-y-4">
+                    {[
+                      { name: "Electronics", value: 45, color: "bg-blue-500" },
+                      { name: "Fashion", value: 30, color: "bg-purple-500" },
+                      { name: "Food & Beverage", value: 15, color: "bg-green-500" },
+                      { name: "Beauty", value: 10, color: "bg-pink-500" },
+                    ].map((c, i) => (
+                      <div key={c.name}>
+                        <div className="flex justify-between mb-2">
+                          <span className="text-sm font-medium">{c.name}</span>
+                          <span className="text-sm text-muted-foreground">{c.value}%</span>
+                        </div>
+                        <div className="h-3 bg-muted rounded-full overflow-hidden">
+                          <motion.div initial={{ width: 0 }} animate={{ width: `${c.value}%` }} transition={{ duration: 0.5, delay: i * 0.1 }}
+                            className={`h-full ${c.color} rounded-full`} />
+                        </div>
                       </div>
-                      <div style={{ height: "0.5rem", backgroundColor: "#f1f5f9", borderRadius: "9999px", overflow: "hidden" }}>
-                        <motion.div initial={{ width: 0 }} animate={{ width: `${c.value}%` }} transition={{ duration: 0.5, delay: i * 0.1 }}
-                          style={{ height: "100%", backgroundColor: c.color }} />
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
 
               {/* Activity + Recent Orders */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "1.5rem" }}>
+              <div className="grid lg:grid-cols-3 gap-6">
                 {/* Activity */}
-                <div style={{ padding: "1.5rem", borderRadius: "0.75rem", border: "1px solid #e2e8f0", backgroundColor: "#ffffff" }}>
-                  <h3 style={{ fontSize: "1.125rem", fontWeight: 600, marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                    <Activity className="w-5 h-5" style={{ color: "#3b82f6" }} /> Recent Activity
+                <div className="p-6 glass rounded-xl">
+                  <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-primary" /> Recent Activity
                   </h3>
-                  {[
-                    { action: "New order received", detail: "Order #1234", time: "2 min ago", color: "#22c55e" },
-                    { action: "Payment confirmed", detail: "UGX 250,000", time: "15 min ago", color: "#3b82f6" },
-                    { action: "Product updated", detail: "Smart Watch Pro", time: "1 hour ago", color: "#a855f7" },
-                    { action: "Customer message", detail: "Sarah Nakato", time: "2 hours ago", color: "#f97316" },
-                    { action: "Low stock alert", detail: "Running Shoes", time: "3 hours ago", color: "#ef4444" },
-                  ].map((a, i) => (
-                    <motion.div key={i} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}
-                      style={{ display: "flex", alignItems: "flex-start", gap: "0.75rem", padding: "0.75rem", borderRadius: "0.5rem", marginBottom: "0.25rem", cursor: "pointer" }}>
-                      <div style={{ width: "2rem", height: "2rem", borderRadius: "0.5rem", backgroundColor: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", color: a.color, flexShrink: 0 }}>
-                        <Activity className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <p style={{ fontSize: "0.875rem", fontWeight: 500 }}>{a.action}</p>
-                        <p style={{ fontSize: "0.75rem", color: "#64748b" }}>{a.detail}</p>
-                        <p style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "0.25rem" }}>{a.time}</p>
-                      </div>
-                    </motion.div>
-                  ))}
+                  <div className="space-y-4">
+                    {[
+                      { action: "New order received", detail: "Order #1234", time: "2 min ago", color: "text-green-500", bg: "bg-green-500/20" },
+                      { action: "Payment confirmed", detail: "UGX 250,000", time: "15 min ago", color: "text-blue-500", bg: "bg-blue-500/20" },
+                      { action: "Product updated", detail: "Smart Watch Pro", time: "1 hour ago", color: "text-purple-500", bg: "bg-purple-500/20" },
+                      { action: "Customer message", detail: "Sarah Nakato", time: "2 hours ago", color: "text-orange-500", bg: "bg-orange-500/20" },
+                      { action: "Low stock alert", detail: "Running Shoes", time: "3 hours ago", color: "text-red-500", bg: "bg-red-500/20" },
+                    ].map((a, i) => (
+                      <motion.div key={i} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}
+                        className="flex items-start gap-3 p-3 rounded-xl hover:bg-accent/50 transition-colors cursor-pointer">
+                        <div className={`w-10 h-10 rounded-xl ${a.bg} ${a.color} flex items-center justify-center shrink-0`}>
+                          <Activity className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{a.action}</p>
+                          <p className="text-xs text-muted-foreground">{a.detail}</p>
+                          <p className="text-xs text-muted-foreground/70 mt-1">{a.time}</p>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Recent Orders */}
-                <div style={{ padding: "1.5rem", borderRadius: "0.75rem", border: "1px solid #e2e8f0", backgroundColor: "#ffffff" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-                    <h3 style={{ fontSize: "1.125rem", fontWeight: 600 }}>Recent Orders</h3>
-                    <button style={{ fontSize: "0.875rem", color: "#3b82f6", background: "none", border: "none", cursor: "pointer" }}>View All</button>
+                <div className="lg:col-span-2 p-6 glass rounded-xl">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg font-semibold">Recent Orders</h3>
+                    <button className="text-sm text-primary hover:underline">View All</button>
                   </div>
-                  {orders.map((order, i) => (
-                    <motion.div key={order.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-                      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1rem", borderRadius: "0.5rem", border: "1px solid #e2e8f0", marginBottom: "0.75rem", cursor: "pointer" }}>
-                      <div>
-                        <div style={{ fontWeight: 500, marginBottom: "0.25rem", fontSize: "0.875rem" }}>{order.id}</div>
-                        <div style={{ fontSize: "0.875rem", color: "#64748b" }}>{order.customer}</div>
-                      </div>
-                      <div style={{ textAlign: "right", marginRight: "1rem" }}>
-                        <div style={{ fontWeight: 600, fontSize: "0.875rem" }}>{fmt(order.amount)}</div>
-                        <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{order.items} items</div>
-                      </div>
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem", padding: "0.25rem 0.75rem", borderRadius: "9999px", fontSize: "0.75rem", fontWeight: 500 }} className={statusColor(order.status)}>
-                        {statusIcon(order.status)} {order.status}
-                      </span>
-                    </motion.div>
-                  ))}
+                  <div className="space-y-3">
+                    {orders.map((order, i) => (
+                      <motion.div key={order.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
+                        className="flex items-center justify-between p-4 rounded-xl glass hover:shadow-smooth transition-all cursor-pointer">
+                        <div>
+                          <div className="font-medium mb-1">{order.id}</div>
+                          <div className="text-sm text-muted-foreground">{order.customer}</div>
+                        </div>
+                        <div className="text-right mr-4">
+                          <div className="font-semibold">{fmt(order.amount)}</div>
+                          <div className="text-xs text-muted-foreground">{order.items} items</div>
+                        </div>
+                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${statusColor(order.status)}`}>
+                          {statusIcon(order.status)} {order.status}
+                        </span>
+                      </motion.div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -376,55 +397,55 @@ export default function SellerDashboardPage() {
           {/* Products Tab */}
           {activeTab === "products" && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
+              <div className="flex justify-between items-center mb-8">
                 <div>
-                  <h1 style={{ fontSize: "1.875rem", fontWeight: 700, marginBottom: "0.5rem" }}>Products</h1>
-                  <p style={{ color: "#64748b" }}>Manage your product catalog</p>
+                  <h1 className="text-2xl font-bold mb-1">Products</h1>
+                  <p className="text-muted-foreground">Manage your product catalog</p>
                 </div>
-                <button style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.625rem 1rem", backgroundColor: "#3b82f6", color: "#ffffff", borderRadius: "0.5rem", border: "none", fontWeight: 500, cursor: "pointer", fontSize: "0.875rem" }}>
+                <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-indigo-600 text-white rounded-lg font-medium hover:scale-105 transition-all shadow-lg">
                   <Plus className="w-4 h-4" /> Add Product
                 </button>
               </div>
 
               {/* Inventory Alerts */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "1rem", marginBottom: "2rem" }}>
+              <div className="grid grid-cols-3 gap-4 mb-8">
                 {[
-                  { label: "Low Stock", count: 12, desc: "Products below 5 units", color: "#f59e0b", bg: "rgba(245,158,11,0.05)", border: "rgba(245,158,11,0.2)" },
-                  { label: "Out of Stock", count: 3, desc: "Products unavailable", color: "#ef4444", bg: "rgba(239,68,68,0.05)", border: "rgba(239,68,68,0.2)" },
-                  { label: "Well Stocked", count: 74, desc: "Products in good stock", color: "#22c55e", bg: "rgba(34,197,94,0.05)", border: "rgba(34,197,94,0.2)" },
+                  { label: "Low Stock", count: 12, desc: "Products below 5 units", color: "border-amber-500/30 bg-amber-500/10", icon: "text-amber-500" },
+                  { label: "Out of Stock", count: 3, desc: "Products unavailable", color: "border-red-500/30 bg-red-500/10", icon: "text-red-500" },
+                  { label: "Well Stocked", count: 74, desc: "Products in good stock", color: "border-green-500/30 bg-green-500/10", icon: "text-green-500" },
                 ].map((a, i) => (
                   <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-                    style={{ padding: "1rem", borderRadius: "0.5rem", border: `2px solid ${a.border}`, backgroundColor: a.bg, cursor: "pointer" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem" }}>
-                      <AlertCircle className="w-5 h-5" style={{ color: a.color }} />
-                      <span style={{ fontWeight: 600 }}>{a.label}</span>
+                    className={`p-4 rounded-xl border-2 ${a.color} cursor-pointer`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertCircle className={`w-5 h-5 ${a.icon}`} />
+                      <span className="font-semibold">{a.label}</span>
                     </div>
-                    <div style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.25rem" }}>{a.count}</div>
-                    <p style={{ fontSize: "0.875rem", color: "#64748b" }}>{a.desc}</p>
+                    <div className="text-2xl font-bold mb-1">{a.count}</div>
+                    <p className="text-sm text-muted-foreground">{a.desc}</p>
                   </motion.div>
                 ))}
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1.5rem" }}>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {products.map((product, i) => (
                   <motion.div key={product.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-                    whileHover={{ scale: 1.05, y: -5 }}
-                    style={{ padding: "1rem", borderRadius: "0.75rem", border: "1px solid #e2e8f0", backgroundColor: "#ffffff", cursor: "pointer" }}>
-                    <div style={{ position: "relative", marginBottom: "1rem" }}>
-                      <img src={product.image} alt={product.name} style={{ width: "100%", height: "12rem", objectFit: "cover", borderRadius: "0.5rem" }} />
+                    whileHover={{ scale: 1.02, y: -5 }}
+                    className="p-4 glass rounded-xl cursor-pointer">
+                    <div className="relative mb-4">
+                      <img src={product.image} alt={product.name} className="w-full h-48 object-cover rounded-lg" />
                     </div>
-                    <h3 style={{ fontWeight: 600, marginBottom: "0.5rem", fontSize: "0.875rem" }}>{product.name}</h3>
-                    <p style={{ fontSize: "0.875rem", color: "#64748b", marginBottom: "1rem" }}>{product.category}</p>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.75rem", alignItems: "center" }}>
-                      <span style={{ fontSize: "1.125rem", fontWeight: 700 }}>{fmt(product.price)}</span>
-                      <span style={{ fontSize: "0.875rem", color: "#64748b" }}>Stock: {product.stock}</span>
+                    <h3 className="font-semibold mb-1 truncate">{product.name}</h3>
+                    <p className="text-sm text-muted-foreground mb-3">{product.category}</p>
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-lg font-bold">{fmt(product.price)}</span>
+                      <span className="text-sm text-muted-foreground">Stock: {product.stock}</span>
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: "0.875rem", color: "#64748b" }}>Sales: {product.sales}</span>
-                      <div style={{ display: "flex", gap: "0.25rem" }}>
-                        {[<Eye className="w-4 h-4" />, <Edit className="w-4 h-4" />, <Trash2 className="w-4 h-4" />].map((icon, j) => (
-                          <button key={j} style={{ padding: "0.25rem", borderRadius: "0.25rem", border: "none", background: "transparent", cursor: "pointer", color: j === 2 ? "#ef4444" : "#374151" }}>{icon}</button>
-                        ))}
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Sales: {product.sales}</span>
+                      <div className="flex gap-1">
+                        <button className="p-2 rounded-lg hover:bg-accent transition-colors"><Eye className="w-4 h-4" /></button>
+                        <button className="p-2 rounded-lg hover:bg-accent transition-colors"><Edit className="w-4 h-4" /></button>
+                        <button className="p-2 rounded-lg hover:bg-red-500/10 text-red-500"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </div>
                   </motion.div>
@@ -436,50 +457,51 @@ export default function SellerDashboardPage() {
           {/* Orders Tab */}
           {activeTab === "orders" && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-              <div style={{ marginBottom: "2rem" }}>
-                <h1 style={{ fontSize: "1.875rem", fontWeight: 700, marginBottom: "0.5rem" }}>Orders</h1>
-                <p style={{ color: "#64748b" }}>Track and manage customer orders</p>
+              <div className="mb-8">
+                <h1 className="text-2xl font-bold mb-1">Orders</h1>
+                <p className="text-muted-foreground">Track and manage customer orders</p>
               </div>
-              <div style={{ padding: "1.5rem", borderRadius: "0.75rem", border: "1px solid #e2e8f0", backgroundColor: "#ffffff" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-                  <div style={{ display: "flex", gap: "0.5rem" }}>
-                    {[{ icon: <Filter className="w-4 h-4" />, label: "Filter" }, { icon: <Calendar className="w-4 h-4" />, label: "Date Range" }].map((btn, i) => (
-                      <button key={i} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 1rem", border: "1px solid #e2e8f0", borderRadius: "0.5rem", background: "#ffffff", cursor: "pointer", fontSize: "0.875rem", fontWeight: 500 }}>
-                        {btn.icon} {btn.label}
-                      </button>
-                    ))}
+              <div className="glass rounded-xl p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <div className="flex gap-2">
+                    <button className="flex items-center gap-2 px-4 py-2 glass rounded-lg hover:bg-accent/50 transition-all text-sm">
+                      <Filter className="w-4 h-4" /> Filter
+                    </button>
+                    <button className="flex items-center gap-2 px-4 py-2 glass rounded-lg hover:bg-accent/50 transition-all text-sm">
+                      <Calendar className="w-4 h-4" /> Date Range
+                    </button>
                   </div>
-                  <button style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 1rem", border: "1px solid #e2e8f0", borderRadius: "0.5rem", background: "#ffffff", cursor: "pointer", fontSize: "0.875rem", fontWeight: 500 }}>
+                  <button className="flex items-center gap-2 px-4 py-2 glass rounded-lg hover:bg-accent/50 transition-all text-sm">
                     <Download className="w-4 h-4" /> Export
                   </button>
                 </div>
-                <div style={{ overflowX: "auto" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
                     <thead>
-                      <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
+                      <tr className="border-b border-border/50">
                         {["Order ID","Customer","Items","Amount","Status","Date","Actions"].map(h => (
-                          <th key={h} style={{ textAlign: "left", padding: "0.75rem 1rem", fontSize: "0.875rem", fontWeight: 500, color: "#64748b" }}>{h}</th>
+                          <th key={h} className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {orders.map((order, i) => (
                         <motion.tr key={order.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-                          style={{ borderBottom: "1px solid #e2e8f0" }}>
-                          <td style={{ padding: "0.75rem 1rem", fontSize: "0.875rem", fontWeight: 500 }}>{order.id}</td>
-                          <td style={{ padding: "0.75rem 1rem", fontSize: "0.875rem" }}>{order.customer}</td>
-                          <td style={{ padding: "0.75rem 1rem", fontSize: "0.875rem" }}>{order.items}</td>
-                          <td style={{ padding: "0.75rem 1rem", fontSize: "0.875rem", fontWeight: 500 }}>{fmt(order.amount)}</td>
-                          <td style={{ padding: "0.75rem 1rem" }}>
-                            <span style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem", padding: "0.25rem 0.75rem", borderRadius: "9999px", fontSize: "0.75rem", fontWeight: 500 }} className={statusColor(order.status)}>
+                          className="border-b border-border/30 hover:bg-accent/30 transition-colors">
+                          <td className="py-4 px-4 text-sm font-medium">{order.id}</td>
+                          <td className="py-4 px-4 text-sm">{order.customer}</td>
+                          <td className="py-4 px-4 text-sm">{order.items}</td>
+                          <td className="py-4 px-4 text-sm font-medium">{fmt(order.amount)}</td>
+                          <td className="py-4 px-4">
+                            <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${statusColor(order.status)}`}>
                               {statusIcon(order.status)} {order.status}
                             </span>
                           </td>
-                          <td style={{ padding: "0.75rem 1rem", fontSize: "0.875rem", color: "#64748b" }}>{order.date}</td>
-                          <td style={{ padding: "0.75rem 1rem" }}>
-                            <div style={{ display: "flex", gap: "0.5rem" }}>
-                              <button style={{ padding: "0.25rem", border: "none", background: "transparent", cursor: "pointer" }}><Eye className="w-4 h-4" /></button>
-                              <button style={{ padding: "0.25rem", border: "none", background: "transparent", cursor: "pointer" }}><MessageSquare className="w-4 h-4" /></button>
+                          <td className="py-4 px-4 text-sm text-muted-foreground">{order.date}</td>
+                          <td className="py-4 px-4">
+                            <div className="flex gap-1">
+                              <button className="p-2 rounded-lg hover:bg-accent transition-colors"><Eye className="w-4 h-4" /></button>
+                              <button className="p-2 rounded-lg hover:bg-accent transition-colors"><MessageSquare className="w-4 h-4" /></button>
                             </div>
                           </td>
                         </motion.tr>
@@ -494,53 +516,55 @@ export default function SellerDashboardPage() {
           {/* Customers Tab */}
           {activeTab === "customers" && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
+              <div className="flex justify-between items-center mb-8">
                 <div>
-                  <h1 style={{ fontSize: "1.875rem", fontWeight: 700, marginBottom: "0.5rem" }}>Customers</h1>
-                  <p style={{ color: "#64748b" }}>Manage customer relationships</p>
+                  <h1 className="text-2xl font-bold mb-1">Customers</h1>
+                  <p className="text-muted-foreground">Manage customer relationships</p>
                 </div>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "1rem", marginBottom: "2rem" }}>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 {[
-                  { icon: <Users className="w-8 h-8" />, value: "5,678", label: "Total Customers", color: "#3b82f6" },
-                  { icon: <Star className="w-8 h-8" />, value: "234", label: "VIP Customers", color: "#f59e0b" },
-                  { icon: <TrendingUp className="w-8 h-8" />, value: "35%", label: "Retention Rate", color: "#22c55e" },
-                  { icon: <DollarSign className="w-8 h-8" />, value: fmt(325_000), label: "Avg Order Value", color: "#a855f7" },
+                  { icon: <Users className="w-8 h-8" />, value: "5,678", label: "Total Customers", color: "text-blue-500" },
+                  { icon: <Star className="w-8 h-8" />, value: "234", label: "VIP Customers", color: "text-amber-500" },
+                  { icon: <TrendingUp className="w-8 h-8" />, value: "35%", label: "Retention Rate", color: "text-green-500" },
+                  { icon: <DollarSign className="w-8 h-8" />, value: fmt(325_000), label: "Avg Order Value", color: "text-purple-500" },
                 ].map((s, i) => (
-                  <div key={i} style={{ padding: "1rem", borderRadius: "0.75rem", border: "1px solid #e2e8f0", backgroundColor: "#ffffff" }}>
-                    <div style={{ color: s.color, marginBottom: "0.75rem" }}>{s.icon}</div>
-                    <div style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.25rem" }}>{s.value}</div>
-                    <div style={{ fontSize: "0.875rem", color: "#64748b" }}>{s.label}</div>
+                  <div key={i} className="p-5 glass rounded-xl">
+                    <div className={`${s.color} mb-4`}>{s.icon}</div>
+                    <div className="text-2xl font-bold mb-1">{s.value}</div>
+                    <div className="text-sm text-muted-foreground">{s.label}</div>
                   </div>
                 ))}
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "1.5rem" }}>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
                   { name: "Sarah Nakato", email: "sarah@example.com", orders: 12, spent: 1_450_000, tier: "VIP", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop" },
                   { name: "David Okello", email: "david@example.com", orders: 8, spent: 890_000, tier: "Regular", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop" },
                   { name: "Grace Nambi", email: "grace@example.com", orders: 15, spent: 2_100_000, tier: "VIP", avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop" },
                   { name: "John Mwesigwa", email: "john@example.com", orders: 5, spent: 650_000, tier: "Regular", avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop" },
                 ].map((c, i) => (
-                  <motion.div key={i} whileHover={{ scale: 1.05, y: -5 }} style={{ padding: "1.5rem", borderRadius: "0.75rem", border: "1px solid #e2e8f0", backgroundColor: "#ffffff", cursor: "pointer", textAlign: "center" }}>
-                    <div style={{ position: "relative", display: "inline-block", marginBottom: "1rem" }}>
-                      <img src={c.avatar} alt={c.name} style={{ width: "5rem", height: "5rem", borderRadius: "9999px", objectFit: "cover" }} />
-                      {c.tier === "VIP" && <div style={{ position: "absolute", top: "-0.25rem", right: "-0.25rem", width: "1.5rem", height: "1.5rem", backgroundColor: "#f59e0b", borderRadius: "9999px", display: "flex", alignItems: "center", justifyContent: "center" }}><Star className="w-3 h-3" style={{ color: "#ffffff" }} /></div>}
+                  <motion.div key={i} whileHover={{ scale: 1.02, y: -5 }} className="p-5 glass rounded-xl text-center cursor-pointer">
+                    <div className="relative inline-block mb-4">
+                      <img src={c.avatar} alt={c.name} className="w-20 h-20 rounded-full object-cover ring-2 ring-primary/20" />
+                      {c.tier === "VIP" && <div className="absolute -top-1 -right-1 w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center"><Star className="w-3 h-3 text-white" /></div>}
                     </div>
-                    <h3 style={{ fontWeight: 600, marginBottom: "0.25rem" }}>{c.name}</h3>
-                    <p style={{ fontSize: "0.875rem", color: "#64748b", marginBottom: "1rem" }}>{c.email}</p>
-                    <div style={{ marginBottom: "1rem" }}>
-                      {[["Orders:", c.orders], ["Spent:", fmt(c.spent)]].map(([k, v], j) => (
-                        <div key={j} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.875rem", marginBottom: "0.25rem" }}>
-                          <span style={{ color: "#64748b" }}>{k}</span>
-                          <span style={{ fontWeight: 500 }}>{v}</span>
-                        </div>
-                      ))}
+                    <h3 className="font-semibold mb-1">{c.name}</h3>
+                    <p className="text-sm text-muted-foreground mb-4">{c.email}</p>
+                    <div className="space-y-2 mb-4">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Orders:</span>
+                        <span className="font-medium">{c.orders}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Spent:</span>
+                        <span className="font-medium">{fmt(c.spent)}</span>
+                      </div>
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
-                      <button style={{ padding: "0.5rem", border: "1px solid #e2e8f0", borderRadius: "0.5rem", background: "#ffffff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.25rem", fontSize: "0.75rem" }}>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button className="py-2 glass rounded-lg text-xs font-medium hover:bg-accent/50 transition-colors flex items-center justify-center gap-1">
                         <Eye className="w-3 h-3" /> View
                       </button>
-                      <button style={{ padding: "0.5rem", backgroundColor: "#22c55e", color: "#ffffff", border: "none", borderRadius: "0.5rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.25rem", fontSize: "0.75rem" }}>
+                      <button className="py-2 bg-green-500 text-white rounded-lg text-xs font-medium hover:bg-green-600 transition-colors flex items-center justify-center gap-1">
                         <MessageSquare className="w-3 h-3" /> Message
                       </button>
                     </div>
@@ -553,116 +577,714 @@ export default function SellerDashboardPage() {
           {/* Analytics Tab */}
           {activeTab === "analytics" && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-              <div style={{ marginBottom: "2rem" }}>
-                <h1 style={{ fontSize: "1.875rem", fontWeight: 700, marginBottom: "0.5rem" }}>Analytics</h1>
-                <p style={{ color: "#64748b" }}>Deep insights into your business performance</p>
+              <div className="mb-8">
+                <h1 className="text-2xl font-bold mb-1">Analytics</h1>
+                <p className="text-muted-foreground">Deep insights into your business performance</p>
               </div>
 
               {/* Financial Overview */}
-              <div style={{ marginBottom: "2rem", padding: "1.5rem", borderRadius: "0.75rem", border: "2px solid rgba(59,130,246,0.2)", background: "linear-gradient(135deg, rgba(59,130,246,0.05), rgba(99,102,241,0.05))" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-                  <h3 style={{ fontSize: "1.125rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                    <DollarSign className="w-5 h-5" style={{ color: "#3b82f6" }} /> Financial Overview
+              <div className="mb-6 p-6 glass rounded-xl border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-indigo-500/5">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-primary" /> Financial Overview
                   </h3>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1.5rem" }}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                    {[["Gross Revenue", fmt(45_230_000), "#374151"], ["Platform Fee (10%)", `-${fmt(4_523_000)}`, "#ef4444"], ["Net Revenue", fmt(40_707_000), "#22c55e"]].map(([k, v, c], i) => (
-                      <div key={i} style={{ display: "flex", justifyContent: "space-between", paddingTop: i === 2 ? "0.75rem" : 0, borderTop: i === 2 ? "1px solid #e2e8f0" : "none" }}>
-                        <span style={{ fontSize: "0.875rem", color: "#64748b" }}>{k}</span>
-                        <span style={{ fontSize: i === 2 ? "1.125rem" : "0.875rem", fontWeight: 700, color: c }}>{v}</span>
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div className="space-y-3">
+                    {[
+                      { label: "Gross Revenue", value: fmt(45_230_000), color: "text-foreground" },
+                      { label: "Platform Fee (10%)", value: `-${fmt(4_523_000)}`, color: "text-red-500" },
+                      { label: "Net Revenue", value: fmt(40_707_000), color: "text-green-500", bold: true, border: true },
+                    ].map((item, i) => (
+                      <div key={i} className={`flex justify-between ${item.border ? 'pt-3 border-t border-border/50' : ''}`}>
+                        <span className="text-sm text-muted-foreground">{item.label}</span>
+                        <span className={`${item.bold ? 'text-lg font-bold' : 'text-sm font-bold'} ${item.color}`}>{item.value}</span>
                       </div>
                     ))}
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                    {[["Pending Payouts", fmt(2_500_000), "#f59e0b"], ["Paid Out", fmt(38_207_000), "#22c55e"], ["Available Balance", fmt(2_500_000), "#374151"]].map(([k, v, c], i) => (
-                      <div key={i} style={{ display: "flex", justifyContent: "space-between", paddingTop: i === 2 ? "0.75rem" : 0, borderTop: i === 2 ? "1px solid #e2e8f0" : "none" }}>
-                        <span style={{ fontSize: "0.875rem", color: "#64748b" }}>{k}</span>
-                        <span style={{ fontSize: i === 2 ? "1.125rem" : "0.875rem", fontWeight: 700, color: c }}>{v}</span>
+                  <div className="space-y-3">
+                    {[
+                      { label: "Pending Payouts", value: fmt(2_500_000), color: "text-amber-500" },
+                      { label: "Paid Out", value: fmt(38_207_000), color: "text-green-500" },
+                      { label: "Available Balance", value: fmt(2_500_000), color: "text-foreground", bold: true, border: true },
+                    ].map((item, i) => (
+                      <div key={i} className={`flex justify-between ${item.border ? 'pt-3 border-t border-border/50' : ''}`}>
+                        <span className="text-sm text-muted-foreground">{item.label}</span>
+                        <span className={`${item.bold ? 'text-lg font-bold' : 'text-sm font-bold'} ${item.color}`}>{item.value}</span>
                       </div>
                     ))}
                   </div>
                   <div>
-                    {[["Profit Margin", "32.5%"], ["ROI", "245%"]].map(([k, v], i) => (
-                      <div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.75rem" }}>
-                        <span style={{ fontSize: "0.875rem", color: "#64748b" }}>{k}</span>
-                        <span style={{ fontSize: "0.875rem", fontWeight: 700, color: "#22c55e" }}>{v}</span>
+                    {[
+                      { label: "Profit Margin", value: "32.5%" },
+                      { label: "ROI", value: "245%" },
+                    ].map((item, i) => (
+                      <div key={i} className="flex justify-between mb-3">
+                        <span className="text-sm text-muted-foreground">{item.label}</span>
+                        <span className="text-sm font-bold text-green-500">{item.value}</span>
                       </div>
                     ))}
-                    <button style={{ width: "100%", marginTop: "0.75rem", padding: "0.625rem 1rem", backgroundColor: "#3b82f6", color: "#ffffff", border: "none", borderRadius: "0.5rem", cursor: "pointer", fontSize: "0.875rem", fontWeight: 500 }}>Request Payout</button>
+                    <button className="w-full mt-4 py-2.5 bg-gradient-to-r from-primary to-indigo-600 text-white rounded-lg font-medium hover:scale-105 transition-all shadow-lg">
+                      Request Payout
+                    </button>
                   </div>
                 </div>
               </div>
 
               {/* Key Metrics */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "1.5rem", marginBottom: "2rem" }}>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 {[
-                  { label: "Conversion Rate", value: "24.5%", trend: "+5.2% from last month", icon: <TrendingUp className="w-5 h-5" />, color: "#22c55e" },
-                  { label: "Avg Order Value", value: fmt(325_000), trend: "+12.3% from last month", icon: <DollarSign className="w-5 h-5" />, color: "#3b82f6" },
-                  { label: "Return Rate", value: "2.8%", trend: "+0.5% from last month", icon: <Activity className="w-5 h-5" />, color: "#f97316" },
-                  { label: "Customer Satisfaction", value: "4.8/5", trend: "+0.3 from last month", icon: <Star className="w-5 h-5" />, color: "#f59e0b" },
+                  { label: "Conversion Rate", value: "24.5%", trend: "+5.2% from last month", icon: <TrendingUp className="w-5 h-5" />, color: "text-green-500" },
+                  { label: "Avg Order Value", value: fmt(325_000), trend: "+12.3% from last month", icon: <DollarSign className="w-5 h-5" />, color: "text-blue-500" },
+                  { label: "Return Rate", value: "2.8%", trend: "+0.5% from last month", icon: <Activity className="w-5 h-5" />, color: "text-orange-500" },
+                  { label: "Customer Satisfaction", value: "4.8/5", trend: "+0.3 from last month", icon: <Star className="w-5 h-5" />, color: "text-amber-500" },
                 ].map((m, i) => (
-                  <div key={i} style={{ padding: "1.5rem", borderRadius: "0.75rem", border: "1px solid #e2e8f0", backgroundColor: "#ffffff" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem", alignItems: "center" }}>
-                      <span style={{ fontSize: "0.875rem", color: "#64748b" }}>{m.label}</span>
-                      <span style={{ color: m.color }}>{m.icon}</span>
+                  <div key={i} className="p-5 glass rounded-xl">
+                    <div className="flex justify-between items-center mb-4">
+                      <span className="text-sm text-muted-foreground">{m.label}</span>
+                      <span className={m.color}>{m.icon}</span>
                     </div>
-                    <div style={{ fontSize: "1.875rem", fontWeight: 700, marginBottom: "0.25rem" }}>{m.value}</div>
-                    <div style={{ fontSize: "0.875rem", color: "#22c55e" }}>{m.trend}</div>
+                    <div className="text-2xl font-bold mb-1">{m.value}</div>
+                    <div className="text-sm text-green-500">{m.trend}</div>
                   </div>
                 ))}
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
-                <div style={{ padding: "1.5rem", borderRadius: "0.75rem", border: "1px solid #e2e8f0", backgroundColor: "#ffffff" }}>
-                  <h3 style={{ fontSize: "1.125rem", fontWeight: 600, marginBottom: "1.5rem" }}>Top Selling Products</h3>
-                  {[
-                    { name: "Premium Wireless Headphones", sales: 234, revenue: 58_500_000 },
-                    { name: "Smart Watch Series 5", sales: 189, revenue: 85_050_000 },
-                    { name: "Running Shoes Pro", sales: 312, revenue: 37_440_000 },
-                    { name: "Designer Handbag", sales: 156, revenue: 28_080_000 },
-                  ].map((p, i) => (
-                    <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "0.75rem", borderRadius: "0.5rem", marginBottom: "0.25rem", cursor: "pointer" }}>
-                      <div>
-                        <div style={{ fontWeight: 500, marginBottom: "0.25rem", fontSize: "0.875rem" }}>{p.name}</div>
-                        <div style={{ fontSize: "0.875rem", color: "#64748b" }}>{p.sales} units sold</div>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="p-6 glass rounded-xl">
+                  <h3 className="text-lg font-semibold mb-6">Top Selling Products</h3>
+                  <div className="space-y-3">
+                    {[
+                      { name: "Premium Wireless Headphones", sales: 234, revenue: 58_500_000 },
+                      { name: "Smart Watch Series 5", sales: 189, revenue: 85_050_000 },
+                      { name: "Running Shoes Pro", sales: 312, revenue: 37_440_000 },
+                      { name: "Designer Handbag", sales: 156, revenue: 28_080_000 },
+                    ].map((p, i) => (
+                      <div key={i} className="flex justify-between p-3 rounded-xl hover:bg-accent/50 transition-colors cursor-pointer">
+                        <div>
+                          <div className="font-medium mb-1">{p.name}</div>
+                          <div className="text-sm text-muted-foreground">{p.sales} units sold</div>
+                        </div>
+                        <div className="font-semibold">{fmt(p.revenue)}</div>
                       </div>
-                      <div style={{ fontWeight: 600, fontSize: "0.875rem" }}>{fmt(p.revenue)}</div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-                <div style={{ padding: "1.5rem", borderRadius: "0.75rem", border: "1px solid #e2e8f0", backgroundColor: "#ffffff" }}>
-                  <h3 style={{ fontSize: "1.125rem", fontWeight: 600, marginBottom: "1.5rem" }}>Traffic Sources</h3>
-                  {[
-                    { source: "WhatsApp", pct: 45, color: "#22c55e" },
-                    { source: "Direct", pct: 25, color: "#3b82f6" },
-                    { source: "Social Media", pct: 20, color: "#a855f7" },
-                    { source: "Search", pct: 10, color: "#f97316" },
-                  ].map((t, i) => (
-                    <div key={i} style={{ marginBottom: "1rem" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
-                        <span style={{ fontSize: "0.875rem", fontWeight: 500 }}>{t.source}</span>
-                        <span style={{ fontSize: "0.875rem", color: "#64748b" }}>{t.pct}%</span>
+                <div className="p-6 glass rounded-xl">
+                  <h3 className="text-lg font-semibold mb-6">Traffic Sources</h3>
+                  <div className="space-y-4">
+                    {[
+                      { source: "WhatsApp", pct: 45, color: "bg-green-500" },
+                      { source: "Direct", pct: 25, color: "bg-blue-500" },
+                      { source: "Social Media", pct: 20, color: "bg-purple-500" },
+                      { source: "Search", pct: 10, color: "bg-orange-500" },
+                    ].map((t, i) => (
+                      <div key={i}>
+                        <div className="flex justify-between mb-2">
+                          <span className="text-sm font-medium">{t.source}</span>
+                          <span className="text-sm text-muted-foreground">{t.pct}%</span>
+                        </div>
+                        <div className="h-3 bg-muted rounded-full overflow-hidden">
+                          <motion.div initial={{ width: 0 }} animate={{ width: `${t.pct}%` }} transition={{ duration: 0.5, delay: i * 0.1 }}
+                            className={`h-full ${t.color} rounded-full`} />
+                        </div>
                       </div>
-                      <div style={{ height: "0.5rem", backgroundColor: "#f1f5f9", borderRadius: "9999px", overflow: "hidden" }}>
-                        <motion.div initial={{ width: 0 }} animate={{ width: `${t.pct}%` }} transition={{ duration: 0.5, delay: i * 0.1 }}
-                          style={{ height: "100%", backgroundColor: t.color }} />
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
             </motion.div>
           )}
 
-          {/* WhatsApp / Settings placeholder */}
-          {(activeTab === "whatsapp" || activeTab === "settings") && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "60vh" }}>
-              <Activity className="w-16 h-16" style={{ color: "#94a3b8", marginBottom: "1rem" }} />
-              <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.5rem" }}>Coming Soon</h2>
-              <p style={{ color: "#64748b" }}>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} page is under development</p>
+          {/* ── WhatsApp Tab ── */}
+          {activeTab === "whatsapp" && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+              <div className="mb-6">
+                <h1 className="text-2xl font-bold mb-1">WhatsApp Business</h1>
+                <p className="text-muted-foreground">Manage customer conversations and your WhatsApp catalog</p>
+              </div>
+
+              {/* WhatsApp Stats */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                {[
+                  { label: "Messages Today", value: "142", change: "+23%", icon: <MessageSquare className="w-5 h-5" />, color: "text-green-500", bg: "bg-green-500/10" },
+                  { label: "Active Chats", value: "28", change: "+5", icon: <Users className="w-5 h-5" />, color: "text-blue-500", bg: "bg-blue-500/10" },
+                  { label: "Response Rate", value: "94%", change: "+2%", icon: <Check className="w-5 h-5" />, color: "text-purple-500", bg: "bg-purple-500/10" },
+                  { label: "Avg Response", value: "2m", change: "-30s", icon: <Clock className="w-5 h-5" />, color: "text-orange-500", bg: "bg-orange-500/10" },
+                ].map((stat, i) => (
+                  <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
+                    className="p-4 glass rounded-xl">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className={`w-10 h-10 rounded-lg ${stat.bg} ${stat.color} flex items-center justify-center`}>
+                        {stat.icon}
+                      </div>
+                      <span className="text-xs font-medium text-green-500">{stat.change}</span>
+                    </div>
+                    <div className="text-2xl font-bold">{stat.value}</div>
+                    <div className="text-sm text-muted-foreground">{stat.label}</div>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Sub-tabs */}
+              <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+                {[
+                  { id: "conversations", label: "Conversations" },
+                  { id: "quick-actions", label: "Quick Actions" },
+                  { id: "catalog", label: "Catalog Link" },
+                ].map((tab) => (
+                  <button key={tab.id} onClick={() => setWhatsappSubTab(tab.id)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+                      whatsappSubTab === tab.id
+                        ? "bg-green-500 text-white shadow-lg"
+                        : "glass hover:bg-accent/50"
+                    }`}>
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Conversations */}
+              {whatsappSubTab === "conversations" && (
+                <div className="grid lg:grid-cols-3 gap-6 h-[60vh]">
+                  {/* Chat List */}
+                  <div className="glass rounded-xl overflow-hidden flex flex-col">
+                    <div className="p-4 border-b border-border/50">
+                      <div className="relative">
+                        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <input type="text" placeholder="Search conversations..."
+                          className="w-full pl-10 pr-4 py-2 bg-accent/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50" />
+                      </div>
+                    </div>
+                    <div className="flex-1 overflow-y-auto">
+                      {[
+                        { id: "1", name: "Sarah Nakato", msg: "Is the Ankara dress available in blue?", time: "2m", unread: 2, avatar: "SN", online: true },
+                        { id: "2", name: "David Okello", msg: "Payment confirmed. When will it arrive?", time: "15m", unread: 0, avatar: "DO", online: true },
+                        { id: "3", name: "Grace Nambi", msg: "Thank you! Got my order 🎉", time: "1h", unread: 0, avatar: "GN", online: false },
+                        { id: "4", name: "John Mwesigwa", msg: "Can I get a discount for 3 items?", time: "2h", unread: 1, avatar: "JM", online: false },
+                        { id: "5", name: "Aisha Nambi", msg: "I want to order the leather bag", time: "3h", unread: 0, avatar: "AN", online: true },
+                      ].map((chat) => (
+                        <button key={chat.id} onClick={() => setSelectedChat(chat.id)}
+                          className={`w-full flex items-center gap-3 p-4 hover:bg-accent/50 transition-colors border-b border-border/30 text-left ${
+                            selectedChat === chat.id ? "bg-accent/50" : ""
+                          }`}>
+                          <div className="relative">
+                            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white text-sm font-bold">
+                              {chat.avatar}
+                            </div>
+                            {chat.online && <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-background" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-medium text-sm">{chat.name}</span>
+                              <span className="text-xs text-muted-foreground">{chat.time}</span>
+                            </div>
+                            <p className="text-sm text-muted-foreground truncate">{chat.msg}</p>
+                          </div>
+                          {chat.unread > 0 && (
+                            <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-xs text-white font-bold">
+                              {chat.unread}
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Chat Window */}
+                  <div className="lg:col-span-2 glass rounded-xl overflow-hidden flex flex-col">
+                    <div className="p-4 border-b border-border/50 flex items-center justify-between bg-green-500/5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white text-sm font-bold">SN</div>
+                        <div>
+                          <h3 className="font-semibold text-sm">Sarah Nakato</h3>
+                          <p className="text-xs text-green-500">Online</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button className="p-2 hover:bg-accent/50 rounded-lg transition-colors"><Phone className="w-4 h-4" /></button>
+                        <button className="p-2 hover:bg-accent/50 rounded-lg transition-colors"><Video className="w-4 h-4" /></button>
+                        <button className="p-2 hover:bg-accent/50 rounded-lg transition-colors"><MoreHorizontal className="w-4 h-4" /></button>
+                      </div>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                      {[
+                        { from: "customer", text: "Hi! I saw your Ankara dress on the catalog", time: "10:30 AM" },
+                        { from: "customer", text: "Is the Ankara dress available in blue?", time: "10:31 AM" },
+                        { from: "me", text: "Hello Sarah! Yes, we have the Ankara dress in blue. Would you like to see photos?", time: "10:32 AM" },
+                        { from: "me", text: "The price is UGX 85,000 and we have sizes S, M, and L available", time: "10:32 AM" },
+                        { from: "customer", text: "Yes please! Can I see the blue one? And do you deliver to Ntinda?", time: "10:33 AM" },
+                      ].map((msg, i) => (
+                        <div key={i} className={`flex ${msg.from === "me" ? "justify-end" : "justify-start"}`}>
+                          <div className={`max-w-[70%] p-3 rounded-2xl ${
+                            msg.from === "me"
+                              ? "bg-green-500 text-white rounded-br-sm"
+                              : "glass rounded-bl-sm"
+                          }`}>
+                            <p className="text-sm">{msg.text}</p>
+                            <p className={`text-xs mt-1 ${msg.from === "me" ? "text-green-100" : "text-muted-foreground"}`}>{msg.time}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="p-4 border-t border-border/50 flex items-center gap-3">
+                      <button className="p-2 hover:bg-accent/50 rounded-lg transition-colors"><Paperclip className="w-5 h-5 text-muted-foreground" /></button>
+                      <button className="p-2 hover:bg-accent/50 rounded-lg transition-colors"><ImageIcon className="w-5 h-5 text-muted-foreground" /></button>
+                      <input type="text" value={chatMessage} onChange={(e) => setChatMessage(e.target.value)}
+                        placeholder="Type a message..."
+                        className="flex-1 px-4 py-2.5 bg-accent/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50" />
+                      <button className="p-2.5 bg-green-500 hover:bg-green-600 text-white rounded-xl transition-colors">
+                        <Send className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Quick Actions */}
+              {whatsappSubTab === "quick-actions" && (
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[
+                    { title: "Send Catalog", desc: "Share your product catalog with a customer", icon: <Package className="w-6 h-6" />, color: "from-blue-500 to-indigo-500" },
+                    { title: "Send Payment Link", desc: "Generate and send a payment link via MTN MoMo", icon: <CreditCard className="w-6 h-6" />, color: "from-yellow-500 to-orange-500" },
+                    { title: "Auto Reply Setup", desc: "Configure automated welcome & away messages", icon: <MessageSquare className="w-6 h-6" />, color: "from-green-500 to-emerald-500" },
+                    { title: "Broadcast Message", desc: "Send a message to multiple customers at once", icon: <Send className="w-6 h-6" />, color: "from-purple-500 to-pink-500" },
+                    { title: "Order Confirmation", desc: "Send order confirmation with tracking details", icon: <Check className="w-6 h-6" />, color: "from-teal-500 to-cyan-500" },
+                    { title: "Feedback Request", desc: "Ask customers to rate their purchase experience", icon: <Star className="w-6 h-6" />, color: "from-amber-500 to-yellow-500" },
+                  ].map((action, i) => (
+                    <motion.button key={i} whileHover={{ scale: 1.02, y: -3 }} whileTap={{ scale: 0.98 }}
+                      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
+                      className="p-6 glass rounded-xl text-left hover:shadow-lg transition-all group">
+                      <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform`}>
+                        {action.icon}
+                      </div>
+                      <h3 className="font-semibold mb-1">{action.title}</h3>
+                      <p className="text-sm text-muted-foreground">{action.desc}</p>
+                      <div className="flex items-center gap-1 mt-3 text-sm font-medium text-green-500">
+                        Use <ChevronRight className="w-4 h-4" />
+                      </div>
+                    </motion.button>
+                  ))}
+                </div>
+              )}
+
+              {/* Catalog Link */}
+              {whatsappSubTab === "catalog" && (
+                <div className="grid lg:grid-cols-2 gap-6">
+                  <div className="p-6 glass rounded-xl">
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <h3 className="text-lg font-semibold">WhatsApp Business Catalog</h3>
+                        <p className="text-sm text-muted-foreground mt-1">Link your WhatsApp Business catalog to sync products</p>
+                      </div>
+                      <div className="px-3 py-1 bg-green-500/10 text-green-500 rounded-full text-xs font-medium flex items-center gap-1">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                        Connected
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="p-4 rounded-xl bg-accent/50 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Smartphone className="w-5 h-5 text-green-500" />
+                          <div>
+                            <div className="font-medium text-sm">+256 772 100 001</div>
+                            <div className="text-xs text-muted-foreground">WhatsApp Business Account</div>
+                          </div>
+                        </div>
+                        <RefreshCw className="w-4 h-4 text-muted-foreground cursor-pointer hover:text-foreground" />
+                      </div>
+                      <div className="p-4 rounded-xl bg-accent/50 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Package className="w-5 h-5 text-blue-500" />
+                          <div>
+                            <div className="font-medium text-sm">18 Products Synced</div>
+                            <div className="text-xs text-muted-foreground">Last synced 5 minutes ago</div>
+                          </div>
+                        </div>
+                        <button className="px-3 py-1.5 bg-green-500 text-white rounded-lg text-xs font-medium hover:bg-green-600 transition-colors">
+                          Sync Now
+                        </button>
+                      </div>
+                      <button onClick={() => setShowLinkModal(true)}
+                        className="w-full py-3 border-2 border-dashed border-border rounded-xl text-sm font-medium text-muted-foreground hover:border-green-500 hover:text-green-500 transition-all flex items-center justify-center gap-2">
+                        <Link2 className="w-4 h-4" />
+                        Link Different Account
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="p-6 glass rounded-xl">
+                    <h3 className="text-lg font-semibold mb-4">Catalog Products</h3>
+                    <p className="text-sm text-muted-foreground mb-6">Products synced from your WhatsApp Business catalog</p>
+                    <div className="space-y-3 max-h-80 overflow-y-auto">
+                      {products.map((p, i) => (
+                        <div key={i} className="flex items-center gap-4 p-3 rounded-xl hover:bg-accent/50 transition-colors">
+                          <img src={p.image} alt={p.name} className="w-12 h-12 rounded-lg object-cover" />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm truncate">{p.name}</div>
+                            <div className="text-xs text-muted-foreground">{fmt(p.price)} · Stock: {p.stock}</div>
+                          </div>
+                          <div className="w-2 h-2 bg-green-500 rounded-full" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
+
+          {/* ── Settings Tab ── */}
+          {activeTab === "settings" && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+              <div className="mb-6">
+                <h1 className="text-2xl font-bold mb-1">Settings</h1>
+                <p className="text-muted-foreground">Manage your store information and payment methods</p>
+              </div>
+
+              {/* Settings Sub-tabs */}
+              <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+                {[
+                  { id: "store", label: "Store Info", icon: <Store className="w-4 h-4" /> },
+                  { id: "payment", label: "Payment Methods", icon: <CreditCard className="w-4 h-4" /> },
+                ].map((tab) => (
+                  <button key={tab.id} onClick={() => setSettingsSubTab(tab.id)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+                      settingsSubTab === tab.id
+                        ? "bg-gradient-to-r from-primary to-indigo-600 text-white shadow-lg"
+                        : "glass hover:bg-accent/50"
+                    }`}>
+                    {tab.icon} {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Store Info */}
+              {settingsSubTab === "store" && (
+                <div className="grid lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2 space-y-6">
+                    <div className="p-6 glass rounded-xl">
+                      <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+                        <Store className="w-5 h-5 text-primary" /> Store Information
+                      </h3>
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Store Name</label>
+                          <input type="text" value={storeForm.name}
+                            onChange={(e) => setStoreForm({ ...storeForm, name: e.target.value })}
+                            className="w-full px-4 py-2.5 bg-accent/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Store URL Slug</label>
+                          <div className="flex">
+                            <span className="px-3 py-2.5 bg-accent/50 rounded-l-xl text-sm text-muted-foreground border-r border-border">swiftshopy.com/</span>
+                            <input type="text" value={storeForm.slug}
+                              onChange={(e) => setStoreForm({ ...storeForm, slug: e.target.value })}
+                              className="flex-1 px-4 py-2.5 bg-accent/50 rounded-r-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Phone Number</label>
+                          <input type="tel" value={storeForm.phone}
+                            onChange={(e) => setStoreForm({ ...storeForm, phone: e.target.value })}
+                            className="w-full px-4 py-2.5 bg-accent/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Email</label>
+                          <input type="email" value={storeForm.email}
+                            onChange={(e) => setStoreForm({ ...storeForm, email: e.target.value })}
+                            className="w-full px-4 py-2.5 bg-accent/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+                        </div>
+                        <div className="sm:col-span-2">
+                          <label className="block text-sm font-medium mb-2">Description</label>
+                          <textarea rows={3} value={storeForm.description}
+                            onChange={(e) => setStoreForm({ ...storeForm, description: e.target.value })}
+                            className="w-full px-4 py-2.5 bg-accent/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Currency</label>
+                          <select value={storeForm.currency}
+                            onChange={(e) => setStoreForm({ ...storeForm, currency: e.target.value })}
+                            className="w-full px-4 py-2.5 bg-accent/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50">
+                            <option value="UGX">UGX - Ugandan Shilling</option>
+                            <option value="KES">KES - Kenyan Shilling</option>
+                            <option value="TZS">TZS - Tanzanian Shilling</option>
+                            <option value="USD">USD - US Dollar</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Timezone</label>
+                          <select value={storeForm.timezone}
+                            onChange={(e) => setStoreForm({ ...storeForm, timezone: e.target.value })}
+                            className="w-full px-4 py-2.5 bg-accent/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50">
+                            <option value="Africa/Kampala">Africa/Kampala (EAT)</option>
+                            <option value="Africa/Nairobi">Africa/Nairobi (EAT)</option>
+                            <option value="Africa/Dar_es_Salaam">Africa/Dar_es_Salaam (EAT)</option>
+                            <option value="UTC">UTC</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="flex justify-end mt-6">
+                        <button className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-primary to-indigo-600 text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity">
+                          <Save className="w-4 h-4" /> Save Changes
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="p-6 glass rounded-xl">
+                      <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+                        <ImageIcon className="w-5 h-5 text-primary" /> Store Branding
+                      </h3>
+                      <div className="grid sm:grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Store Logo</label>
+                          <div className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
+                            <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                            <p className="text-sm text-muted-foreground">Click to upload or drag and drop</p>
+                            <p className="text-xs text-muted-foreground mt-1">PNG, JPG up to 2MB</p>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Store Banner</label>
+                          <div className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
+                            <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                            <p className="text-sm text-muted-foreground">Click to upload or drag and drop</p>
+                            <p className="text-xs text-muted-foreground mt-1">PNG, JPG 1200x400px recommended</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div className="p-6 glass rounded-xl">
+                      <h3 className="text-lg font-semibold mb-4">Store Preview</h3>
+                      <div className="text-center mb-4">
+                        <div className="w-16 h-16 bg-gradient-to-br from-primary to-indigo-600 rounded-full mx-auto mb-3 flex items-center justify-center">
+                          <Store className="w-8 h-8 text-white" />
+                        </div>
+                        <h4 className="font-semibold">{storeForm.name}</h4>
+                        <p className="text-sm text-muted-foreground">swiftshopy.com/{storeForm.slug}</p>
+                      </div>
+                      <div className="space-y-3 text-sm">
+                        <div className="flex justify-between p-3 bg-accent/50 rounded-lg">
+                          <span className="text-muted-foreground">Phone</span>
+                          <span className="font-medium">{storeForm.phone}</span>
+                        </div>
+                        <div className="flex justify-between p-3 bg-accent/50 rounded-lg">
+                          <span className="text-muted-foreground">Email</span>
+                          <span className="font-medium truncate ml-2">{storeForm.email}</span>
+                        </div>
+                        <div className="flex justify-between p-3 bg-accent/50 rounded-lg">
+                          <span className="text-muted-foreground">Currency</span>
+                          <span className="font-medium">{storeForm.currency}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-6 glass rounded-xl">
+                      <h3 className="text-lg font-semibold mb-4">Danger Zone</h3>
+                      <div className="space-y-3">
+                        <button className="w-full py-2.5 border border-red-500/30 text-red-500 rounded-xl text-sm font-medium hover:bg-red-500/10 transition-colors">
+                          Deactivate Store
+                        </button>
+                        <p className="text-xs text-muted-foreground text-center">
+                          Your store will be hidden from customers. You can reactivate it anytime.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Payment Methods */}
+              {settingsSubTab === "payment" && (
+                <div className="grid lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2 space-y-6">
+                    <div className="p-6 glass rounded-xl">
+                      <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+                        <CreditCard className="w-5 h-5 text-primary" /> Payment Methods
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-6">
+                        Configure how customers pay for orders. Enable or disable payment methods for your store.
+                      </p>
+                      <div className="space-y-4">
+                        {[
+                          { name: "MTN Mobile Money", desc: "Accept payments via MTN MoMo. Most popular in Uganda.", enabled: true, icon: "🟡", status: "Connected", color: "text-yellow-500" },
+                          { name: "Airtel Money", desc: "Accept payments via Airtel Money.", enabled: true, icon: "🔴", status: "Connected", color: "text-red-500" },
+                          { name: "Cash on Delivery", desc: "Let customers pay when they receive their order.", enabled: true, icon: "💵", status: "Active", color: "text-green-500" },
+                          { name: "Bank Transfer", desc: "Accept direct bank transfers.", enabled: false, icon: "🏦", status: "Not configured", color: "text-muted-foreground" },
+                        ].map((method, i) => (
+                          <div key={i} className="flex items-center justify-between p-4 rounded-xl border border-border hover:bg-accent/30 transition-colors">
+                            <div className="flex items-center gap-4">
+                              <div className="text-2xl">{method.icon}</div>
+                              <div>
+                                <div className="font-medium">{method.name}</div>
+                                <div className="text-sm text-muted-foreground">{method.desc}</div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <span className={`text-xs font-medium ${method.color}`}>{method.status}</span>
+                              <div className={`w-12 h-6 ${method.enabled ? "bg-green-500" : "bg-accent"} rounded-full relative cursor-pointer transition-colors`}>
+                                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${method.enabled ? "right-1" : "left-1"}`} />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="p-6 glass rounded-xl">
+                      <h3 className="text-lg font-semibold mb-6">MTN Mobile Money Configuration</h3>
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">API Key</label>
+                          <input type="password" readOnly value="sk_live_xxxxxxxxxxxxxx"
+                            className="w-full px-4 py-2.5 bg-accent/50 rounded-xl text-sm focus:outline-none" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Collection Account</label>
+                          <input type="text" readOnly value="+256772100001"
+                            className="w-full px-4 py-2.5 bg-accent/50 rounded-xl text-sm focus:outline-none" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Environment</label>
+                          <select className="w-full px-4 py-2.5 bg-accent/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50">
+                            <option value="sandbox">Sandbox (Testing)</option>
+                            <option value="production">Production (Live)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Callback URL</label>
+                          <input type="text" readOnly value="https://api.swiftshopy.com/webhooks/mtn"
+                            className="w-full px-4 py-2.5 bg-accent/50 rounded-xl text-sm focus:outline-none" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-6 glass rounded-xl">
+                      <h3 className="text-lg font-semibold mb-6">Commission & Fees</h3>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between p-4 bg-accent/50 rounded-xl">
+                          <div>
+                            <div className="font-medium">Platform Commission</div>
+                            <div className="text-sm text-muted-foreground">Fee charged on each sale</div>
+                          </div>
+                          <div className="text-lg font-bold text-primary">10%</div>
+                        </div>
+                        <div className="flex items-center justify-between p-4 bg-accent/50 rounded-xl">
+                          <div>
+                            <div className="font-medium">MTN MoMo Transaction Fee</div>
+                            <div className="text-sm text-muted-foreground">Charged by MTN per transaction</div>
+                          </div>
+                          <div className="text-lg font-bold text-muted-foreground">1.5%</div>
+                        </div>
+                        <div className="flex items-center justify-between p-4 bg-accent/50 rounded-xl">
+                          <div>
+                            <div className="font-medium">Payout Frequency</div>
+                            <div className="text-sm text-muted-foreground">How often you receive earnings</div>
+                          </div>
+                          <select className="px-3 py-1.5 bg-background rounded-lg text-sm border border-border">
+                            <option>Daily</option>
+                            <option>Weekly</option>
+                            <option>Bi-weekly</option>
+                            <option>Monthly</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div className="p-6 glass rounded-xl">
+                      <h3 className="text-lg font-semibold mb-4">Payout Summary</h3>
+                      <div className="space-y-4">
+                        <div className="p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20">
+                          <div className="text-sm text-muted-foreground mb-1">Available Balance</div>
+                          <div className="text-2xl font-bold text-green-500">UGX 2,500,000</div>
+                        </div>
+                        <div className="flex justify-between items-center p-3 bg-accent/50 rounded-lg">
+                          <span className="text-sm text-muted-foreground">Pending</span>
+                          <span className="font-medium">UGX 450,000</span>
+                        </div>
+                        <div className="flex justify-between items-center p-3 bg-accent/50 rounded-lg">
+                          <span className="text-sm text-muted-foreground">Total Earned</span>
+                          <span className="font-medium">UGX 40,707,000</span>
+                        </div>
+                        <button className="w-full py-2.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity">
+                          Request Payout
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="p-6 glass rounded-xl">
+                      <h3 className="text-lg font-semibold mb-4">Security</h3>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between p-3 bg-accent/50 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <Shield className="w-4 h-4 text-green-500" />
+                            <span className="text-sm">Two-Factor Auth</span>
+                          </div>
+                          <div className="w-10 h-5 bg-green-500 rounded-full relative cursor-pointer">
+                            <div className="absolute right-0.5 top-0.5 w-4 h-4 bg-white rounded-full" />
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-accent/50 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <LockIcon className="w-4 h-4 text-green-500" />
+                            <span className="text-sm">Payment PIN</span>
+                          </div>
+                          <button className="text-xs text-primary font-medium">Set PIN</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {/* Link Account Modal */}
+          <AnimatePresence>
+            {showLinkModal && (
+              <>
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  onClick={() => setShowLinkModal(false)} className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
+                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                  className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md glass rounded-2xl z-50 p-6">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-xl font-bold">Link WhatsApp Business</h3>
+                    <button onClick={() => setShowLinkModal(false)} className="p-2 hover:bg-accent/50 rounded-lg transition-colors">
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <div className="text-center mb-6">
+                    <div className="inline-flex items-center justify-center w-48 h-48 bg-white rounded-2xl border-2 border-border/50 mb-4 p-4">
+                      <div className="w-full h-full bg-[repeating-conic-gradient(#000_0%_25%,#fff_0%_50%)] bg-[length:16px_16px] rounded-lg" />
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-2">Scan this QR code with your WhatsApp Business app</p>
+                    <p className="text-xs text-muted-foreground">Settings → Linked Devices → Link a Device</p>
+                  </div>
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-xs text-muted-foreground">or</span>
+                    <div className="flex-1 h-px bg-border" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Enter Phone Number</label>
+                    <div className="flex gap-2">
+                      <input type="tel" placeholder="+256 XXX XXX XXX"
+                        className="flex-1 px-4 py-2.5 bg-accent/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50" />
+                      <button className="px-4 py-2.5 bg-green-500 text-white rounded-xl text-sm font-medium hover:bg-green-600 transition-colors">
+                        Link
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
         </div>
       </main>
 
@@ -670,27 +1292,27 @@ export default function SellerDashboardPage() {
       <AnimatePresence>
         {showShareModal && (
           <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowShareModal(false)} style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)", zIndex: 50 }} />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowShareModal(false)} className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "100%", maxWidth: "32rem", backgroundColor: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "0.75rem", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", zIndex: 51, padding: "1.5rem" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-                <h3 style={{ fontSize: "1.25rem", fontWeight: 700 }}>Share Your Store</h3>
-                <button onClick={() => setShowShareModal(false)} style={{ border: "none", background: "transparent", cursor: "pointer" }}><X className="w-5 h-5" /></button>
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md glass rounded-2xl z-50 p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold">Share Your Store</h3>
+                <button onClick={() => setShowShareModal(false)} className="p-2 hover:bg-accent/50 rounded-lg transition-colors"><X className="w-5 h-5" /></button>
               </div>
-              <div style={{ marginBottom: "1.5rem" }}>
-                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, marginBottom: "0.5rem" }}>Store Link</label>
-                <div style={{ display: "flex", gap: "0.5rem" }}>
-                  <input type="text" readOnly value="https://swiftshopy.com/shop/your-store" style={{ flex: 1, padding: "0.5rem 0.75rem", border: "1px solid #e2e8f0", borderRadius: "0.5rem", fontSize: "0.875rem" }} />
-                  <button onClick={() => navigator.clipboard.writeText("https://swiftshopy.com/shop/your-store")} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 0.75rem", backgroundColor: "#3b82f6", color: "#ffffff", border: "none", borderRadius: "0.5rem", cursor: "pointer", fontSize: "0.875rem" }}>
+              <div className="mb-6">
+                <label className="block text-sm font-medium mb-2">Store Link</label>
+                <div className="flex gap-2">
+                  <input type="text" readOnly value="https://swiftshopy.com/shop/your-store" className="flex-1 px-4 py-2 glass rounded-lg text-sm" />
+                  <button onClick={() => navigator.clipboard.writeText("https://swiftshopy.com/shop/your-store")} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-indigo-600 text-white rounded-lg text-sm font-medium hover:scale-105 transition-all">
                     <Copy className="w-4 h-4" /> Copy
                   </button>
                 </div>
               </div>
-              <div style={{ textAlign: "center" }}>
-                <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "12rem", height: "12rem", backgroundColor: "#f1f5f9", borderRadius: "0.5rem", border: "2px solid #e2e8f0", marginBottom: "0.75rem" }}>
-                  <QrCode className="w-24 h-24" style={{ color: "#94a3b8" }} />
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-48 h-48 bg-muted rounded-xl border-2 border-border/50 mb-4">
+                  <QrCode className="w-24 h-24 text-muted-foreground" />
                 </div>
-                <p style={{ fontSize: "0.875rem", color: "#64748b" }}>Scan to visit your store</p>
+                <p className="text-sm text-muted-foreground">Scan to visit your store</p>
               </div>
             </motion.div>
           </>
@@ -701,36 +1323,36 @@ export default function SellerDashboardPage() {
       <AnimatePresence>
         {showStorePreview && (
           <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowStorePreview(false)} style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)", zIndex: 50 }} />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowStorePreview(false)} className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "100%", maxWidth: "56rem", maxHeight: "90vh", backgroundColor: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "0.75rem", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", zIndex: 51, overflow: "hidden" }}>
-              <div style={{ padding: "1rem", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", backgroundColor: "#f8fafc" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                  <Eye className="w-5 h-5" style={{ color: "#3b82f6" }} />
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-3xl max-h-[90vh] glass rounded-2xl z-50 overflow-hidden">
+              <div className="p-4 border-b border-border/50 flex justify-between items-center bg-accent/30">
+                <div className="flex items-center gap-3">
+                  <Eye className="w-5 h-5 text-primary" />
                   <div>
-                    <h3 style={{ fontWeight: 600, fontSize: "0.875rem" }}>Store Preview</h3>
-                    <p style={{ fontSize: "0.75rem", color: "#64748b" }}>How customers see your store</p>
+                    <h3 className="font-semibold">Store Preview</h3>
+                    <p className="text-xs text-muted-foreground">How customers see your store</p>
                   </div>
                 </div>
-                <button onClick={() => setShowStorePreview(false)} style={{ border: "none", background: "transparent", cursor: "pointer" }}><X className="w-5 h-5" /></button>
+                <button onClick={() => setShowStorePreview(false)} className="p-2 hover:bg-accent/50 rounded-lg transition-colors"><X className="w-5 h-5" /></button>
               </div>
-              <div style={{ padding: "2rem", overflowY: "auto", maxHeight: "calc(90vh - 5rem)", backgroundColor: "#f8fafc" }}>
-                <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-                  <div style={{ width: "5rem", height: "5rem", background: "linear-gradient(135deg, #3b82f6, #6366f1)", borderRadius: "9999px", margin: "0 auto 1rem", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <ShoppingCart className="w-8 h-8" style={{ color: "#ffffff" }} />
+              <div className="p-8 overflow-y-auto max-h-[calc(90vh-5rem)] bg-accent/20">
+                <div className="text-center mb-8">
+                  <div className="w-20 h-20 bg-gradient-to-br from-primary to-indigo-600 rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <ShoppingCart className="w-10 h-10 text-white" />
                   </div>
-                  <h1 style={{ fontSize: "1.875rem", fontWeight: 700, marginBottom: "0.5rem" }}>SwiftShopy Store</h1>
-                  <p style={{ color: "#64748b" }}>Premium products at affordable prices</p>
+                  <h1 className="text-3xl font-bold mb-2">SwiftShopy Store</h1>
+                  <p className="text-muted-foreground">Premium products at affordable prices</p>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "1rem" }}>
+                <div className="grid grid-cols-3 gap-4">
                   {products.slice(0,3).map((p, i) => (
-                    <div key={i} style={{ padding: "1rem", borderRadius: "0.5rem", border: "1px solid #e2e8f0", backgroundColor: "#ffffff" }}>
-                      <img src={p.image} alt={p.name} style={{ width: "100%", height: "8rem", objectFit: "cover", borderRadius: "0.5rem", marginBottom: "0.75rem" }} />
-                      <h4 style={{ fontWeight: 500, fontSize: "0.875rem", marginBottom: "0.5rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</h4>
-                      <div style={{ fontSize: "1.125rem", fontWeight: 700, color: "#3b82f6", marginBottom: "0.75rem" }}>{fmt(p.price)}</div>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
-                        <button style={{ padding: "0.375rem", fontSize: "0.75rem", backgroundColor: "#22c55e", color: "#ffffff", border: "none", borderRadius: "0.25rem", cursor: "pointer" }}>Order</button>
-                        <button style={{ padding: "0.375rem", fontSize: "0.75rem", backgroundColor: "#3b82f6", color: "#ffffff", border: "none", borderRadius: "0.25rem", cursor: "pointer" }}>Pay Now</button>
+                    <div key={i} className="p-4 glass rounded-xl">
+                      <img src={p.image} alt={p.name} className="w-full h-32 object-cover rounded-lg mb-4" />
+                      <h4 className="font-medium mb-2 truncate">{p.name}</h4>
+                      <div className="text-lg font-bold text-primary mb-4">{fmt(p.price)}</div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button className="py-2 bg-green-500 text-white rounded-lg text-xs font-medium">Order</button>
+                        <button className="py-2 bg-primary text-white rounded-lg text-xs font-medium">Pay Now</button>
                       </div>
                     </div>
                   ))}

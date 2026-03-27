@@ -39,7 +39,15 @@ import {
   AlertCircle,
   Star,
   MessageSquare,
+  FileText,
+  FileBarChart,
+  ChevronDown,
+  AlertTriangle,
+  Plus,
+  Copy,
+  QrCode,
 } from "lucide-react"
+import { useAdminDashboardData } from "@/lib/hooks/useAdminDashboardData"
 
 // Types
 interface Seller {
@@ -82,7 +90,67 @@ function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview")
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [selectedSellers, setSelectedSellers] = useState<string[]>([])
+  const [showExportDropdown, setShowExportDropdown] = useState<string | null>(null)
+  const [showBulkConfirmModal, setShowBulkConfirmModal] = useState(false)
+  const [bulkAction, setBulkAction] = useState("")
+  const [showRoleModal, setShowRoleModal] = useState<string | null>(null)
+  const [auditFilter, setAuditFilter] = useState("all")
+  const [showCreateReportModal, setShowCreateReportModal] = useState(false)
+  
+  // Settings state
+  const [settingsSubTab, setSettingsSubTab] = useState("general")
+  const [generalSettings, setGeneralSettings] = useState({
+    platformName: "SwiftShopy",
+    supportEmail: "support@swiftshopy.com",
+    platformDescription: "WhatsApp Commerce + Mobile Money Payments platform for small businesses",
+    maintenanceMode: false,
+  })
+  const [paymentSettings, setPaymentSettings] = useState({
+    mtnEnabled: true,
+    mtnApiKey: "",
+    mtnSubscriptionKey: "",
+    mtnCollectionId: "",
+    airtelEnabled: true,
+    airtelApiKey: "",
+    codEnabled: true,
+    platformCommission: 10,
+  })
+  const [securitySettings, setSecuritySettings] = useState({
+    require2FA: true,
+    apiRateLimit: 1000,
+    sellerVerification: true,
+    sessionTimeout: 3600,
+    passwordMinLength: 8,
+  })
+  const [notificationSettings, setNotificationSettings] = useState({
+    newSellerAlert: true,
+    highValueThreshold: 1000000,
+    failedPaymentAlert: true,
+    systemErrorAlert: true,
+    dailyReport: false,
+    weeklySummary: true,
+    notificationEmail: "admin@swiftshopy.com",
+  })
+  const [apiSettings, setApiSettings] = useState({
+    webhookUrl: "https://api.swiftshopy.com/webhooks",
+    apiKey: "sk_live_xxxxxxxxxxxxxxxxxxxx",
+    apiRateLimit: 1000,
+    apiSecret: "",
+  })
+  const [settingsSaving, setSettingsSaving] = useState(false)
+  const [settingsSaved, setSettingsSaved] = useState(false)
 
+  const saveSettings = async () => {
+    setSettingsSaving(true)
+    setSettingsSaved(false)
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    setSettingsSaving(false)
+    setSettingsSaved(true)
+    setTimeout(() => setSettingsSaved(false), 3000)
+  }
+
+  // Use mock data for admin summary
   const stats: AdminStats = {
     totalRevenue: 450_000_000,
     totalSellers: 1_234,
@@ -154,6 +222,50 @@ function AdminDashboard() {
     { id: "TXN-002", seller: "Tech Hub UG", amount: 890_000, commission: 89_000, type: "sale", status: "completed", date: "2024-01-15" },
     { id: "TXN-003", seller: "Grace's Kitchen", amount: 250_000, commission: 25_000, type: "sale", status: "pending", date: "2024-01-14" },
     { id: "TXN-004", seller: "JM Electronics", amount: 120_000, commission: 12_000, type: "sale", status: "failed", date: "2024-01-14" },
+  ]
+
+  const auditLogs = [
+    { id: "AL-001", admin: "Super Admin", action: "seller_approve", target: "Nakato Styles", date: "2024-01-15 14:32" },
+    { id: "AL-002", admin: "Support Agent", action: "ticket_resolve", target: "TKT-001", date: "2024-01-15 13:10" },
+    { id: "AL-003", admin: "Super Admin", action: "seller_suspend", target: "JM Electronics", date: "2024-01-14 11:45" },
+    { id: "AL-004", admin: "Admin", action: "config_update", target: "Commission Rate", date: "2024-01-14 09:20" },
+    { id: "AL-005", admin: "Super Admin", action: "role_update", target: "Support", date: "2024-01-13 16:55" },
+    { id: "AL-006", admin: "Support Agent", action: "ticket_create", target: "TKT-004", date: "2024-01-13 10:30" },
+    { id: "AL-007", admin: "Super Admin", action: "export_data", target: "Transactions", date: "2024-01-12 15:00" },
+    { id: "AL-008", admin: "Admin", action: "seller_approve", target: "Tech Hub UG", date: "2024-01-12 12:15" },
+  ]
+
+  const scheduledReports = [
+    { id: "RPT-001", name: "Daily Revenue Summary", type: "revenue", format: "csv", schedule: "daily", recipients: "admin@swiftshopy.com", active: true },
+    { id: "RPT-002", name: "Weekly Seller Performance", type: "sellers", format: "xlsx", schedule: "weekly", recipients: "ops@swiftshopy.com", active: true },
+    { id: "RPT-003", name: "Monthly Order Report", type: "orders", format: "pdf", schedule: "monthly", recipients: "finance@swiftshopy.com", active: true },
+    { id: "RPT-004", name: "Transaction Audit", type: "transactions", format: "csv", schedule: "weekly", recipients: "audit@swiftshopy.com", active: false },
+    { id: "RPT-005", name: "Support Ticket Summary", type: "support", format: "json", schedule: "daily", recipients: "support@swiftshopy.com", active: true },
+  ]
+
+  const breachedTickets = [
+    { id: "TKT-001", subject: "Payment not received", priority: "critical", breachedAt: "2 hours ago" },
+    { id: "TKT-003", subject: "WhatsApp integration issue", priority: "high", breachedAt: "30 min ago" },
+  ]
+
+  const rolePermissions: Record<string, string[]> = {
+    "Super Admin": ["seller_management", "transaction_view", "transaction_edit", "reports_view", "reports_export", "system_config", "user_management", "support_access", "support_resolve", "bulk_operations", "audit_logs"],
+    "Admin": ["seller_management", "transaction_view", "reports_view", "reports_export", "support_access", "support_resolve"],
+    "Support": ["transaction_view", "support_access", "support_resolve"],
+  }
+
+  const allPermissions = [
+    { key: "seller_management", label: "Seller Management" },
+    { key: "transaction_view", label: "View Transactions" },
+    { key: "transaction_edit", label: "Edit Transactions" },
+    { key: "reports_view", label: "View Reports" },
+    { key: "reports_export", label: "Export Reports" },
+    { key: "system_config", label: "System Configuration" },
+    { key: "user_management", label: "User Management" },
+    { key: "support_access", label: "Access Support" },
+    { key: "support_resolve", label: "Resolve Tickets" },
+    { key: "bulk_operations", label: "Bulk Operations" },
+    { key: "audit_logs", label: "View Audit Logs" },
   ]
 
   const formatCurrency = (amount: number) => `UGX ${amount.toLocaleString()}`
@@ -273,6 +385,8 @@ function AdminDashboard() {
           <SidebarButton icon={<Shield className="w-5 h-5" />} label="Permissions" active={activeTab === "permissions"} onClick={() => { setActiveTab("permissions"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
           <SidebarButton icon={<Activity className="w-5 h-5" />} label="Analytics" active={activeTab === "analytics"} onClick={() => { setActiveTab("analytics"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
           <SidebarButton icon={<MessageSquare className="w-5 h-5" />} label="Support" active={activeTab === "support"} onClick={() => { setActiveTab("support"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
+          <SidebarButton icon={<FileText className="w-5 h-5" />} label="Audit Trail" active={activeTab === "audit"} onClick={() => { setActiveTab("audit"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
+          <SidebarButton icon={<FileBarChart className="w-5 h-5" />} label="Reports" active={activeTab === "reports"} onClick={() => { setActiveTab("reports"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
           <div className="pt-4 mt-4 border-t border-border">
             <SidebarButton icon={<Settings className="w-5 h-5" />} label="Settings" active={activeTab === "settings"} onClick={() => { setActiveTab("settings"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
             <SidebarButton icon={<LogOut className="w-5 h-5" />} label="Logout" active={false} onClick={() => {}} collapsed={!sidebarOpen} />
@@ -474,9 +588,18 @@ function AdminDashboard() {
                   <button className="px-4 py-2 border border-border rounded-lg hover:bg-accent transition-colors flex items-center gap-2">
                     <Filter className="w-4 h-4" /> Filter
                   </button>
-                  <button className="px-4 py-2 border border-border rounded-lg hover:bg-accent transition-colors flex items-center gap-2">
-                    <Download className="w-4 h-4" /> Export
-                  </button>
+                  <div className="relative">
+                    <button onClick={() => setShowExportDropdown(showExportDropdown === "sellers" ? null : "sellers")}
+                      className="px-4 py-2 border border-border rounded-lg hover:bg-accent transition-colors flex items-center gap-2">
+                      <Download className="w-4 h-4" /> Export <ChevronDown className="w-3 h-3" />
+                    </button>
+                    {showExportDropdown === "sellers" && (
+                      <div className="absolute right-0 mt-2 w-36 bg-card border border-border rounded-lg shadow-lg z-10">
+                        <button onClick={() => setShowExportDropdown(null)} className="w-full px-4 py-2 text-sm text-left hover:bg-accent transition-colors rounded-t-lg">Export JSON</button>
+                        <button onClick={() => setShowExportDropdown(null)} className="w-full px-4 py-2 text-sm text-left hover:bg-accent transition-colors rounded-b-lg">Export CSV</button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -485,13 +608,13 @@ function AdminDashboard() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">{selectedSellers.length} seller(s) selected</span>
                     <div className="flex items-center gap-2">
-                      <button className="px-3 py-1.5 text-sm bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center gap-1">
+                      <button onClick={() => { setBulkAction("approve"); setShowBulkConfirmModal(true) }} className="px-3 py-1.5 text-sm bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center gap-1">
                         <CheckCircle className="w-4 h-4" /> Approve
                       </button>
-                      <button className="px-3 py-1.5 text-sm bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors flex items-center gap-1">
+                      <button onClick={() => { setBulkAction("suspend"); setShowBulkConfirmModal(true) }} className="px-3 py-1.5 text-sm bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors flex items-center gap-1">
                         <Lock className="w-4 h-4" /> Suspend
                       </button>
-                      <button className="px-3 py-1.5 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center gap-1">
+                      <button onClick={() => { setBulkAction("ban"); setShowBulkConfirmModal(true) }} className="px-3 py-1.5 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center gap-1">
                         <Ban className="w-4 h-4" /> Ban
                       </button>
                       <button onClick={() => setSelectedSellers([])} className="px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-accent transition-colors">
@@ -500,6 +623,31 @@ function AdminDashboard() {
                     </div>
                   </div>
                 </motion.div>
+              )}
+
+              {showBulkConfirmModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                  <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+                    className="w-full max-w-md bg-card rounded-xl border border-border p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${bulkAction === "ban" ? "bg-red-500/10" : bulkAction === "suspend" ? "bg-yellow-500/10" : "bg-green-500/10"}`}>
+                        <AlertTriangle className={`w-5 h-5 ${bulkAction === "ban" ? "text-red-500" : bulkAction === "suspend" ? "text-yellow-500" : "text-green-500"}`} />
+                      </div>
+                      <h3 className="text-lg font-semibold">Confirm Bulk {bulkAction.charAt(0).toUpperCase() + bulkAction.slice(1)}</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-6">
+                      Are you sure you want to <strong>{bulkAction}</strong> {selectedSellers.length} selected seller(s)? This action will be logged in the audit trail.
+                    </p>
+                    <div className="flex items-center justify-end gap-3">
+                      <button onClick={() => setShowBulkConfirmModal(false)}
+                        className="px-4 py-2 border border-border rounded-lg hover:bg-accent transition-colors">Cancel</button>
+                      <button onClick={() => { setShowBulkConfirmModal(false); setSelectedSellers([]) }}
+                        className={`px-4 py-2 text-white rounded-lg transition-colors ${bulkAction === "ban" ? "bg-red-500 hover:bg-red-600" : bulkAction === "suspend" ? "bg-yellow-500 hover:bg-yellow-600" : "bg-green-500 hover:bg-green-600"}`}>
+                        Confirm {bulkAction.charAt(0).toUpperCase() + bulkAction.slice(1)}
+                      </button>
+                    </div>
+                  </motion.div>
+                </div>
               )}
 
               <div className="p-6 rounded-xl border border-border bg-card">
@@ -561,9 +709,18 @@ function AdminDashboard() {
                   <h1 className="text-3xl font-bold mb-2">Transactions</h1>
                   <p className="text-muted-foreground">All platform transactions and payments</p>
                 </div>
-                <button className="px-4 py-2 border border-border rounded-lg hover:bg-accent transition-colors flex items-center gap-2">
-                  <Download className="w-4 h-4" /> Export Report
-                </button>
+                <div className="relative">
+                  <button onClick={() => setShowExportDropdown(showExportDropdown === "transactions" ? null : "transactions")}
+                    className="px-4 py-2 border border-border rounded-lg hover:bg-accent transition-colors flex items-center gap-2">
+                    <Download className="w-4 h-4" /> Export Report <ChevronDown className="w-3 h-3" />
+                  </button>
+                  {showExportDropdown === "transactions" && (
+                    <div className="absolute right-0 mt-2 w-36 bg-card border border-border rounded-lg shadow-lg z-10">
+                      <button onClick={() => setShowExportDropdown(null)} className="w-full px-4 py-2 text-sm text-left hover:bg-accent transition-colors rounded-t-lg">Export JSON</button>
+                      <button onClick={() => setShowExportDropdown(null)} className="w-full px-4 py-2 text-sm text-left hover:bg-accent transition-colors rounded-b-lg">Export CSV</button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
@@ -712,10 +869,43 @@ function AdminDashboard() {
                         </div>
                       ))}
                     </div>
-                    <button className="w-full px-4 py-2 border border-border rounded-lg hover:bg-accent transition-colors">Manage Role</button>
+                    <button onClick={() => setShowRoleModal(role.role)} className="w-full px-4 py-2 border border-border rounded-lg hover:bg-accent transition-colors">Manage Role</button>
                   </motion.div>
                 ))}
               </div>
+
+              {showRoleModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                  <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+                    className="w-full max-w-md bg-card rounded-xl border border-border p-6">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-lg font-semibold">Manage Role: {showRoleModal}</h3>
+                      <button onClick={() => setShowRoleModal(null)} className="p-1 hover:bg-accent rounded transition-colors">
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                    <div className="space-y-3 max-h-80 overflow-y-auto">
+                      {allPermissions.map((perm) => {
+                        const rolePerms = rolePermissions[showRoleModal] || []
+                        const isChecked = rolePerms.includes(perm.key)
+                        return (
+                          <label key={perm.key} className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer">
+                            <input type="checkbox" defaultChecked={isChecked}
+                              className="w-4 h-4 rounded border-border text-purple-600 focus:ring-purple-600" />
+                            <span className="text-sm font-medium">{perm.label}</span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                    <div className="flex items-center justify-end gap-3 mt-6">
+                      <button onClick={() => setShowRoleModal(null)}
+                        className="px-4 py-2 border border-border rounded-lg hover:bg-accent transition-colors">Cancel</button>
+                      <button onClick={() => setShowRoleModal(null)}
+                        className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:opacity-90 transition-opacity">Save Permissions</button>
+                    </div>
+                  </motion.div>
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -868,6 +1058,23 @@ function AdminDashboard() {
                 <p className="text-muted-foreground">Manage customer and seller support requests</p>
               </div>
 
+              {breachedTickets.length > 0 && (
+                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+                  className="mb-6 p-4 rounded-xl border-2 border-red-500/30 bg-red-500/5 flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <h4 className="text-sm font-semibold text-red-500 mb-1">SLA Breached — {breachedTickets.length} ticket(s) overdue</h4>
+                    <div className="space-y-1">
+                      {breachedTickets.map((t) => (
+                        <div key={t.id} className="text-sm text-muted-foreground">
+                          <span className="font-mono font-medium text-foreground">{t.id}</span> — {t.subject} <span className="text-red-400">(breached {t.breachedAt})</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
               <div className="grid sm:grid-cols-4 gap-6 mb-8">
                 {[
                   { label: "Critical", count: 2, sla: "1 hour", color: "text-red-500", border: "border-red-500/20", bg: "bg-red-500/5" },
@@ -953,25 +1160,208 @@ function AdminDashboard() {
             </motion.div>
           )}
 
+          {/* ── Audit Trail Tab ── */}
+          {activeTab === "audit" && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h1 className="text-3xl font-bold mb-2">Audit Trail</h1>
+                  <p className="text-muted-foreground">Track all admin actions and changes</p>
+                </div>
+                <select value={auditFilter} onChange={(e) => setAuditFilter(e.target.value)}
+                  className="px-4 py-2 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-purple-600">
+                  <option value="all">All Actions</option>
+                  <option value="seller_approve">Seller Approve</option>
+                  <option value="seller_suspend">Seller Suspend</option>
+                  <option value="ticket_create">Ticket Create</option>
+                  <option value="ticket_resolve">Ticket Resolve</option>
+                  <option value="config_update">Config Update</option>
+                  <option value="role_update">Role Update</option>
+                  <option value="export_data">Export Data</option>
+                </select>
+              </div>
+
+              <div className="p-6 rounded-xl border border-border bg-card">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-border">
+                        {["Admin", "Action", "Target", "Date"].map((h) => (
+                          <th key={h} className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {auditLogs
+                        .filter((log) => auditFilter === "all" || log.action === auditFilter)
+                        .map((log, i) => (
+                          <motion.tr key={log.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: i * 0.05 }}
+                            className="border-b border-border hover:bg-accent/50 transition-colors">
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-full bg-purple-500/10 flex items-center justify-center">
+                                  <Shield className="w-4 h-4 text-purple-500" />
+                                </div>
+                                <span className="text-sm font-medium">{log.admin}</span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-500">
+                                {log.action.replace(/_/g, " ")}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-sm">{log.target}</td>
+                            <td className="py-3 px-4 text-sm text-muted-foreground">{log.date}</td>
+                          </motion.tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ── Reports Tab ── */}
+          {activeTab === "reports" && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h1 className="text-3xl font-bold mb-2">Scheduled Reports</h1>
+                  <p className="text-muted-foreground">Manage automated report generation and delivery</p>
+                </div>
+                <button onClick={() => setShowCreateReportModal(true)}
+                  className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2">
+                  <Plus className="w-4 h-4" /> Create Report
+                </button>
+              </div>
+
+              <div className="p-6 rounded-xl border border-border bg-card">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-border">
+                        {["Name", "Type", "Format", "Schedule", "Recipients", "Status"].map((h) => (
+                          <th key={h} className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {scheduledReports.map((report, i) => (
+                        <motion.tr key={report.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: i * 0.05 }}
+                          className="border-b border-border hover:bg-accent/50 transition-colors">
+                          <td className="py-3 px-4 text-sm font-medium">{report.name}</td>
+                          <td className="py-3 px-4">
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-500/10 text-purple-500 capitalize">{report.type}</span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-500 uppercase">{report.format}</span>
+                          </td>
+                          <td className="py-3 px-4 text-sm capitalize">{report.schedule}</td>
+                          <td className="py-3 px-4 text-sm text-muted-foreground">{report.recipients}</td>
+                          <td className="py-3 px-4">
+                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${report.active ? "bg-green-500/10 text-green-500 border-green-500/20" : "bg-gray-500/10 text-gray-500 border-gray-500/20"}`}>
+                              {report.active ? "Active" : "Paused"}
+                            </span>
+                          </td>
+                        </motion.tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {showCreateReportModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                  <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+                    className="w-full max-w-lg bg-card rounded-xl border border-border p-6">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-lg font-semibold">Create Scheduled Report</h3>
+                      <button onClick={() => setShowCreateReportModal(false)} className="p-1 hover:bg-accent rounded transition-colors">
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Report Name</label>
+                        <input type="text" placeholder="e.g. Daily Revenue Summary" className="w-full px-4 py-2 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-purple-600" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Type</label>
+                          <select className="w-full px-4 py-2 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-purple-600">
+                            <option value="revenue">Revenue</option>
+                            <option value="sellers">Sellers</option>
+                            <option value="orders">Orders</option>
+                            <option value="products">Products</option>
+                            <option value="transactions">Transactions</option>
+                            <option value="support">Support</option>
+                            <option value="custom">Custom</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Format</label>
+                          <select className="w-full px-4 py-2 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-purple-600">
+                            <option value="json">JSON</option>
+                            <option value="csv">CSV</option>
+                            <option value="xlsx">XLSX</option>
+                            <option value="pdf">PDF</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Schedule</label>
+                        <select className="w-full px-4 py-2 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-purple-600">
+                          <option value="daily">Daily</option>
+                          <option value="weekly">Weekly</option>
+                          <option value="monthly">Monthly</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Recipients (comma separated)</label>
+                        <input type="text" placeholder="admin@swiftshopy.com, ops@swiftshopy.com" className="w-full px-4 py-2 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-purple-600" />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-end gap-3 mt-6">
+                      <button onClick={() => setShowCreateReportModal(false)}
+                        className="px-4 py-2 border border-border rounded-lg hover:bg-accent transition-colors">Cancel</button>
+                      <button onClick={() => setShowCreateReportModal(false)}
+                        className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:opacity-90 transition-opacity">Create Report</button>
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+            </motion.div>
+          )}
+
           {/* ── Settings Tab ── */}
           {activeTab === "settings" && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-              <div className="mb-8">
-                <h1 className="text-3xl font-bold mb-2">Platform Settings</h1>
-                <p className="text-muted-foreground">Configure global platform settings and preferences</p>
+              <div className="mb-8 flex items-center justify-between">
+                <div>
+                  <h1 className="text-3xl font-bold mb-2">Platform Settings</h1>
+                  <p className="text-muted-foreground">Configure global platform settings and preferences</p>
+                </div>
+                {settingsSaved && (
+                  <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
+                    className="px-4 py-2 bg-green-500/10 text-green-500 rounded-lg flex items-center gap-2">
+                    <Check className="w-4 h-4" /> Settings saved!
+                  </motion.div>
+                )}
               </div>
 
               <div className="grid lg:grid-cols-4 gap-6">
                 <div className="lg:col-span-1 space-y-2">
                   {[
-                    { label: "General", icon: <Settings className="w-5 h-5" /> },
-                    { label: "Payment Gateway", icon: <CreditCard className="w-5 h-5" /> },
-                    { label: "Security", icon: <Shield className="w-5 h-5" /> },
-                    { label: "Notifications", icon: <Bell className="w-5 h-5" /> },
-                    { label: "API Configuration", icon: <Activity className="w-5 h-5" /> },
-                    { label: "Maintenance", icon: <AlertCircle className="w-5 h-5" /> },
-                  ].map((item, i) => (
-                    <button key={i} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-accent transition-colors text-left">
+                    { id: "general", label: "General", icon: <Settings className="w-5 h-5" /> },
+                    { id: "payment", label: "Payment Gateway", icon: <CreditCard className="w-5 h-5" /> },
+                    { id: "security", label: "Security", icon: <Shield className="w-5 h-5" /> },
+                    { id: "notification", label: "Notifications", icon: <Bell className="w-5 h-5" /> },
+                    { id: "api", label: "API Configuration", icon: <Activity className="w-5 h-5" /> },
+                  ].map((item) => (
+                    <button key={item.id} onClick={() => setSettingsSubTab(item.id)}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-accent transition-colors text-left ${
+                        settingsSubTab === item.id ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white" : ""
+                      }`}>
                       {item.icon}
                       <span className="font-medium">{item.label}</span>
                     </button>
@@ -980,107 +1370,327 @@ function AdminDashboard() {
 
                 <div className="lg:col-span-3 space-y-6">
                   {/* General Settings */}
-                  <div className="p-6 rounded-xl border border-border bg-card">
-                    <h3 className="text-lg font-semibold mb-6">General Settings</h3>
-                    <div className="space-y-4">
-                      {[
-                        { label: "Platform Name", type: "text", value: "SwiftShopy" },
-                        { label: "Support Email", type: "email", value: "support@swiftshopy.com" },
-                      ].map((f, i) => (
-                        <div key={i}>
-                          <label className="block text-sm font-medium mb-2">{f.label}</label>
-                          <input type={f.type} defaultValue={f.value} className="w-full px-4 py-2 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-purple-600" />
+                  {settingsSubTab === "general" && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                      <div className="p-6 rounded-xl border border-border bg-card">
+                        <h3 className="text-lg font-semibold mb-6">General Settings</h3>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Platform Name</label>
+                            <input type="text" value={generalSettings.platformName}
+                              onChange={(e) => setGeneralSettings({ ...generalSettings, platformName: e.target.value })}
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-purple-600" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Support Email</label>
+                            <input type="email" value={generalSettings.supportEmail}
+                              onChange={(e) => setGeneralSettings({ ...generalSettings, supportEmail: e.target.value })}
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-purple-600" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Platform Description</label>
+                            <textarea rows={3} value={generalSettings.platformDescription}
+                              onChange={(e) => setGeneralSettings({ ...generalSettings, platformDescription: e.target.value })}
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-purple-600 resize-none" />
+                          </div>
+                          <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                            <div>
+                              <div className="font-medium">Maintenance Mode</div>
+                              <div className="text-sm text-muted-foreground">Temporarily disable platform access</div>
+                            </div>
+                            <button onClick={() => setGeneralSettings({ ...generalSettings, maintenanceMode: !generalSettings.maintenanceMode })}
+                              className={`w-12 h-6 rounded-full relative transition-colors ${generalSettings.maintenanceMode ? "bg-red-500" : "bg-accent"}`}>
+                              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${generalSettings.maintenanceMode ? "right-1" : "left-1"}`} />
+                            </button>
+                          </div>
                         </div>
-                      ))}
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Platform Description</label>
-                        <textarea rows={3} defaultValue="WhatsApp Commerce + Mobile Money Payments platform for small businesses"
-                          className="w-full px-4 py-2 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-purple-600 resize-none" />
                       </div>
-                      <div className="flex items-center justify-between p-4 rounded-lg border border-border">
-                        <div>
-                          <div className="font-medium">Maintenance Mode</div>
-                          <div className="text-sm text-muted-foreground">Temporarily disable platform access</div>
-                        </div>
-                        <div className="w-12 h-6 bg-accent rounded-full relative cursor-pointer">
-                          <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full" />
+                    </motion.div>
+                  )}
+
+                  {/* Payment Gateway Settings */}
+                  {settingsSubTab === "payment" && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                      <div className="p-6 rounded-xl border border-border bg-card">
+                        <h3 className="text-lg font-semibold mb-6">Payment Gateways</h3>
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                            <div className="flex items-center gap-3">
+                              <div className="text-2xl">🟡</div>
+                              <div>
+                                <div className="font-medium">MTN Mobile Money</div>
+                                <div className="text-sm text-muted-foreground">Accept payments via MTN MoMo</div>
+                              </div>
+                            </div>
+                            <button onClick={() => setPaymentSettings({ ...paymentSettings, mtnEnabled: !paymentSettings.mtnEnabled })}
+                              className={`w-12 h-6 rounded-full relative transition-colors ${paymentSettings.mtnEnabled ? "bg-green-500" : "bg-accent"}`}>
+                              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${paymentSettings.mtnEnabled ? "right-1" : "left-1"}`} />
+                            </button>
+                          </div>
+                          {paymentSettings.mtnEnabled && (
+                            <div className="pl-4 ml-4 border-l-2 border-yellow-500/30 space-y-4">
+                              <div>
+                                <label className="block text-sm font-medium mb-2">API Key</label>
+                                <input type="password" value={paymentSettings.mtnApiKey}
+                                  onChange={(e) => setPaymentSettings({ ...paymentSettings, mtnApiKey: e.target.value })}
+                                  placeholder="Enter MTN MoMo API Key"
+                                  className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-purple-600" />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-2">Subscription Key</label>
+                                <input type="password" value={paymentSettings.mtnSubscriptionKey}
+                                  onChange={(e) => setPaymentSettings({ ...paymentSettings, mtnSubscriptionKey: e.target.value })}
+                                  placeholder="Enter Subscription Key"
+                                  className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-purple-600" />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-2">Collection Account ID</label>
+                                <input type="text" value={paymentSettings.mtnCollectionId}
+                                  onChange={(e) => setPaymentSettings({ ...paymentSettings, mtnCollectionId: e.target.value })}
+                                  placeholder="Enter Collection Account ID"
+                                  className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-purple-600" />
+                              </div>
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                            <div className="flex items-center gap-3">
+                              <div className="text-2xl">🔴</div>
+                              <div>
+                                <div className="font-medium">Airtel Money</div>
+                                <div className="text-sm text-muted-foreground">Accept payments via Airtel</div>
+                              </div>
+                            </div>
+                            <button onClick={() => setPaymentSettings({ ...paymentSettings, airtelEnabled: !paymentSettings.airtelEnabled })}
+                              className={`w-12 h-6 rounded-full relative transition-colors ${paymentSettings.airtelEnabled ? "bg-green-500" : "bg-accent"}`}>
+                              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${paymentSettings.airtelEnabled ? "right-1" : "left-1"}`} />
+                            </button>
+                          </div>
+                          {paymentSettings.airtelEnabled && (
+                            <div className="pl-4 ml-4 border-l-2 border-red-500/30 space-y-4">
+                              <div>
+                                <label className="block text-sm font-medium mb-2">API Key</label>
+                                <input type="password" value={paymentSettings.airtelApiKey}
+                                  onChange={(e) => setPaymentSettings({ ...paymentSettings, airtelApiKey: e.target.value })}
+                                  placeholder="Enter Airtel Money API Key"
+                                  className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-purple-600" />
+                              </div>
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                            <div className="flex items-center gap-3">
+                              <div className="text-2xl">💵</div>
+                              <div>
+                                <div className="font-medium">Cash on Delivery</div>
+                                <div className="text-sm text-muted-foreground">Let customers pay on delivery</div>
+                              </div>
+                            </div>
+                            <button onClick={() => setPaymentSettings({ ...paymentSettings, codEnabled: !paymentSettings.codEnabled })}
+                              className={`w-12 h-6 rounded-full relative transition-colors ${paymentSettings.codEnabled ? "bg-green-500" : "bg-accent"}`}>
+                              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${paymentSettings.codEnabled ? "right-1" : "left-1"}`} />
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
+                      <div className="p-6 rounded-xl border border-border bg-card">
+                        <h3 className="text-lg font-semibold mb-6">Commission Settings</h3>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Platform Commission (%)</label>
+                            <input type="number" value={paymentSettings.platformCommission}
+                              onChange={(e) => setPaymentSettings({ ...paymentSettings, platformCommission: parseInt(e.target.value) })}
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-purple-600" />
+                            <p className="text-sm text-muted-foreground mt-1">Fee charged on each sale</p>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
 
                   {/* Security Settings */}
-                  <div className="p-6 rounded-xl border border-border bg-card">
-                    <h3 className="text-lg font-semibold mb-6">Security Configuration</h3>
-                    <div className="space-y-4">
-                      {[
-                        { label: "Two-Factor Authentication", desc: "Require 2FA for admin accounts", enabled: true },
-                        { label: "API Rate Limiting", desc: "Prevent API abuse", enabled: true },
-                        { label: "Seller Verification", desc: "Manual approval for new sellers", enabled: true },
-                      ].map((s, i) => (
-                        <div key={i} className="flex items-center justify-between p-4 rounded-lg border border-border">
-                          <div>
-                            <div className="font-medium">{s.label}</div>
-                            <div className="text-sm text-muted-foreground">{s.desc}</div>
+                  {settingsSubTab === "security" && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                      <div className="p-6 rounded-xl border border-border bg-card">
+                        <h3 className="text-lg font-semibold mb-6">Security Configuration</h3>
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                            <div>
+                              <div className="font-medium">Two-Factor Authentication</div>
+                              <div className="text-sm text-muted-foreground">Require 2FA for admin accounts</div>
+                            </div>
+                            <button onClick={() => setSecuritySettings({ ...securitySettings, require2FA: !securitySettings.require2FA })}
+                              className={`w-12 h-6 rounded-full relative transition-colors ${securitySettings.require2FA ? "bg-green-500" : "bg-accent"}`}>
+                              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${securitySettings.require2FA ? "right-1" : "left-1"}`} />
+                            </button>
                           </div>
-                          <div className="w-12 h-6 bg-green-500 rounded-full relative cursor-pointer">
-                            <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full" />
+                          <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                            <div>
+                              <div className="font-medium">Seller Verification</div>
+                              <div className="text-sm text-muted-foreground">Manual approval for new sellers</div>
+                            </div>
+                            <button onClick={() => setSecuritySettings({ ...securitySettings, sellerVerification: !securitySettings.sellerVerification })}
+                              className={`w-12 h-6 rounded-full relative transition-colors ${securitySettings.sellerVerification ? "bg-green-500" : "bg-accent"}`}>
+                              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${securitySettings.sellerVerification ? "right-1" : "left-1"}`} />
+                            </button>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">API Rate Limit (requests/minute)</label>
+                            <input type="number" value={securitySettings.apiRateLimit}
+                              onChange={(e) => setSecuritySettings({ ...securitySettings, apiRateLimit: parseInt(e.target.value) })}
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-purple-600" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Session Timeout (seconds)</label>
+                            <input type="number" value={securitySettings.sessionTimeout}
+                              onChange={(e) => setSecuritySettings({ ...securitySettings, sessionTimeout: parseInt(e.target.value) })}
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-purple-600" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Minimum Password Length</label>
+                            <input type="number" value={securitySettings.passwordMinLength}
+                              onChange={(e) => setSecuritySettings({ ...securitySettings, passwordMinLength: parseInt(e.target.value) })}
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-purple-600" />
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                      </div>
+                    </motion.div>
+                  )}
 
                   {/* Notification Settings */}
-                  <div className="p-6 rounded-xl border border-border bg-card">
-                    <h3 className="text-lg font-semibold mb-6">Notification Preferences</h3>
-                    <div className="space-y-4">
-                      {[
-                        { title: "New Seller Registration", description: "Get notified when new sellers sign up", enabled: true },
-                        { title: "High Value Transactions", description: "Alert for transactions over UGX 1M", enabled: true },
-                        { title: "Failed Payments", description: "Notify when payments fail", enabled: true },
-                        { title: "System Errors", description: "Critical system error alerts", enabled: true },
-                        { title: "Daily Reports", description: "Automated daily performance reports", enabled: false },
-                        { title: "Weekly Summary", description: "Weekly platform summary emails", enabled: true },
-                      ].map((notif, i) => (
-                        <div key={i} className="flex items-center justify-between p-4 rounded-lg border border-border">
-                          <div>
-                            <div className="font-medium">{notif.title}</div>
-                            <div className="text-sm text-muted-foreground">{notif.description}</div>
+                  {settingsSubTab === "notification" && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                      <div className="p-6 rounded-xl border border-border bg-card">
+                        <h3 className="text-lg font-semibold mb-6">Notification Preferences</h3>
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                            <div>
+                              <div className="font-medium">New Seller Registration</div>
+                              <div className="text-sm text-muted-foreground">Get notified when new sellers sign up</div>
+                            </div>
+                            <button onClick={() => setNotificationSettings({ ...notificationSettings, newSellerAlert: !notificationSettings.newSellerAlert })}
+                              className={`w-12 h-6 rounded-full relative transition-colors ${notificationSettings.newSellerAlert ? "bg-green-500" : "bg-accent"}`}>
+                              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${notificationSettings.newSellerAlert ? "right-1" : "left-1"}`} />
+                            </button>
                           </div>
-                          <div className={`w-12 h-6 ${notif.enabled ? "bg-green-500" : "bg-accent"} rounded-full relative cursor-pointer`}>
-                            <div className={`absolute ${notif.enabled ? "right-1" : "left-1"} top-1 w-4 h-4 bg-white rounded-full`} />
+                          <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                            <div>
+                              <div className="font-medium">Failed Payments</div>
+                              <div className="text-sm text-muted-foreground">Notify when payments fail</div>
+                            </div>
+                            <button onClick={() => setNotificationSettings({ ...notificationSettings, failedPaymentAlert: !notificationSettings.failedPaymentAlert })}
+                              className={`w-12 h-6 rounded-full relative transition-colors ${notificationSettings.failedPaymentAlert ? "bg-green-500" : "bg-accent"}`}>
+                              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${notificationSettings.failedPaymentAlert ? "right-1" : "left-1"}`} />
+                            </button>
+                          </div>
+                          <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                            <div>
+                              <div className="font-medium">System Errors</div>
+                              <div className="text-sm text-muted-foreground">Critical system error alerts</div>
+                            </div>
+                            <button onClick={() => setNotificationSettings({ ...notificationSettings, systemErrorAlert: !notificationSettings.systemErrorAlert })}
+                              className={`w-12 h-6 rounded-full relative transition-colors ${notificationSettings.systemErrorAlert ? "bg-green-500" : "bg-accent"}`}>
+                              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${notificationSettings.systemErrorAlert ? "right-1" : "left-1"}`} />
+                            </button>
+                          </div>
+                          <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                            <div>
+                              <div className="font-medium">Daily Reports</div>
+                              <div className="text-sm text-muted-foreground">Automated daily performance reports</div>
+                            </div>
+                            <button onClick={() => setNotificationSettings({ ...notificationSettings, dailyReport: !notificationSettings.dailyReport })}
+                              className={`w-12 h-6 rounded-full relative transition-colors ${notificationSettings.dailyReport ? "bg-green-500" : "bg-accent"}`}>
+                              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${notificationSettings.dailyReport ? "right-1" : "left-1"}`} />
+                            </button>
+                          </div>
+                          <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                            <div>
+                              <div className="font-medium">Weekly Summary</div>
+                              <div className="text-sm text-muted-foreground">Weekly platform summary emails</div>
+                            </div>
+                            <button onClick={() => setNotificationSettings({ ...notificationSettings, weeklySummary: !notificationSettings.weeklySummary })}
+                              className={`w-12 h-6 rounded-full relative transition-colors ${notificationSettings.weeklySummary ? "bg-green-500" : "bg-accent"}`}>
+                              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${notificationSettings.weeklySummary ? "right-1" : "left-1"}`} />
+                            </button>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">High Value Threshold (UGX)</label>
+                            <input type="number" value={notificationSettings.highValueThreshold}
+                              onChange={(e) => setNotificationSettings({ ...notificationSettings, highValueThreshold: parseInt(e.target.value) })}
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-purple-600" />
+                            <p className="text-sm text-muted-foreground mt-1">Alert for transactions over this amount</p>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Notification Email</label>
+                            <input type="email" value={notificationSettings.notificationEmail}
+                              onChange={(e) => setNotificationSettings({ ...notificationSettings, notificationEmail: e.target.value })}
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-purple-600" />
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                      </div>
+                    </motion.div>
+                  )}
 
                   {/* API Configuration */}
-                  <div className="p-6 rounded-xl border border-border bg-card">
-                    <h3 className="text-lg font-semibold mb-6">API Configuration</h3>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Webhook URL</label>
-                        <input type="url" defaultValue="https://api.swiftshopy.com/webhooks" className="w-full px-4 py-2 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-purple-600" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Rate Limit (requests/minute)</label>
-                        <input type="number" defaultValue="1000" className="w-full px-4 py-2 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-purple-600" />
-                      </div>
-                      <div className="p-4 rounded-lg bg-accent/50">
-                        <div className="text-sm font-medium mb-2">API Key</div>
-                        <div className="flex items-center gap-2">
-                          <code className="flex-1 px-3 py-2 bg-background rounded text-sm">sk_live_xxxxxxxxxxxxxxxxxxxx</code>
-                          <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">Regenerate</button>
+                  {settingsSubTab === "api" && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                      <div className="p-6 rounded-xl border border-border bg-card">
+                        <h3 className="text-lg font-semibold mb-6">API Configuration</h3>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Webhook URL</label>
+                            <input type="url" value={apiSettings.webhookUrl}
+                              onChange={(e) => setApiSettings({ ...apiSettings, webhookUrl: e.target.value })}
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-purple-600" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Rate Limit (requests/minute)</label>
+                            <input type="number" value={apiSettings.apiRateLimit}
+                              onChange={(e) => setApiSettings({ ...apiSettings, apiRateLimit: parseInt(e.target.value) })}
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-purple-600" />
+                          </div>
+                          <div className="p-4 rounded-lg bg-accent/50">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="text-sm font-medium">API Key</div>
+                              <button className="text-xs text-purple-500 font-medium">Regenerate</button>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <code className="flex-1 px-3 py-2 bg-background rounded text-sm font-mono">{apiSettings.apiKey}</code>
+                              <button onClick={() => navigator.clipboard.writeText(apiSettings.apiKey)}
+                                className="px-3 py-2 bg-background rounded hover:bg-accent transition-colors">
+                                <Copy className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                          <div className="p-4 rounded-lg bg-accent/50">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="text-sm font-medium">API Secret</div>
+                              <button className="text-xs text-purple-500 font-medium">Regenerate</button>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input type="password" value={apiSettings.apiSecret}
+                                onChange={(e) => setApiSettings({ ...apiSettings, apiSecret: e.target.value })}
+                                placeholder="Enter or generate API Secret"
+                                className="flex-1 px-3 py-2 bg-background rounded text-sm" />
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
+                    </motion.div>
+                  )}
 
                   <div className="flex items-center justify-end gap-4">
-                    <button className="px-6 py-3 border border-border rounded-lg hover:bg-accent transition-colors">Reset to Defaults</button>
-                    <button className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:opacity-90 transition-opacity">Save All Changes</button>
+                    <button onClick={() => {
+                      setGeneralSettings({ platformName: "SwiftShopy", supportEmail: "support@swiftshopy.com", platformDescription: "WhatsApp Commerce + Mobile Money Payments platform", maintenanceMode: false })
+                      setPaymentSettings({ mtnEnabled: true, mtnApiKey: "", mtnSubscriptionKey: "", mtnCollectionId: "", airtelEnabled: true, airtelApiKey: "", codEnabled: true, platformCommission: 10 })
+                      setSecuritySettings({ require2FA: true, apiRateLimit: 1000, sellerVerification: true, sessionTimeout: 3600, passwordMinLength: 8 })
+                      setNotificationSettings({ newSellerAlert: true, highValueThreshold: 1000000, failedPaymentAlert: true, systemErrorAlert: true, dailyReport: false, weeklySummary: true, notificationEmail: "admin@swiftshopy.com" })
+                      setApiSettings({ webhookUrl: "https://api.swiftshopy.com/webhooks", apiKey: "sk_live_xxxxxxxxxxxxxxxxxxxx", apiRateLimit: 1000, apiSecret: "" })
+                    }}
+                      className="px-6 py-3 border border-border rounded-lg hover:bg-accent transition-colors">Reset to Defaults</button>
+                    <button onClick={saveSettings} disabled={settingsSaving}
+                      className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2">
+                      {settingsSaving && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                      {settingsSaving ? "Saving..." : "Save All Changes"}
+                    </button>
                   </div>
                 </div>
               </div>

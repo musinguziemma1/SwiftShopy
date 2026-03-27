@@ -22,8 +22,10 @@ export const create = mutation({
     price: v.number(),
     image: v.optional(v.string()),
     stock: v.number(),
+    sales: v.optional(v.number()),
+    category: v.optional(v.string()),
   },
-  handler: async (ctx, args) => ctx.db.insert("products", { ...args, isActive: true }),
+  handler: async (ctx, args) => ctx.db.insert("products", { ...args, isActive: true, sales: args.sales ?? 0, category: args.category ?? "" }),
 });
 
 export const update = mutation({

@@ -289,7 +289,7 @@ export default function SellerDashboardPage() {
           {/* Quick Actions Bar */}
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
             className="mb-6 p-4 glass rounded-xl">
-            <div className="flex flex-wrap gap-3 items-center">
+            <div className="flex flex-wrap gap-3 items-center justify-center">
               {[
                 { label: "Add Product", icon: <Plus className="w-4 h-4" />, primary: true },
                 { label: "Share Store", icon: <Share2 className="w-4 h-4" />, onClick: () => setShowShareModal(true) },

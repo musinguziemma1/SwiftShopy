@@ -6,7 +6,12 @@
     "dev": "next dev -p 3014",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
@@ -28,10 +33,13 @@
     "next-auth": "^4.24.5",
     "next-themes": "^0.4.6",
     "postcss": "^8.4.33",
+    "qrcode": "^1.5.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.49.3",
     "recharts": "^2.10.4",
+    "resend": "^6.9.4",
+    "speakeasy": "^2.0.0",
     "tailwind-merge": "^2.2.0",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.3.3",
@@ -39,6 +47,12 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "eslint": "^8.57.1"
+    "@playwright/test": "^1.58.2",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@vitejs/plugin-react": "^6.0.1",
+    "eslint": "^8.57.1",
+    "jsdom": "^29.0.1",
+    "vitest": "^4.1.2"
   }
 }

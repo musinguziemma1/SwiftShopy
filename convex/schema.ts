@@ -356,4 +356,42 @@ export default defineSchema({
     .index("by_store", ["storeId"])
     .index("by_unread", ["isRead"])
     .index("by_date", ["createdAt"]),
+
+  // ─── Customers ──────────────────────────────────────────
+  customers: defineTable({
+    storeId: v.id("stores"),
+    name: v.string(),
+    phone: v.string(),
+    email: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    totalOrders: v.number(),
+    totalSpent: v.number(),
+    tier: v.union(v.literal("regular"), v.literal("vip"), v.literal("premium")),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_store", ["storeId"])
+    .index("by_phone", ["phone"])
+    .index("by_tier", ["tier"]),
+
+  // ─── Payouts ──────────────────────────────────────────
+  payouts: defineTable({
+    storeId: v.id("stores"),
+    amount: v.number(),
+    currency: v.string(),
+    method: v.union(v.literal("mtn_momo"), v.literal("bank_transfer")),
+    accountNumber: v.string(),
+    accountName: v.string(),
+    status: v.union(v.literal("pending"), v.literal("processing"), v.literal("completed"), v.literal("failed")),
+    reference: v.optional(v.string()),
+    failureReason: v.optional(v.string()),
+    approvedBy: v.optional(v.string()),
+    approvedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_store", ["storeId"])
+    .index("by_status", ["status"])
+    .index("by_date", ["createdAt"]),
 });

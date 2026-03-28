@@ -64,8 +64,9 @@ export default function SellerDashboardPage() {
   const { createProduct, updateProduct, deleteProduct, toggleProduct } = useProductMutations();
   const { updateOrderStatus } = useOrderMutations();
 
-  // Get seller store data from Convex (queries all stores, uses first one)
-  const { store, storeId, products: convexProducts, orders: convexOrders, isLoading } = useSellerData();
+  // Get seller store data from Convex using session email
+  const userEmail = (session?.user as any)?.email;
+  const { store, storeId, products: convexProducts, orders: convexOrders, isLoading } = useSellerData(userEmail);
 
   // Calculate stats from real data
   const totalRevenue = convexOrders?.filter(o => o.status === "paid").reduce((sum, o) => sum + o.total, 0) ?? 0;
@@ -1313,19 +1314,73 @@ export default function SellerDashboardPage() {
                       <div className="grid sm:grid-cols-2 gap-6">
                         <div>
                           <label className="block text-sm font-medium mb-2">Store Logo</label>
-                          <div className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                            <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                            <p className="text-sm text-muted-foreground">Click to upload or drag and drop</p>
-                            <p className="text-xs text-muted-foreground mt-1">PNG, JPG up to 2MB</p>
-                          </div>
+                          {store?.logo ? (
+                            <div className="relative group">
+                              <img src={store.logo} alt="Store Logo" className="w-full h-40 object-contain rounded-xl border border-border" />
+                              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center">
+                                <label className="cursor-pointer px-4 py-2 bg-white text-black rounded-lg text-sm font-medium">
+                                  Change
+                                  <input type="file" accept="image/*" className="hidden"
+                                    onChange={async (e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file && store?._id) {
+                                        const url = URL.createObjectURL(file);
+                                        await updateStore({ id: store._id, logo: url });
+                                      }
+                                    }} />
+                                </label>
+                              </div>
+                            </div>
+                          ) : (
+                            <label className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer block">
+                              <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                              <p className="text-sm text-muted-foreground">Click to upload or drag and drop</p>
+                              <p className="text-xs text-muted-foreground mt-1">PNG, JPG up to 2MB</p>
+                              <input type="file" accept="image/*" className="hidden"
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file && store?._id) {
+                                    const url = URL.createObjectURL(file);
+                                    await updateStore({ id: store._id, logo: url });
+                                  }
+                                }} />
+                            </label>
+                          )}
                         </div>
                         <div>
                           <label className="block text-sm font-medium mb-2">Store Banner</label>
-                          <div className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                            <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                            <p className="text-sm text-muted-foreground">Click to upload or drag and drop</p>
-                            <p className="text-xs text-muted-foreground mt-1">PNG, JPG 1200x400px recommended</p>
-                          </div>
+                          {store?.banner ? (
+                            <div className="relative group">
+                              <img src={store.banner} alt="Store Banner" className="w-full h-40 object-cover rounded-xl border border-border" />
+                              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center">
+                                <label className="cursor-pointer px-4 py-2 bg-white text-black rounded-lg text-sm font-medium">
+                                  Change
+                                  <input type="file" accept="image/*" className="hidden"
+                                    onChange={async (e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file && store?._id) {
+                                        const url = URL.createObjectURL(file);
+                                        await updateStore({ id: store._id, banner: url });
+                                      }
+                                    }} />
+                                </label>
+                              </div>
+                            </div>
+                          ) : (
+                            <label className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer block">
+                              <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                              <p className="text-sm text-muted-foreground">Click to upload or drag and drop</p>
+                              <p className="text-xs text-muted-foreground mt-1">PNG, JPG 1200x400px recommended</p>
+                              <input type="file" accept="image/*" className="hidden"
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file && store?._id) {
+                                    const url = URL.createObjectURL(file);
+                                    await updateStore({ id: store._id, banner: url });
+                                  }
+                                }} />
+                            </label>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1335,24 +1390,28 @@ export default function SellerDashboardPage() {
                     <div className="p-6 glass rounded-xl">
                       <h3 className="text-lg font-semibold mb-4">Store Preview</h3>
                       <div className="text-center mb-4">
-                        <div className="w-16 h-16 bg-gradient-to-br from-primary to-indigo-600 rounded-full mx-auto mb-3 flex items-center justify-center">
-                          <Store className="w-8 h-8 text-white" />
-                        </div>
-                        <h4 className="font-semibold">{storeForm.name}</h4>
-                        <p className="text-sm text-muted-foreground">swiftshopy.com/{storeForm.slug}</p>
+                        {store?.logo ? (
+                          <img src={store.logo} alt="Logo" className="w-16 h-16 rounded-full mx-auto mb-3 object-cover border-2 border-border" />
+                        ) : (
+                          <div className="w-16 h-16 bg-gradient-to-br from-primary to-indigo-600 rounded-full mx-auto mb-3 flex items-center justify-center">
+                            <Store className="w-8 h-8 text-white" />
+                          </div>
+                        )}
+                        <h4 className="font-semibold">{store?.name ?? storeForm.name}</h4>
+                        <p className="text-sm text-muted-foreground">swiftshopy.com/{store?.slug ?? storeForm.slug}</p>
                       </div>
                       <div className="space-y-3 text-sm">
                         <div className="flex justify-between p-3 bg-accent/50 rounded-lg">
                           <span className="text-muted-foreground">Phone</span>
-                          <span className="font-medium">{storeForm.phone}</span>
+                          <span className="font-medium">{store?.phone ?? storeForm.phone}</span>
                         </div>
                         <div className="flex justify-between p-3 bg-accent/50 rounded-lg">
                           <span className="text-muted-foreground">Email</span>
-                          <span className="font-medium truncate ml-2">seller@swiftshopy.com</span>
+                          <span className="font-medium truncate ml-2">{userEmail ?? "seller@swiftshopy.com"}</span>
                         </div>
                         <div className="flex justify-between p-3 bg-accent/50 rounded-lg">
-                          <span className="text-muted-foreground">Currency</span>
-                          <span className="font-medium">{storeForm.currency}</span>
+                          <span className="text-muted-foreground">Description</span>
+                          <span className="font-medium truncate ml-2 max-w-[60%] text-right">{store?.description?.slice(0, 30) ?? "No description"}...</span>
                         </div>
                       </div>
                     </div>
@@ -1611,26 +1670,54 @@ export default function SellerDashboardPage() {
                 </div>
                 <button onClick={() => setShowStorePreview(false)} className="p-2 hover:bg-accent/50 rounded-lg transition-colors"><X className="w-5 h-5" /></button>
               </div>
-              <div className="p-4 sm:p-8 overflow-y-auto max-h-[calc(100vh-8rem)] sm:max-h-[calc(90vh-5rem)] bg-accent/20">
-                <div className="text-center mb-6 sm:mb-8">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-primary to-indigo-600 rounded-full mx-auto mb-4 flex items-center justify-center">
-                    <ShoppingCart className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
+              <div className="overflow-y-auto max-h-[calc(100vh-8rem)] sm:max-h-[calc(90vh-5rem)] bg-accent/20">
+                {/* Store Banner */}
+                {store?.banner ? (
+                  <div className="w-full h-32 sm:h-48 relative">
+                    <img src={store.banner} alt="Store Banner" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                   </div>
-                  <h1 className="text-xl sm:text-3xl font-bold mb-2">SwiftShopy Store</h1>
-                  <p className="text-sm sm:text-base text-muted-foreground">Premium products at affordable prices</p>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                  {products.slice(0,3).map((p, i) => (
-                    <div key={i} className="p-3 sm:p-4 glass rounded-xl">
-                      <img src={p.image} alt={p.name} className="w-full h-24 sm:h-32 object-cover rounded-lg mb-3 sm:mb-4" />
-                      <h4 className="font-medium mb-2 truncate text-sm sm:text-base">{p.name}</h4>
-                      <div className="text-base sm:text-lg font-bold text-primary mb-3 sm:mb-4">{fmt(p.price)}</div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button className="py-2 bg-green-500 text-white rounded-lg text-xs font-medium">Order</button>
-                        <button className="py-2 bg-primary text-white rounded-lg text-xs font-medium">Pay Now</button>
+                ) : (
+                  <div className="w-full h-32 sm:h-48 bg-gradient-to-br from-primary to-indigo-600 relative">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.1),transparent)]" />
+                  </div>
+                )}
+                
+                <div className="p-4 sm:p-8 -mt-12 sm:-mt-16 relative">
+                  {/* Store Logo & Info */}
+                  <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 mb-6 sm:mb-8">
+                    {store?.logo ? (
+                      <img src={store.logo} alt="Store Logo" className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border-4 border-background shadow-lg" />
+                    ) : (
+                      <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-primary to-indigo-600 rounded-2xl flex items-center justify-center border-4 border-background shadow-lg">
+                        <Store className="w-10 h-10 sm:w-12 sm:h-12 text-white" />
                       </div>
+                    )}
+                    <div className="text-center sm:text-left">
+                      <h1 className="text-xl sm:text-3xl font-bold mb-1">{store?.name ?? "My Store"}</h1>
+                      <p className="text-sm sm:text-base text-muted-foreground">{store?.description ?? "Premium products at affordable prices"}</p>
                     </div>
-                  ))}
+                  </div>
+
+                  {/* Products Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                    {products.length > 0 ? products.slice(0,6).map((p, i) => (
+                      <div key={i} className="p-3 sm:p-4 glass rounded-xl">
+                        <img src={p.image} alt={p.name} className="w-full h-24 sm:h-32 object-cover rounded-lg mb-3 sm:mb-4" />
+                        <h4 className="font-medium mb-2 truncate text-sm sm:text-base">{p.name}</h4>
+                        <div className="text-base sm:text-lg font-bold text-primary mb-3 sm:mb-4">{fmt(p.price)}</div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button className="py-2 bg-green-500 text-white rounded-lg text-xs font-medium">Order</button>
+                          <button className="py-2 bg-primary text-white rounded-lg text-xs font-medium">Pay Now</button>
+                        </div>
+                      </div>
+                    )) : (
+                      <div className="col-span-full text-center py-12 text-muted-foreground">
+                        <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <p>No products yet. Add your first product to see it here.</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </motion.div>

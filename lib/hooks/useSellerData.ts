@@ -1,13 +1,20 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 
+// Email to store mapping for demo purposes
+const EMAIL_STORE_MAP: Record<string, { slug: string; userId: string }> = {
+  "seller@swiftshopy.com": { slug: "nakato-styles", userId: "user_seller_1" },
+  "mugisha@swiftshopy.com": { slug: "mugisha-electronics", userId: "user_seller_2" },
+  "apio@swiftshopy.com": { slug: "apios-kitchen", userId: "user_seller_3" },
+};
+
 export const useSellerData = (userEmail?: string | null) => {
-  // Get all stores and find the one owned by this user
-  const allStores = useQuery(api.stores.list);
-  
-  // Find store by email (matching against phone or slug that contains email pattern)
-  // For demo, we use the first store
-  const store = allStores && allStores.length > 0 ? allStores[0] : null;
+  // Get store by email
+  const store = useQuery(
+    api.stores.getByEmail,
+    userEmail ? { email: userEmail } : "skip"
+  );
+
   const storeId = store?._id;
 
   const products = useQuery(
@@ -25,7 +32,7 @@ export const useSellerData = (userEmail?: string | null) => {
     storeId: storeId ?? null,
     products: products ?? [],
     orders: orders ?? [],
-    isLoading: allStores === undefined || products === undefined || orders === undefined,
+    isLoading: store === undefined || products === undefined || orders === undefined,
   };
 };
 

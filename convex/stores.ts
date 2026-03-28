@@ -16,6 +16,17 @@ export const getByUser = query({
   },
 });
 
+export const getByEmail = query({
+  args: { email: v.string() },
+  handler: async (ctx, { email }) => {
+    const users = await ctx.db.query("users").collect();
+    const user = users.find(u => u.email === email);
+    if (!user) return null;
+    const stores = await ctx.db.query("stores").collect();
+    return stores.find(s => s.userId === user._id) ?? null;
+  },
+});
+
 export const getById = query({
   args: { id: v.id("stores") },
   handler: async (ctx, { id }) => ctx.db.get(id),

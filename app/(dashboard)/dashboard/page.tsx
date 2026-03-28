@@ -525,7 +525,7 @@ export default function SellerDashboardPage() {
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                       onClick={() => setShowAddProduct(false)} className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
                     <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
-                      className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] sm:w-full sm:max-w-lg glass rounded-2xl z-50 p-4 sm:p-6 overflow-y-auto sm:max-h-[90vh] max-h-[calc(100vh-2rem)]">
+                      className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-1rem)] sm:w-full sm:max-w-lg glass rounded-2xl z-50 p-4 sm:p-6 overflow-y-auto sm:max-h-[90vh] max-h-[calc(100vh-1rem)]">
                       <div className="flex justify-between items-center mb-4 sm:mb-6">
                         <h3 className="text-lg sm:text-xl font-bold">Add New Product</h3>
                         <button onClick={() => setShowAddProduct(false)} className="p-2 hover:bg-accent/50 rounded-lg"><X className="w-5 h-5" /></button>
@@ -1586,7 +1586,7 @@ export default function SellerDashboardPage() {
                   onClick={() => setShowLinkModal(false)} className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
                 <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                  className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] sm:w-full sm:max-w-md glass rounded-2xl z-50 p-4 sm:p-6 overflow-y-auto max-h-[calc(100vh-2rem)]">
+                  className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-1rem)] sm:w-full sm:max-w-md glass rounded-2xl z-50 p-4 sm:p-6 overflow-y-auto max-h-[calc(100vh-1rem)]">
                   <div className="flex justify-between items-center mb-4 sm:mb-6">
                     <h3 className="text-lg sm:text-xl font-bold">Link WhatsApp Business</h3>
                     <button onClick={() => setShowLinkModal(false)} className="p-2 hover:bg-accent/50 rounded-lg transition-colors">
@@ -1628,7 +1628,7 @@ export default function SellerDashboardPage() {
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowShareModal(false)} className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] sm:w-full sm:max-w-md glass rounded-2xl z-50 p-4 sm:p-6 overflow-y-auto max-h-[calc(100vh-2rem)]">
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-1rem)] sm:w-full sm:max-w-md glass rounded-2xl z-50 p-4 sm:p-6 overflow-y-auto max-h-[calc(100vh-1rem)]">
               <div className="flex justify-between items-center mb-4 sm:mb-6">
                 <h3 className="text-lg sm:text-xl font-bold">Share Your Store</h3>
                 <button onClick={() => setShowShareModal(false)} className="p-2 hover:bg-accent/50 rounded-lg transition-colors"><X className="w-5 h-5" /></button>
@@ -1659,7 +1659,7 @@ export default function SellerDashboardPage() {
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowStorePreview(false)} className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-1rem)] sm:w-full sm:max-w-3xl sm:max-h-[90vh] max-h-[calc(100vh-1rem)] glass rounded-2xl z-50 overflow-hidden">
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-0.5rem)] sm:w-full sm:max-w-3xl sm:max-h-[95vh] max-h-[calc(100vh-0.5rem)] glass rounded-2xl z-50 overflow-hidden">
               <div className="p-4 border-b border-border/50 flex justify-between items-center bg-accent/30">
                 <div className="flex items-center gap-3">
                   <Eye className="w-5 h-5 text-primary" />

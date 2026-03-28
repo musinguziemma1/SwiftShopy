@@ -224,32 +224,41 @@ export default function SellerDashboardPage() {
     <div className="min-h-screen bg-background">
       {/* Top Nav */}
       <nav className="fixed top-0 w-full glass border-b border-border/50 z-50">
-        <div className="px-6">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4">
-              <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 rounded-lg hover:bg-accent/50 transition-colors">
-                <Menu className="w-5 h-5" />
+        <div className="px-4 sm:px-6">
+          <div className="flex items-center justify-between h-14 sm:h-16">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <button onClick={() => {
+                if (window.innerWidth < 768) {
+                  setMobileMenuOpen(!mobileMenuOpen);
+                } else {
+                  setSidebarOpen(!sidebarOpen);
+                }
+              }} className="p-2 rounded-lg hover:bg-accent/50 transition-colors">
+                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
               <Link href="/" className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-primary to-indigo-600 rounded-lg flex items-center justify-center shadow-lg">
-                  <Zap className="w-4 h-4 text-white" />
+                <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-primary to-indigo-600 rounded-lg flex items-center justify-center shadow-lg">
+                  <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
                 </div>
-                <span className="text-lg font-bold text-gradient">SwiftShopy</span>
+                <span className="text-base sm:text-lg font-bold text-gradient hidden xs:inline">SwiftShopy</span>
               </Link>
             </div>
 
-            <div className="flex-1 max-w-xl mx-6 relative hidden md:block">
+            <div className="flex-1 max-w-xl mx-2 sm:mx-6 relative hidden md:block">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input type="text" placeholder="Search products, orders..." className="w-full pl-10 pr-4 py-2 glass rounded-lg border border-border/50 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 sm:gap-3">
+              <button className="p-2 rounded-lg hover:bg-accent/50 transition-colors md:hidden">
+                <Search className="w-5 h-5" />
+              </button>
               <ThemeToggle />
               <NotificationsCenter />
-              <button onClick={() => signOut({ callbackUrl: "/login" })} className="flex items-center gap-2 px-3 py-2 glass rounded-lg hover:bg-accent/50 transition-all text-sm text-red-500 hover:text-red-600">
+              <button onClick={() => signOut({ callbackUrl: "/login" })} className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 glass rounded-lg hover:bg-accent/50 transition-all text-sm text-red-500 hover:text-red-600">
                 <LogOut className="w-4 h-4" /> <span className="hidden sm:inline">Sign Out</span>
               </button>
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center text-sm font-bold text-white shadow-lg">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center text-xs sm:text-sm font-bold text-white shadow-lg">
                 {session?.user?.name?.slice(0, 2).toUpperCase() || "US"}
               </div>
             </div>
@@ -257,35 +266,42 @@ export default function SellerDashboardPage() {
         </div>
       </nav>
 
+      {/* Mobile Sidebar Overlay */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={() => setMobileMenuOpen(false)} />
+      )}
+
       {/* Sidebar */}
-      <aside className={`fixed top-16 left-0 h-[calc(100vh-4rem)] glass border-r border-border/50 transition-all duration-300 z-40 overflow-y-auto ${sidebarOpen ? "w-64" : "w-20"}`}>
+      <aside className={`fixed top-14 sm:top-16 left-0 h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] glass border-r border-border/50 transition-all duration-300 z-40 overflow-y-auto ${
+        mobileMenuOpen ? "w-64 translate-x-0" : sidebarOpen ? "w-64 hidden md:block" : "w-20 hidden md:block"
+      } ${mobileMenuOpen ? "block" : ""}`}>
         <div className="p-4">
           {navItems.map((item) => (
-            <button key={item.id} onClick={() => setActiveTab(item.id)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl mb-2 transition-all ${
+            <button key={item.id} onClick={() => { setActiveTab(item.id); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl mb-2 transition-all ${
               activeTab === item.id
                 ? "bg-gradient-to-r from-primary to-indigo-600 text-primary-foreground shadow-lg"
                 : "hover:bg-accent/50 text-foreground"
             }`}>
               {item.icon}
-              {sidebarOpen && <span className="text-sm font-medium">{item.label}</span>}
+              {(sidebarOpen || mobileMenuOpen) && <span className="text-sm font-medium">{item.label}</span>}
             </button>
           ))}
           <div className="border-t border-border/50 mt-4 pt-4">
-            <button onClick={() => setActiveTab("settings")} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+            <button onClick={() => { setActiveTab("settings"); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
               activeTab === "settings"
                 ? "bg-gradient-to-r from-primary to-indigo-600 text-primary-foreground shadow-lg"
                 : "hover:bg-accent/50 text-foreground"
             }`}>
               <Settings className="w-5 h-5" />
-              {sidebarOpen && <span className="text-sm font-medium">Settings</span>}
+              {(sidebarOpen || mobileMenuOpen) && <span className="text-sm font-medium">Settings</span>}
             </button>
           </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className={`pt-16 transition-all duration-300 ${sidebarOpen ? "ml-64" : "ml-20"}`}>
-        <div className="p-6">
+      <main className={`pt-14 sm:pt-16 transition-all duration-300 ${mobileMenuOpen ? "ml-0" : sidebarOpen ? "ml-0 md:ml-64" : "ml-0 md:ml-20"}`}>
+        <div className="p-4 sm:p-6">
 
           {/* Quick Actions Bar */}
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
@@ -508,13 +524,13 @@ export default function SellerDashboardPage() {
           {/* Products Tab */}
           {activeTab === "products" && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-              <div className="flex justify-between items-center mb-8">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
                 <div>
-                  <h1 className="text-2xl font-bold mb-1">Products</h1>
-                  <p className="text-muted-foreground">Manage your product catalog</p>
+                  <h1 className="text-xl sm:text-2xl font-bold mb-1">Products</h1>
+                  <p className="text-sm sm:text-base text-muted-foreground">Manage your product catalog</p>
                 </div>
                 <button onClick={() => setShowAddProduct(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-indigo-600 text-white rounded-lg font-medium hover:scale-105 transition-all shadow-lg">
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-indigo-600 text-white rounded-lg font-medium hover:scale-105 transition-all shadow-lg text-sm sm:text-base w-full sm:w-auto justify-center">
                   <Plus className="w-4 h-4" /> Add Product
                 </button>
               </div>
@@ -579,37 +595,37 @@ export default function SellerDashboardPage() {
               </AnimatePresence>
 
               {/* Inventory Alerts - Dynamic based on products */}
-              <div className="grid grid-cols-3 gap-4 mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
                 {[
                   { label: "Low Stock", count: products.filter(p => p.stock > 0 && p.stock <= 5).length, desc: "Products below 5 units", color: "border-amber-500/30 bg-amber-500/10", icon: "text-amber-500" },
                   { label: "Out of Stock", count: products.filter(p => p.stock === 0).length, desc: "Products unavailable", color: "border-red-500/30 bg-red-500/10", icon: "text-red-500" },
                   { label: "Well Stocked", count: products.filter(p => p.stock > 5).length, desc: "Products in good stock", color: "border-green-500/30 bg-green-500/10", icon: "text-green-500" },
                 ].map((a, i) => (
                   <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-                    className={`p-4 rounded-xl border-2 ${a.color} cursor-pointer`}>
+                    className={`p-3 sm:p-4 rounded-xl border-2 ${a.color} cursor-pointer`}>
                     <div className="flex items-center gap-2 mb-2">
-                      <AlertCircle className={`w-5 h-5 ${a.icon}`} />
-                      <span className="font-semibold">{a.label}</span>
+                      <AlertCircle className={`w-4 h-4 sm:w-5 sm:h-5 ${a.icon}`} />
+                      <span className="font-semibold text-sm sm:text-base">{a.label}</span>
                     </div>
-                    <div className="text-2xl font-bold mb-1">{a.count}</div>
-                    <p className="text-sm text-muted-foreground">{a.desc}</p>
+                    <div className="text-xl sm:text-2xl font-bold mb-1">{a.count}</div>
+                    <p className="text-xs sm:text-sm text-muted-foreground">{a.desc}</p>
                   </motion.div>
                 ))}
               </div>
 
-              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 {products.slice((productsPage - 1) * itemsPerPage, productsPage * itemsPerPage).map((product, i) => (
                   <motion.div key={product.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
                     whileHover={{ scale: 1.02, y: -5 }}
-                    className="p-4 glass rounded-xl cursor-pointer">
-                    <div className="relative mb-4">
-                      <img src={product.image} alt={product.name} className="w-full h-48 object-cover rounded-lg" />
+                    className="p-3 sm:p-4 glass rounded-xl cursor-pointer">
+                    <div className="relative mb-3 sm:mb-4">
+                      <img src={product.image} alt={product.name} className="w-full h-32 sm:h-48 object-cover rounded-lg" />
                     </div>
-                    <h3 className="font-semibold mb-1 truncate">{product.name}</h3>
-                    <p className="text-sm text-muted-foreground mb-3">{product.category}</p>
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="text-lg font-bold">{fmt(product.price)}</span>
-                      <span className="text-sm text-muted-foreground">Stock: {product.stock}</span>
+                    <h3 className="font-semibold mb-1 truncate text-sm sm:text-base">{product.name}</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">{product.category}</p>
+                    <div className="flex justify-between items-center mb-2 sm:mb-3">
+                      <span className="text-base sm:text-lg font-bold">{fmt(product.price)}</span>
+                      <span className="text-xs sm:text-sm text-muted-foreground">Stock: {product.stock}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">Sales: {product.sales}</span>
@@ -663,32 +679,32 @@ export default function SellerDashboardPage() {
               </div>
 
               {/* Order Stats */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
                 {[
                   { label: "Pending", count: orders.filter(o => o.status === "pending").length, color: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" },
                   { label: "Paid", count: orders.filter(o => o.status === "paid").length, color: "bg-green-500/10 text-green-500 border-green-500/20" },
                   { label: "Failed", count: orders.filter(o => o.status === "failed").length, color: "bg-red-500/10 text-red-500 border-red-500/20" },
                   { label: "Total", count: orders.length, color: "bg-primary/10 text-primary border-primary/20" },
                 ].map((s, i) => (
-                  <div key={i} className={`p-4 rounded-xl border ${s.color}`}>
-                    <div className="text-2xl font-bold">{s.count}</div>
-                    <div className="text-sm">{s.label}</div>
+                  <div key={i} className={`p-3 sm:p-4 rounded-xl border ${s.color}`}>
+                    <div className="text-xl sm:text-2xl font-bold">{s.count}</div>
+                    <div className="text-xs sm:text-sm">{s.label}</div>
                   </div>
                 ))}
               </div>
 
-              <div className="glass rounded-xl p-6">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                  <div className="flex gap-2 flex-wrap">
-                    <button className="flex items-center gap-2 px-4 py-2 glass rounded-lg hover:bg-accent/50 transition-all text-sm">
-                      <Filter className="w-4 h-4" /> Filter
+              <div className="glass rounded-xl p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+                  <div className="flex gap-2 flex-wrap w-full sm:w-auto">
+                    <button className="flex items-center gap-2 px-3 sm:px-4 py-2 glass rounded-lg hover:bg-accent/50 transition-all text-xs sm:text-sm flex-1 sm:flex-none justify-center">
+                      <Filter className="w-3 h-3 sm:w-4 sm:h-4" /> Filter
                     </button>
-                    <button className="flex items-center gap-2 px-4 py-2 glass rounded-lg hover:bg-accent/50 transition-all text-sm">
-                      <Calendar className="w-4 h-4" /> Date Range
+                    <button className="flex items-center gap-2 px-3 sm:px-4 py-2 glass rounded-lg hover:bg-accent/50 transition-all text-xs sm:text-sm flex-1 sm:flex-none justify-center">
+                      <Calendar className="w-3 h-3 sm:w-4 sm:h-4" /> Date
                     </button>
                   </div>
-                  <button className="flex items-center gap-2 px-4 py-2 glass rounded-lg hover:bg-accent/50 transition-all text-sm">
-                    <Download className="w-4 h-4" /> Export
+                  <button className="flex items-center gap-2 px-3 sm:px-4 py-2 glass rounded-lg hover:bg-accent/50 transition-all text-xs sm:text-sm w-full sm:w-auto justify-center">
+                    <Download className="w-3 h-3 sm:w-4 sm:h-4" /> Export
                   </button>
                 </div>
 
@@ -843,19 +859,19 @@ export default function SellerDashboardPage() {
           {/* Analytics Tab */}
           {activeTab === "analytics" && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-              <div className="mb-8">
-                <h1 className="text-2xl font-bold mb-1">Analytics</h1>
-                <p className="text-muted-foreground">Deep insights into your business performance</p>
+              <div className="mb-6 sm:mb-8">
+                <h1 className="text-xl sm:text-2xl font-bold mb-1">Analytics</h1>
+                <p className="text-sm sm:text-base text-muted-foreground">Deep insights into your business performance</p>
               </div>
 
               {/* Financial Overview */}
-              <div className="mb-6 p-6 glass rounded-xl border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-indigo-500/5">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <DollarSign className="w-5 h-5 text-primary" /> Financial Overview
+              <div className="mb-6 p-4 sm:p-6 glass rounded-xl border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-indigo-500/5">
+                <div className="flex justify-between items-center mb-4 sm:mb-6">
+                  <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-primary" /> Financial Overview
                   </h3>
                 </div>
-                <div className="grid md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
                   <div className="space-y-3">
                     {[
                       { label: "Gross Revenue", value: fmt(45_230_000), color: "text-foreground" },
@@ -916,9 +932,9 @@ export default function SellerDashboardPage() {
                 ))}
               </div>
 
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="p-6 glass rounded-xl">
-                  <h3 className="text-lg font-semibold mb-6">Top Selling Products</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                <div className="p-4 sm:p-6 glass rounded-xl">
+                  <h3 className="text-base sm:text-lg font-semibold mb-4 sm:mb-6">Top Selling Products</h3>
                   <div className="space-y-3">
                     {[
                       { name: "Premium Wireless Headphones", sales: 234, revenue: 58_500_000 },
@@ -928,16 +944,16 @@ export default function SellerDashboardPage() {
                     ].map((p, i) => (
                       <div key={i} className="flex justify-between p-3 rounded-xl hover:bg-accent/50 transition-colors cursor-pointer">
                         <div>
-                          <div className="font-medium mb-1">{p.name}</div>
-                          <div className="text-sm text-muted-foreground">{p.sales} units sold</div>
+                          <div className="font-medium mb-1 text-sm sm:text-base truncate max-w-[180px] sm:max-w-none">{p.name}</div>
+                          <div className="text-xs sm:text-sm text-muted-foreground">{p.sales} units sold</div>
                         </div>
-                        <div className="font-semibold">{fmt(p.revenue)}</div>
+                        <div className="font-semibold text-sm sm:text-base">{fmt(p.revenue)}</div>
                       </div>
                     ))}
                   </div>
                 </div>
-                <div className="p-6 glass rounded-xl">
-                  <h3 className="text-lg font-semibold mb-6">Traffic Sources</h3>
+                <div className="p-4 sm:p-6 glass rounded-xl">
+                  <h3 className="text-base sm:text-lg font-semibold mb-4 sm:mb-6">Traffic Sources</h3>
                   <div className="space-y-4">
                     {[
                       { source: "WhatsApp", pct: 45, color: "bg-green-500" },
@@ -971,36 +987,36 @@ export default function SellerDashboardPage() {
               </div>
 
               {/* WhatsApp Stats */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
                 {[
-                  { label: "Messages Today", value: "142", change: "+23%", icon: <MessageSquare className="w-5 h-5" />, color: "text-green-500", bg: "bg-green-500/10" },
-                  { label: "Active Chats", value: "28", change: "+5", icon: <Users className="w-5 h-5" />, color: "text-blue-500", bg: "bg-blue-500/10" },
-                  { label: "Response Rate", value: "94%", change: "+2%", icon: <Check className="w-5 h-5" />, color: "text-purple-500", bg: "bg-purple-500/10" },
-                  { label: "Avg Response", value: "2m", change: "-30s", icon: <Clock className="w-5 h-5" />, color: "text-orange-500", bg: "bg-orange-500/10" },
+                  { label: "Messages Today", value: "142", change: "+23%", icon: <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />, color: "text-green-500", bg: "bg-green-500/10" },
+                  { label: "Active Chats", value: "28", change: "+5", icon: <Users className="w-4 h-4 sm:w-5 sm:h-5" />, color: "text-blue-500", bg: "bg-blue-500/10" },
+                  { label: "Response Rate", value: "94%", change: "+2%", icon: <Check className="w-4 h-4 sm:w-5 sm:h-5" />, color: "text-purple-500", bg: "bg-purple-500/10" },
+                  { label: "Avg Response", value: "2m", change: "-30s", icon: <Clock className="w-4 h-4 sm:w-5 sm:h-5" />, color: "text-orange-500", bg: "bg-orange-500/10" },
                 ].map((stat, i) => (
                   <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-                    className="p-4 glass rounded-xl">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className={`w-10 h-10 rounded-lg ${stat.bg} ${stat.color} flex items-center justify-center`}>
+                    className="p-3 sm:p-4 glass rounded-xl">
+                    <div className="flex items-center justify-between mb-2 sm:mb-3">
+                      <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg ${stat.bg} ${stat.color} flex items-center justify-center`}>
                         {stat.icon}
                       </div>
                       <span className="text-xs font-medium text-green-500">{stat.change}</span>
                     </div>
-                    <div className="text-2xl font-bold">{stat.value}</div>
-                    <div className="text-sm text-muted-foreground">{stat.label}</div>
+                    <div className="text-xl sm:text-2xl font-bold">{stat.value}</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">{stat.label}</div>
                   </motion.div>
                 ))}
               </div>
 
               {/* Sub-tabs */}
-              <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+              <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
                 {[
                   { id: "conversations", label: "Conversations" },
                   { id: "quick-actions", label: "Quick Actions" },
                   { id: "catalog", label: "Catalog Link" },
                 ].map((tab) => (
                   <button key={tab.id} onClick={() => setWhatsappSubTab(tab.id)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+                    className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-all ${
                       whatsappSubTab === tab.id
                         ? "bg-green-500 text-white shadow-lg"
                         : "glass hover:bg-accent/50"
@@ -1204,18 +1220,18 @@ export default function SellerDashboardPage() {
           {activeTab === "settings" && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
               <div className="mb-6">
-                <h1 className="text-2xl font-bold mb-1">Settings</h1>
-                <p className="text-muted-foreground">Manage your store information and payment methods</p>
+                <h1 className="text-xl sm:text-2xl font-bold mb-1">Settings</h1>
+                <p className="text-sm sm:text-base text-muted-foreground">Manage your store information and payment methods</p>
               </div>
 
               {/* Settings Sub-tabs */}
-              <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+              <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
                 {[
                   { id: "store", label: "Store Info", icon: <Store className="w-4 h-4" /> },
                   { id: "payment", label: "Payment Methods", icon: <CreditCard className="w-4 h-4" /> },
                 ].map((tab) => (
                   <button key={tab.id} onClick={() => setSettingsSubTab(tab.id)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+                    className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-all ${
                       settingsSubTab === tab.id
                         ? "bg-gradient-to-r from-primary to-indigo-600 text-white shadow-lg"
                         : "glass hover:bg-accent/50"
@@ -1227,13 +1243,13 @@ export default function SellerDashboardPage() {
 
               {/* Store Info */}
               {settingsSubTab === "store" && (
-                <div className="grid lg:grid-cols-3 gap-6">
-                  <div className="lg:col-span-2 space-y-6">
-                    <div className="p-6 glass rounded-xl">
-                      <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
-                        <Store className="w-5 h-5 text-primary" /> Store Information
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+                  <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+                    <div className="p-4 sm:p-6 glass rounded-xl">
+                      <h3 className="text-base sm:text-lg font-semibold mb-4 sm:mb-6 flex items-center gap-2">
+                        <Store className="w-4 h-4 sm:w-5 sm:h-5 text-primary" /> Store Information
                       </h3>
-                      <div className="grid sm:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <div>
                           <label className="block text-sm font-medium mb-2">Store Name</label>
                           <input type="text" value={storeForm.name}

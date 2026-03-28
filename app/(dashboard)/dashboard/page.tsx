@@ -17,6 +17,7 @@ import {
   ChevronRight, Store, CreditCard, Upload, Save, Shield, Lock as LockIcon
 } from "lucide-react";
 import { useSellerData, useStoreMutations, useProductMutations, useOrderMutations } from "@/lib/hooks/useSellerData";
+import { useWhatsAppChat, useWhatsAppMessages } from "@/lib/hooks/useWhatsAppChat";
 
 interface Product {
   id: string; name: string; price: number; stock: number; sales: number;
@@ -184,7 +185,9 @@ export default function SellerDashboardPage() {
     }
   };
 
-  // Load store data into form
+  // Get WhatsApp conversations from Convex
+  const { conversations, sendMessage } = useWhatsAppChat(storeId);
+  const { messages } = useWhatsAppMessages(selectedChat);
   useEffect(() => {
     if (store) {
       setStoreForm({
@@ -1039,86 +1042,119 @@ export default function SellerDashboardPage() {
                       </div>
                     </div>
                     <div className="flex-1 overflow-y-auto">
-                      {[
-                        { id: "1", name: "Sarah Nakato", msg: "Is the Ankara dress available in blue?", time: "2m", unread: 2, avatar: "SN", online: true },
-                        { id: "2", name: "David Okello", msg: "Payment confirmed. When will it arrive?", time: "15m", unread: 0, avatar: "DO", online: true },
-                        { id: "3", name: "Grace Nambi", msg: "Thank you! Got my order 🎉", time: "1h", unread: 0, avatar: "GN", online: false },
-                        { id: "4", name: "John Mwesigwa", msg: "Can I get a discount for 3 items?", time: "2h", unread: 1, avatar: "JM", online: false },
-                        { id: "5", name: "Aisha Nambi", msg: "I want to order the leather bag", time: "3h", unread: 0, avatar: "AN", online: true },
-                      ].map((chat) => (
-                        <button key={chat.id} onClick={() => setSelectedChat(chat.id)}
-                          className={`w-full flex items-center gap-3 p-4 hover:bg-accent/50 transition-colors border-b border-border/30 text-left ${
-                            selectedChat === chat.id ? "bg-accent/50" : ""
-                          }`}>
-                          <div className="relative">
-                            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white text-sm font-bold">
-                              {chat.avatar}
+                      {conversations.length === 0 ? (
+                        <div className="p-8 text-center text-muted-foreground">
+                          <MessageSquare className="w-8 h-8 mx-auto mb-3 opacity-50" />
+                          <p className="text-sm">No conversations yet</p>
+                          <p className="text-xs mt-1">Connect WhatsApp to start receiving messages</p>
+                        </div>
+                      ) : conversations.map((conv: any) => {
+                        const contact = conv.contact
+                        const name = contact?.name ?? contact?.phone ?? "Unknown"
+                        const initials = name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()
+                        return (
+                          <button key={conv._id} onClick={() => setSelectedChat(conv._id)}
+                            className={`w-full flex items-center gap-3 p-4 hover:bg-accent/50 transition-colors border-b border-border/30 text-left ${
+                              selectedChat === conv._id ? "bg-accent/50" : ""
+                            }`}>
+                            <div className="relative">
+                              <div className="w-11 h-11 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white text-sm font-bold">
+                                {initials}
+                              </div>
                             </div>
-                            {chat.online && <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-background" />}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="font-medium text-sm">{chat.name}</span>
-                              <span className="text-xs text-muted-foreground">{chat.time}</span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="font-medium text-sm">{name}</span>
+                                <span className="text-xs text-muted-foreground">{new Date(conv.lastMessageAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                              </div>
+                              <p className="text-sm text-muted-foreground truncate">{conv.lastMessagePreview || "No messages"}</p>
                             </div>
-                            <p className="text-sm text-muted-foreground truncate">{chat.msg}</p>
-                          </div>
-                          {chat.unread > 0 && (
-                            <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-xs text-white font-bold">
-                              {chat.unread}
-                            </div>
-                          )}
-                        </button>
-                      ))}
+                            {conv.unreadCount > 0 && (
+                              <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-xs text-white font-bold">
+                                {conv.unreadCount}
+                              </div>
+                            )}
+                          </button>
+                        )
+                      })}
                     </div>
                   </div>
 
                   {/* Chat Window */}
                   <div className="lg:col-span-2 glass rounded-xl overflow-hidden flex flex-col">
-                    <div className="p-4 border-b border-border/50 flex items-center justify-between bg-green-500/5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white text-sm font-bold">SN</div>
-                        <div>
-                          <h3 className="font-semibold text-sm">Sarah Nakato</h3>
-                          <p className="text-xs text-green-500">Online</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button className="p-2 hover:bg-accent/50 rounded-lg transition-colors"><Phone className="w-4 h-4" /></button>
-                        <button className="p-2 hover:bg-accent/50 rounded-lg transition-colors"><Video className="w-4 h-4" /></button>
-                        <button className="p-2 hover:bg-accent/50 rounded-lg transition-colors"><MoreHorizontal className="w-4 h-4" /></button>
-                      </div>
-                    </div>
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                      {[
-                        { from: "customer", text: "Hi! I saw your Ankara dress on the catalog", time: "10:30 AM" },
-                        { from: "customer", text: "Is the Ankara dress available in blue?", time: "10:31 AM" },
-                        { from: "me", text: "Hello Sarah! Yes, we have the Ankara dress in blue. Would you like to see photos?", time: "10:32 AM" },
-                        { from: "me", text: "The price is UGX 85,000 and we have sizes S, M, and L available", time: "10:32 AM" },
-                        { from: "customer", text: "Yes please! Can I see the blue one? And do you deliver to Ntinda?", time: "10:33 AM" },
-                      ].map((msg, i) => (
-                        <div key={i} className={`flex ${msg.from === "me" ? "justify-end" : "justify-start"}`}>
-                          <div className={`max-w-[70%] p-3 rounded-2xl ${
-                            msg.from === "me"
-                              ? "bg-green-500 text-white rounded-br-sm"
-                              : "glass rounded-bl-sm"
-                          }`}>
-                            <p className="text-sm">{msg.text}</p>
-                            <p className={`text-xs mt-1 ${msg.from === "me" ? "text-green-100" : "text-muted-foreground"}`}>{msg.time}</p>
+                    {selectedChat ? (
+                      <>
+                        <div className="p-4 border-b border-border/50 flex items-center justify-between bg-green-500/5">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white text-sm font-bold">
+                              {(conversations as any[])?.find((c: any) => c._id === selectedChat)?.contact?.name?.split(" ").map((n: string) => n[0]).join("").slice(0, 2) ?? "?"}
+                            </div>
+                            <div>
+                              <h3 className="font-semibold text-sm">{(conversations as any[])?.find((c: any) => c._id === selectedChat)?.contact?.name ?? "Chat"}</h3>
+                              <p className="text-xs text-muted-foreground">WhatsApp</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button className="p-2 hover:bg-accent/50 rounded-lg transition-colors"><Phone className="w-4 h-4" /></button>
+                            <button className="p-2 hover:bg-accent/50 rounded-lg transition-colors"><MoreHorizontal className="w-4 h-4" /></button>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                    <div className="p-4 border-t border-border/50 flex items-center gap-3">
-                      <button className="p-2 hover:bg-accent/50 rounded-lg transition-colors"><Paperclip className="w-5 h-5 text-muted-foreground" /></button>
-                      <button className="p-2 hover:bg-accent/50 rounded-lg transition-colors"><ImageIcon className="w-5 h-5 text-muted-foreground" /></button>
-                      <input type="text" value={chatMessage} onChange={(e) => setChatMessage(e.target.value)}
-                        placeholder="Type a message..."
-                        className="flex-1 px-4 py-2.5 bg-accent/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50" />
-                      <button className="p-2.5 bg-green-500 hover:bg-green-600 text-white rounded-xl transition-colors">
-                        <Send className="w-5 h-5" />
-                      </button>
-                    </div>
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                          {messages.length === 0 ? (
+                            <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+                              No messages yet. Start the conversation!
+                            </div>
+                          ) : messages.map((msg: any) => (
+                            <div key={msg._id} className={`flex ${msg.direction === "outbound" ? "justify-end" : "justify-start"}`}>
+                              <div className={`max-w-[70%] p-3 rounded-2xl ${
+                                msg.direction === "outbound"
+                                  ? "bg-green-500 text-white rounded-br-sm"
+                                  : "glass rounded-bl-sm"
+                              }`}>
+                                <p className="text-sm">{msg.content}</p>
+                                <p className={`text-xs mt-1 ${msg.direction === "outbound" ? "text-green-100" : "text-muted-foreground"}`}>
+                                  {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="p-4 border-t border-border/50 flex items-center gap-3">
+                          <button className="p-2 hover:bg-accent/50 rounded-lg transition-colors"><Paperclip className="w-5 h-5 text-muted-foreground" /></button>
+                          <button className="p-2 hover:bg-accent/50 rounded-lg transition-colors"><ImageIcon className="w-5 h-5 text-muted-foreground" /></button>
+                          <input type="text" value={chatMessage} onChange={(e) => setChatMessage(e.target.value)}
+                            onKeyDown={async (e) => {
+                              if (e.key === "Enter" && chatMessage.trim() && selectedChat) {
+                                const conv = (conversations as any[])?.find((c: any) => c._id === selectedChat)
+                                if (conv) {
+                                  await sendMessage(selectedChat, conv.contactId, chatMessage)
+                                  setChatMessage("")
+                                }
+                              }
+                            }}
+                            placeholder="Type a message..."
+                            className="flex-1 px-4 py-2.5 bg-accent/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50" />
+                          <button onClick={async () => {
+                            if (chatMessage.trim() && selectedChat) {
+                              const conv = (conversations as any[])?.find((c: any) => c._id === selectedChat)
+                              if (conv) {
+                                await sendMessage(selectedChat, conv.contactId, chatMessage)
+                                setChatMessage("")
+                              }
+                            }
+                          }} className="p-2.5 bg-green-500 hover:bg-green-600 text-white rounded-xl transition-colors">
+                            <Send className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="h-full flex items-center justify-center text-muted-foreground">
+                        <div className="text-center">
+                          <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                          <p className="text-sm">Select a conversation to start chatting</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

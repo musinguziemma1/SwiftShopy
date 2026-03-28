@@ -328,4 +328,32 @@ export default defineSchema({
     .index("by_order", ["orderId"])
     .index("by_status", ["status"])
     .index("by_date", ["createdAt"]),
+
+  // ─── Notifications ─────────────────────────────────────────
+  notifications: defineTable({
+    userId: v.optional(v.string()),
+    storeId: v.optional(v.id("stores")),
+    type: v.union(
+      v.literal("order_new"),
+      v.literal("order_paid"),
+      v.literal("order_failed"),
+      v.literal("payment_received"),
+      v.literal("product_low_stock"),
+      v.literal("product_out_of_stock"),
+      v.literal("whatsapp_message"),
+      v.literal("whatsapp_connected"),
+      v.literal("system_alert"),
+      v.literal("sla_breach")
+    ),
+    title: v.string(),
+    message: v.string(),
+    isRead: v.boolean(),
+    actionUrl: v.optional(v.string()),
+    metadata: v.optional(v.any()),
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_store", ["storeId"])
+    .index("by_unread", ["isRead"])
+    .index("by_date", ["createdAt"]),
 });

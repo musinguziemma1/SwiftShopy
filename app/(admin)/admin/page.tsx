@@ -2,6 +2,7 @@
 
 import React, { useState } from "react"
 import Link from "next/link"
+import { signOut } from "next-auth/react"
 import { motion } from "framer-motion"
 import NotificationsCenter from "@/components/ui/notifications-center"
 import {
@@ -47,6 +48,7 @@ import {
   Copy,
   QrCode,
 } from "lucide-react"
+import { useAdminData, useAdminMutations } from "@/lib/hooks/useAdminData"
 import { useAdminDashboardData } from "@/lib/hooks/useAdminDashboardData"
 
 // Types
@@ -143,104 +145,70 @@ function AdminDashboard() {
   const saveSettings = async () => {
     setSettingsSaving(true)
     setSettingsSaved(false)
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1500))
     setSettingsSaving(false)
     setSettingsSaved(true)
     setTimeout(() => setSettingsSaved(false), 3000)
   }
 
-  // Use mock data for admin summary
+  // Get real data from Convex
+  const { sellers: convexSellers, stores, orders, transactions, isLoading } = useAdminData()
+  const { toggleUserActive, updateOrderStatus } = useAdminMutations()
+
+  // Calculate stats from real data
+  const totalRevenue = orders?.filter(o => o.status === "paid").reduce((sum, o) => sum + o.total, 0) ?? 0
+  const totalSellers = convexSellers?.length ?? 0
+  const totalOrders = orders?.length ?? 0
+  const totalCommission = Math.round(totalRevenue * 0.1)
+
   const stats: AdminStats = {
-    totalRevenue: 450_000_000,
-    totalSellers: 1_234,
-    totalOrders: 15_678,
-    totalCommission: 45_000_000,
+    totalRevenue,
+    totalSellers,
+    totalOrders,
+    totalCommission,
     revenueChange: 18.5,
     sellersChange: 12.3,
     ordersChange: 22.7,
     commissionChange: 15.2,
   }
 
-  const sellers: Seller[] = [
-    {
-      id: "S001",
-      name: "Sarah Nakato",
-      email: "sarah@example.com",
-      storeName: "Nakato Styles",
-      status: "active",
-      revenue: 15_450_000,
-      products: 45,
-      orders: 234,
-      commission: 1_545_000,
-      joinDate: "2024-01-15",
-      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
-    },
-    {
-      id: "S002",
-      name: "David Okello",
-      email: "david@example.com",
-      storeName: "Tech Hub UG",
-      status: "active",
-      revenue: 22_890_000,
-      products: 67,
-      orders: 456,
-      commission: 2_289_000,
-      joinDate: "2023-11-20",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
-    },
-    {
-      id: "S003",
-      name: "Grace Nambi",
-      email: "grace@example.com",
-      storeName: "Grace's Kitchen",
-      status: "active",
-      revenue: 8_100_000,
-      products: 23,
-      orders: 178,
-      commission: 810_000,
-      joinDate: "2024-02-10",
-      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop",
-    },
-    {
-      id: "S004",
-      name: "John Mwesigwa",
-      email: "john@example.com",
-      storeName: "JM Electronics",
-      status: "suspended",
-      revenue: 3_650_000,
-      products: 15,
-      orders: 89,
-      commission: 365_000,
-      joinDate: "2023-12-05",
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop",
-    },
-  ]
+  // Map Convex sellers to display format
+  const sellers: Seller[] = convexSellers?.map(s => ({
+    id: s._id,
+    name: s.name,
+    email: s.email,
+    storeName: s.storeName ?? "No Store",
+    status: s.isActive ? "active" : "inactive",
+    revenue: s.revenue ?? 0,
+    products: s.productCount ?? 0,
+    orders: s.orderCount ?? 0,
+    commission: Math.round((s.revenue ?? 0) * 0.1),
+    joinDate: s.joinDate ? new Date(s.joinDate).toLocaleDateString() : "N/A",
+    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
+  })) ?? []
 
-  const transactions: Transaction[] = [
-    { id: "TXN-001", seller: "Nakato Styles", amount: 450_000, commission: 45_000, type: "sale", status: "completed", date: "2024-01-15" },
-    { id: "TXN-002", seller: "Tech Hub UG", amount: 890_000, commission: 89_000, type: "sale", status: "completed", date: "2024-01-15" },
-    { id: "TXN-003", seller: "Grace's Kitchen", amount: 250_000, commission: 25_000, type: "sale", status: "pending", date: "2024-01-14" },
-    { id: "TXN-004", seller: "JM Electronics", amount: 120_000, commission: 12_000, type: "sale", status: "failed", date: "2024-01-14" },
-  ]
+  // Map Convex transactions to display format
+  const txnList: Transaction[] = transactions?.map(t => ({
+    id: t._id.slice(0, 8),
+    seller: "Store",
+    amount: t.amount,
+    commission: Math.round(t.amount * 0.1),
+    type: "sale",
+    status: t.status === "successful" ? "completed" : t.status,
+    date: new Date(t._creationTime).toLocaleDateString(),
+  })) ?? []
 
   const auditLogs = [
     { id: "AL-001", admin: "Super Admin", action: "seller_approve", target: "Nakato Styles", date: "2024-01-15 14:32" },
     { id: "AL-002", admin: "Support Agent", action: "ticket_resolve", target: "TKT-001", date: "2024-01-15 13:10" },
     { id: "AL-003", admin: "Super Admin", action: "seller_suspend", target: "JM Electronics", date: "2024-01-14 11:45" },
     { id: "AL-004", admin: "Admin", action: "config_update", target: "Commission Rate", date: "2024-01-14 09:20" },
-    { id: "AL-005", admin: "Super Admin", action: "role_update", target: "Support", date: "2024-01-13 16:55" },
-    { id: "AL-006", admin: "Support Agent", action: "ticket_create", target: "TKT-004", date: "2024-01-13 10:30" },
-    { id: "AL-007", admin: "Super Admin", action: "export_data", target: "Transactions", date: "2024-01-12 15:00" },
-    { id: "AL-008", admin: "Admin", action: "seller_approve", target: "Tech Hub UG", date: "2024-01-12 12:15" },
   ]
 
   const scheduledReports = [
     { id: "RPT-001", name: "Daily Revenue Summary", type: "revenue", format: "csv", schedule: "daily", recipients: "admin@swiftshopy.com", active: true },
     { id: "RPT-002", name: "Weekly Seller Performance", type: "sellers", format: "xlsx", schedule: "weekly", recipients: "ops@swiftshopy.com", active: true },
     { id: "RPT-003", name: "Monthly Order Report", type: "orders", format: "pdf", schedule: "monthly", recipients: "finance@swiftshopy.com", active: true },
-    { id: "RPT-004", name: "Transaction Audit", type: "transactions", format: "csv", schedule: "weekly", recipients: "audit@swiftshopy.com", active: false },
-    { id: "RPT-005", name: "Support Ticket Summary", type: "support", format: "json", schedule: "daily", recipients: "support@swiftshopy.com", active: true },
   ]
 
   const breachedTickets = [
@@ -553,7 +521,7 @@ function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {transactions.map((txn, i) => (
+                      {txnList.map((txn, i) => (
                         <motion.tr key={txn.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: i * 0.1 }}
                           className="border-b border-border hover:bg-accent/50 transition-colors">
                           <td className="py-3 px-4 text-sm font-medium">{txn.id}</td>
@@ -750,7 +718,7 @@ function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {transactions.map((txn, i) => (
+                      {txnList.map((txn, i) => (
                         <motion.tr key={txn.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: i * 0.1 }}
                           className="border-b border-border hover:bg-accent/50 transition-colors">
                           <td className="py-3 px-4 text-sm font-medium">{txn.id}</td>

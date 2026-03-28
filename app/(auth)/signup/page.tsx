@@ -8,6 +8,9 @@ import { motion } from "framer-motion";
 import { Zap, User, Mail, Lock, Phone, Eye, EyeOff, ArrowRight, Check, AlertCircle, ShoppingBag, Sparkles } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { BackgroundPaths } from "@/components/ui/background-paths";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import bcrypt from "bcryptjs";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -15,6 +18,7 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const createUser = useMutation(api.users.create);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -25,11 +29,24 @@ export default function SignupPage() {
     e.preventDefault();
     if (form.password !== form.confirmPassword) { setError("Passwords do not match."); return; }
     if (form.password.length < 6) { setError("Password must be at least 6 characters."); return; }
+    if (!form.name || !form.email) { setError("Name and email are required."); return; }
     setLoading(true);
-    // Demo: redirect to login after "signup"
-    await new Promise((r) => setTimeout(r, 1200));
-    setLoading(false);
-    router.push("/login?registered=true");
+    setError("");
+    try {
+      const passwordHash = await bcrypt.hash(form.password, 10);
+      await createUser({
+        name: form.name,
+        email: form.email,
+        passwordHash,
+        role: "seller",
+        phone: form.phone || undefined,
+      });
+      router.push("/login?registered=true");
+    } catch (err: any) {
+      setError(err.message || "Failed to create account. Email may already be registered.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

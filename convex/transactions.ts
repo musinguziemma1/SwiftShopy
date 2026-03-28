@@ -10,10 +10,11 @@ export const create = mutation({
     provider: v.union(v.literal("mtn_momo"), v.literal("airtel_money")),
     providerRef: v.string(),
     externalRef: v.string(),
+    status: v.optional(v.union(v.literal("pending"), v.literal("successful"), v.literal("failed"))),
     customerPhone: v.string(),
     metadata: v.optional(v.any()),
   },
-  handler: async (ctx, args) => ctx.db.insert("transactions", { ...args, status: "pending" }),
+  handler: async (ctx, args) => ctx.db.insert("transactions", { ...args, status: args.status ?? "pending" }),
 });
 
 export const getByExternalRef = query({

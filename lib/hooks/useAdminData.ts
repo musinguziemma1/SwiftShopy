@@ -6,7 +6,6 @@ export const useAdminData = () => {
   const stores = useQuery(api.stores.getAll);
   const orders = useQuery(api.orders.list);
   const transactions = useQuery(api.transactions.list);
-  const products = useQuery(api.products.getByStore, {} as any);
 
   return {
     sellers: sellers ?? [],

@@ -546,4 +546,37 @@ export default defineSchema({
     .index("by_type", ["type"])
     .index("by_active", ["isActive"])
     .index("by_dates", ["startDate", "endDate"]),
+
+  // ─── Email Verification ──────────────────────────────────
+  email_verifications: defineTable({
+    email: v.string(),
+    code: v.string(),
+    type: v.union(v.literal("registration"), v.literal("password_reset"), v.literal("email_change")),
+    userId: v.optional(v.id("users")),
+    isUsed: v.boolean(),
+    expiresAt: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_email", ["email"])
+    .index("by_code", ["code"])
+    .index("by_expires", ["expiresAt"]),
+
+  // ─── Admin Invitations ──────────────────────────────────
+  admin_invitations: defineTable({
+    email: v.string(),
+    invitedBy: v.id("users"),
+    invitedByName: v.string(),
+    role: v.union(v.literal("super_admin"), v.literal("admin"), v.literal("support"), v.literal("analyst")),
+    permissions: v.array(v.string()),
+    token: v.string(),
+    status: v.union(v.literal("pending"), v.literal("accepted"), v.literal("expired"), v.literal("cancelled")),
+    acceptedBy: v.optional(v.id("users")),
+    expiresAt: v.number(),
+    createdAt: v.number(),
+    acceptedAt: v.optional(v.number()),
+  })
+    .index("by_email", ["email"])
+    .index("by_token", ["token"])
+    .index("by_status", ["status"])
+    .index("by_invitedBy", ["invitedBy"]),
 });

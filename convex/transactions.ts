@@ -14,7 +14,45 @@ export const create = mutation({
     customerPhone: v.string(),
     metadata: v.optional(v.any()),
   },
-  handler: async (ctx, args) => ctx.db.insert("transactions", { ...args, status: args.status ?? "pending" }),
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const status = args.status ?? "pending";
+    const transactionId = await ctx.db.insert("transactions", { ...args, status });
+    
+    // Get store and seller info
+    const store = await ctx.db.get(args.storeId);
+    const sellerId = store?.userId;
+    const providerName = args.provider === "mtn_momo" ? "MTN MoMo" : "Airtel Money";
+
+    // Notify admin about new transaction
+    await ctx.db.insert("notifications", {
+      userId: "admin",
+      type: "transaction_new",
+      title: "New Transaction",
+      message: `${providerName} transaction of ${args.currency} ${args.amount.toLocaleString()} - ${status}`,
+      isRead: false,
+      actionUrl: "/admin",
+      metadata: { transactionId, storeId: args.storeId, amount: args.amount, provider: args.provider, status },
+      createdAt: now,
+    });
+
+    // Notify seller about transaction
+    if (sellerId) {
+      await ctx.db.insert("notifications", {
+        userId: sellerId,
+        storeId: args.storeId,
+        type: "transaction_new",
+        title: "Payment Transaction",
+        message: `${providerName} payment of ${args.currency} ${args.amount.toLocaleString()} is ${status}.`,
+        isRead: false,
+        actionUrl: "/dashboard",
+        metadata: { transactionId, amount: args.amount, provider: args.provider, status },
+        createdAt: now,
+      });
+    }
+
+    return transactionId;
+  },
 });
 
 export const getByExternalRef = query({
@@ -50,6 +88,45 @@ export const updateStatus = mutation({
     metadata: v.optional(v.any()),
   },
   handler: async (ctx, { id, status, metadata }) => {
+    const transaction = await ctx.db.get(id);
+    if (!transaction) throw new Error("Transaction not found");
+    
     await ctx.db.patch(id, { status, ...(metadata && { metadata }) });
+    
+    const now = Date.now();
+    const store = await ctx.db.get(transaction.storeId);
+    const sellerId = store?.userId;
+    const providerName = transaction.provider === "mtn_momo" ? "MTN MoMo" : "Airtel Money";
+
+    // Notify admin about status update
+    await ctx.db.insert("notifications", {
+      userId: "admin",
+      type: status === "successful" ? "payment_success" : status === "failed" ? "payment_failed" : "payment_pending",
+      title: `Transaction ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+      message: `${providerName} transaction of ${transaction.currency} ${transaction.amount.toLocaleString()} is now ${status}.`,
+      isRead: false,
+      actionUrl: "/admin",
+      metadata: { transactionId: id, amount: transaction.amount, status, provider: transaction.provider },
+      createdAt: now,
+    });
+
+    // Notify seller about status update
+    if (sellerId) {
+      await ctx.db.insert("notifications", {
+        userId: sellerId,
+        storeId: transaction.storeId,
+        type: status === "successful" ? "payment_success" : status === "failed" ? "payment_failed" : "payment_pending",
+        title: `Payment ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+        message: status === "successful" 
+          ? `Payment of ${transaction.currency} ${transaction.amount.toLocaleString()} received successfully!`
+          : status === "failed"
+          ? `Payment of ${transaction.currency} ${transaction.amount.toLocaleString()} failed. Please retry.`
+          : `Payment of ${transaction.currency} ${transaction.amount.toLocaleString()} is processing.`,
+        isRead: false,
+        actionUrl: "/dashboard",
+        metadata: { transactionId: id, amount: transaction.amount, status },
+        createdAt: now,
+      });
+    }
   },
 });

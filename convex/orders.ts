@@ -71,7 +71,43 @@ export const create = mutation({
     total: v.number(),
     notes: v.optional(v.string()),
   },
-  handler: async (ctx, args) => ctx.db.insert("orders", { ...args, status: "pending", createdAt: Date.now() }),
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const orderId = await ctx.db.insert("orders", { ...args, status: "pending", createdAt: now });
+    
+    // Get store info for seller notification
+    const store = await ctx.db.get(args.storeId);
+    const sellerId = store?.userId;
+
+    // Notify admin about new order
+    await ctx.db.insert("notifications", {
+      userId: "admin",
+      type: "order_new",
+      title: "New Order Received",
+      message: `Order ${args.orderNumber} from ${args.customerName} - UGX ${args.total.toLocaleString()}`,
+      isRead: false,
+      actionUrl: "/admin",
+      metadata: { orderId, storeId: args.storeId, orderNumber: args.orderNumber, total: args.total },
+      createdAt: now,
+    });
+
+    // Notify seller about new order
+    if (sellerId) {
+      await ctx.db.insert("notifications", {
+        userId: sellerId,
+        storeId: args.storeId,
+        type: "order_new",
+        title: "New Order!",
+        message: `${args.customerName} placed an order for UGX ${args.total.toLocaleString()}. Order #${args.orderNumber}`,
+        isRead: false,
+        actionUrl: "/dashboard",
+        metadata: { orderId, customerName: args.customerName, total: args.total },
+        createdAt: now,
+      });
+    }
+
+    return orderId;
+  },
 });
 
 export const updateStatus = mutation({
@@ -79,5 +115,62 @@ export const updateStatus = mutation({
     id: v.id("orders"),
     status: v.union(v.literal("pending"), v.literal("paid"), v.literal("failed"), v.literal("cancelled")),
   },
-  handler: async (ctx, { id, status }) => ctx.db.patch(id, { status }),
+  handler: async (ctx, { id, status }) => {
+    const order = await ctx.db.get(id);
+    if (!order) throw new Error("Order not found");
+    
+    await ctx.db.patch(id, { status });
+    
+    const now = Date.now();
+    const store = await ctx.db.get(order.storeId);
+    const sellerId = store?.userId;
+
+    // Determine notification type and messages
+    let notificationType: "order_paid" | "order_failed" | "order_updated" = "order_updated";
+    let adminMessage = "";
+    let sellerMessage = "";
+
+    if (status === "paid") {
+      notificationType = "order_paid";
+      adminMessage = `Order ${order.orderNumber} has been paid - UGX ${order.total.toLocaleString()}`;
+      sellerMessage = `Payment received for Order #${order.orderNumber}! UGX ${order.total.toLocaleString()}`;
+    } else if (status === "failed") {
+      notificationType = "order_failed";
+      adminMessage = `Order ${order.orderNumber} payment failed`;
+      sellerMessage = `Payment failed for Order #${order.orderNumber}. Customer: ${order.customerName}`;
+    } else if (status === "cancelled") {
+      adminMessage = `Order ${order.orderNumber} has been cancelled`;
+      sellerMessage = `Order #${order.orderNumber} has been cancelled`;
+    } else {
+      adminMessage = `Order ${order.orderNumber} status updated to ${status}`;
+      sellerMessage = `Order #${order.orderNumber} status updated to ${status}`;
+    }
+
+    // Notify admin
+    await ctx.db.insert("notifications", {
+      userId: "admin",
+      type: notificationType,
+      title: `Order ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+      message: adminMessage,
+      isRead: false,
+      actionUrl: "/admin",
+      metadata: { orderId: id, orderNumber: order.orderNumber, status, total: order.total },
+      createdAt: now,
+    });
+
+    // Notify seller
+    if (sellerId) {
+      await ctx.db.insert("notifications", {
+        userId: sellerId,
+        storeId: order.storeId,
+        type: notificationType,
+        title: `Order ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+        message: sellerMessage,
+        isRead: false,
+        actionUrl: "/dashboard",
+        metadata: { orderId: id, orderNumber: order.orderNumber, status, total: order.total },
+        createdAt: now,
+      });
+    }
+  },
 });

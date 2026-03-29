@@ -27,6 +27,8 @@ export const create = mutation({
     const userId = await ctx.db.insert("users", { ...args, isActive: true, joinDate: Date.now() });
     
     const now = Date.now();
+    
+    // Create free subscription
     await ctx.db.insert("subscriptions", {
       userId,
       storeId: undefined,
@@ -39,6 +41,7 @@ export const create = mutation({
       updatedAt: now,
     });
 
+    // Create billing settings with referral code
     const referralCode = "SS-" + Math.random().toString(36).substring(2, 8).toUpperCase();
     await ctx.db.insert("billing_settings", {
       userId,
@@ -48,6 +51,18 @@ export const create = mutation({
       referralCount: 0,
       createdAt: now,
       updatedAt: now,
+    });
+
+    // Notify admin about new user registration
+    await ctx.db.insert("notifications", {
+      userId: "admin",
+      type: "user_registered",
+      title: "New User Registered",
+      message: `${args.name} (${args.email}) just signed up as a ${args.role}.`,
+      isRead: false,
+      actionUrl: "/admin",
+      metadata: { userId, email: args.email, role: args.role },
+      createdAt: now,
     });
 
     return userId;
@@ -99,7 +114,40 @@ export const listSellers = query({
 
 export const toggleActive = mutation({
   args: { id: v.id("users"), isActive: v.boolean() },
-  handler: async (ctx, { id, isActive }) => ctx.db.patch(id, { isActive }),
+  handler: async (ctx, { id, isActive }) => {
+    const user = await ctx.db.get(id);
+    if (!user) throw new Error("User not found");
+    
+    await ctx.db.patch(id, { isActive });
+    
+    const now = Date.now();
+    const notificationType = isActive ? "user_activated" : "user_suspended";
+    
+    // Notify admin
+    await ctx.db.insert("notifications", {
+      userId: "admin",
+      type: notificationType,
+      title: isActive ? "User Activated" : "User Suspended",
+      message: `${user.name} (${user.email}) has been ${isActive ? "activated" : "suspended"}.`,
+      isRead: false,
+      actionUrl: "/admin",
+      metadata: { userId: id, email: user.email },
+      createdAt: now,
+    });
+
+    // Notify the user
+    await ctx.db.insert("notifications", {
+      userId: id,
+      type: notificationType,
+      title: isActive ? "Account Activated" : "Account Suspended",
+      message: isActive 
+        ? "Your account has been reactivated. You can now access all features." 
+        : "Your account has been suspended. Please contact support for assistance.",
+      isRead: false,
+      metadata: { reason: "Admin action" },
+      createdAt: now,
+    });
+  },
 });
 
 export const updateRole = mutation({

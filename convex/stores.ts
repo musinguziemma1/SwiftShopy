@@ -64,7 +64,40 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const existing = await ctx.db.query("stores").withIndex("by_slug", q => q.eq("slug", args.slug)).first();
     if (existing) throw new Error("Store slug already taken");
-    return await ctx.db.insert("stores", { ...args, userId: args.userId as any, isActive: true });
+    
+    const now = Date.now();
+    const storeId = await ctx.db.insert("stores", { ...args, userId: args.userId as any, isActive: true });
+    
+    // Get user info for notification
+    const user = await ctx.db.get(args.userId as any);
+    const userName = user && "name" in user ? user.name : "Unknown";
+
+    // Notify admin about new store
+    await ctx.db.insert("notifications", {
+      userId: "admin",
+      type: "store_created",
+      title: "New Store Created",
+      message: `${args.name} by ${userName} has been created.`,
+      isRead: false,
+      actionUrl: "/admin",
+      metadata: { storeId, storeName: args.name, userId: args.userId },
+      createdAt: now,
+    });
+
+    // Notify seller about store creation
+    await ctx.db.insert("notifications", {
+      userId: args.userId,
+      storeId,
+      type: "store_created",
+      title: "Store Created!",
+      message: `Your store "${args.name}" has been created successfully. Start adding products!`,
+      isRead: false,
+      actionUrl: "/dashboard",
+      metadata: { storeId, storeName: args.name },
+      createdAt: now,
+    });
+
+    return storeId;
   },
 });
 

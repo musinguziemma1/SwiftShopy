@@ -2,7 +2,11 @@
 
 import React, { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Bell, ShoppingCart, Users, DollarSign, AlertCircle, CheckCircle, X, Settings, MessageSquare } from "lucide-react"
+import { 
+  Bell, ShoppingCart, Users, DollarSign, AlertCircle, CheckCircle, X, Settings, MessageSquare,
+  Package, Store, CreditCard, UserPlus, UserMinus, Gift, TrendingUp, ArrowUpRight, 
+  Percent, HelpCircle, FileText, Wallet, Star, Zap
+} from "lucide-react"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "@/convex/_generated/api"
 import { useSession } from "next-auth/react"
@@ -11,26 +15,72 @@ const iconMap: Record<string, React.ReactNode> = {
   order_new: <ShoppingCart className="w-4 h-4" />,
   order_paid: <CheckCircle className="w-4 h-4" />,
   order_failed: <AlertCircle className="w-4 h-4" />,
+  order_updated: <ShoppingCart className="w-4 h-4" />,
   payment_received: <DollarSign className="w-4 h-4" />,
   product_low_stock: <AlertCircle className="w-4 h-4" />,
   product_out_of_stock: <AlertCircle className="w-4 h-4" />,
+  product_created: <Package className="w-4 h-4" />,
+  product_updated: <Package className="w-4 h-4" />,
   whatsapp_message: <MessageSquare className="w-4 h-4" />,
   whatsapp_connected: <CheckCircle className="w-4 h-4" />,
   system_alert: <Settings className="w-4 h-4" />,
   sla_breach: <AlertCircle className="w-4 h-4" />,
+  user_registered: <UserPlus className="w-4 h-4" />,
+  user_suspended: <UserMinus className="w-4 h-4" />,
+  user_activated: <CheckCircle className="w-4 h-4" />,
+  store_created: <Store className="w-4 h-4" />,
+  transaction_new: <CreditCard className="w-4 h-4" />,
+  customer_inquiry: <HelpCircle className="w-4 h-4" />,
+  customer_chat: <MessageSquare className="w-4 h-4" />,
+  payout_requested: <Wallet className="w-4 h-4" />,
+  payout_completed: <CheckCircle className="w-4 h-4" />,
+  subscription_created: <Zap className="w-4 h-4" />,
+  subscription_renewed: <Zap className="w-4 h-4" />,
+  subscription_expired: <AlertCircle className="w-4 h-4" />,
+  subscription_upgraded: <ArrowUpRight className="w-4 h-4" />,
+  subscription_downgraded: <TrendingUp className="w-4 h-4" />,
+  payment_pending: <Clock className="w-4 h-4" />,
+  payment_success: <CheckCircle className="w-4 h-4" />,
+  payment_failed: <AlertCircle className="w-4 h-4" />,
+  product_limit_reached: <AlertCircle className="w-4 h-4" />,
+  referral_bonus: <Gift className="w-4 h-4" />,
+  usage_discount_applied: <Percent className="w-4 h-4" />,
 }
 
 const colorMap: Record<string, { bg: string; color: string }> = {
   order_new: { bg: "bg-blue-500/20", color: "text-blue-500" },
   order_paid: { bg: "bg-green-500/20", color: "text-green-500" },
   order_failed: { bg: "bg-red-500/20", color: "text-red-500" },
+  order_updated: { bg: "bg-blue-500/20", color: "text-blue-500" },
   payment_received: { bg: "bg-green-500/20", color: "text-green-500" },
   product_low_stock: { bg: "bg-amber-500/20", color: "text-amber-500" },
   product_out_of_stock: { bg: "bg-red-500/20", color: "text-red-500" },
+  product_created: { bg: "bg-blue-500/20", color: "text-blue-500" },
+  product_updated: { bg: "bg-blue-500/20", color: "text-blue-500" },
   whatsapp_message: { bg: "bg-green-500/20", color: "text-green-500" },
   whatsapp_connected: { bg: "bg-green-500/20", color: "text-green-500" },
   system_alert: { bg: "bg-purple-500/20", color: "text-purple-500" },
   sla_breach: { bg: "bg-red-500/20", color: "text-red-500" },
+  user_registered: { bg: "bg-green-500/20", color: "text-green-500" },
+  user_suspended: { bg: "bg-red-500/20", color: "text-red-500" },
+  user_activated: { bg: "bg-green-500/20", color: "text-green-500" },
+  store_created: { bg: "bg-blue-500/20", color: "text-blue-500" },
+  transaction_new: { bg: "bg-blue-500/20", color: "text-blue-500" },
+  customer_inquiry: { bg: "bg-purple-500/20", color: "text-purple-500" },
+  customer_chat: { bg: "bg-green-500/20", color: "text-green-500" },
+  payout_requested: { bg: "bg-amber-500/20", color: "text-amber-500" },
+  payout_completed: { bg: "bg-green-500/20", color: "text-green-500" },
+  subscription_created: { bg: "bg-purple-500/20", color: "text-purple-500" },
+  subscription_renewed: { bg: "bg-purple-500/20", color: "text-purple-500" },
+  subscription_expired: { bg: "bg-red-500/20", color: "text-red-500" },
+  subscription_upgraded: { bg: "bg-green-500/20", color: "text-green-500" },
+  subscription_downgraded: { bg: "bg-amber-500/20", color: "text-amber-500" },
+  payment_pending: { bg: "bg-amber-500/20", color: "text-amber-500" },
+  payment_success: { bg: "bg-green-500/20", color: "text-green-500" },
+  payment_failed: { bg: "bg-red-500/20", color: "text-red-500" },
+  product_limit_reached: { bg: "bg-red-500/20", color: "text-red-500" },
+  referral_bonus: { bg: "bg-purple-500/20", color: "text-purple-500" },
+  usage_discount_applied: { bg: "bg-green-500/20", color: "text-green-500" },
 }
 
 function getTimeAgo(timestamp: number): string {
@@ -187,5 +237,8 @@ export function NotificationsCenter() {
     </div>
   )
 }
+
+// Import Clock icon for pending status
+import { Clock } from "lucide-react"
 
 export default NotificationsCenter

@@ -53,9 +53,10 @@ export default function InvitePage() {
 
       if (result.success) {
         setSuccess(true);
+        // Redirect to set password page for first-time setup
         setTimeout(() => {
-          router.push("/admin");
-        }, 2000);
+          router.push(`/set-password?email=${encodeURIComponent(invitation.email)}&token=${token}`);
+        }, 1500);
       } else {
         setError(result.error || "Failed to accept invitation");
       }
@@ -168,9 +169,9 @@ export default function InvitePage() {
           className="text-center"
         >
           <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-6" />
-          <h1 className="text-3xl font-bold mb-2">Welcome to the Team!</h1>
-          <p className="text-muted-foreground mb-4">You've been added as {getRoleBadge(invitation.role).label}.</p>
-          <p className="text-sm text-muted-foreground">Redirecting to dashboard...</p>
+          <h1 className="text-3xl font-bold mb-2">Invitation Accepted!</h1>
+          <p className="text-muted-foreground mb-4">Setting up your account...</p>
+          <p className="text-sm text-muted-foreground">You'll be redirected to set your password.</p>
         </motion.div>
       </div>
     );

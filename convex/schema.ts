@@ -579,4 +579,28 @@ export default defineSchema({
     .index("by_token", ["token"])
     .index("by_status", ["status"])
     .index("by_invitedBy", ["invitedBy"]),
+
+  // ─── Email Queue ──────────────────────────────────────────
+  email_queue: defineTable({
+    to: v.string(),
+    subject: v.string(),
+    body: v.string(),
+    type: v.union(
+      v.literal("verification"),
+      v.literal("invitation"),
+      v.literal("notification"),
+      v.literal("password_reset"),
+      v.literal("welcome"),
+      v.literal("order"),
+      v.literal("payment"),
+      v.literal("subscription")
+    ),
+    status: v.union(v.literal("pending"), v.literal("sent"), v.literal("failed")),
+    errorMessage: v.optional(v.string()),
+    sentAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_status", ["status"])
+    .index("by_type", ["type"])
+    .index("by_to", ["to"]),
 });

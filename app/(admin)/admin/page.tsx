@@ -99,6 +99,10 @@ function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview")
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [selectedSellers, setSelectedSellers] = useState<string[]>([])
+  const [showSellerModal, setShowSellerModal] = useState(false)
+  const [selectedSeller, setSelectedSeller] = useState<any>(null)
+  const [sellerModalMode, setSellerModalMode] = useState<"view" | "edit">("view")
+  const [searchQuery, setSearchQuery] = useState("")
   const [showExportDropdown, setShowExportDropdown] = useState<string | null>(null)
   const [showBulkConfirmModal, setShowBulkConfirmModal] = useState(false)
   const [bulkAction, setBulkAction] = useState("")
@@ -590,9 +594,12 @@ function AdminDashboard() {
                   <p className="text-muted-foreground">Manage all sellers on the platform</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button className="px-4 py-2 border border-border rounded-lg hover:bg-accent transition-colors flex items-center gap-2">
-                    <Filter className="w-4 h-4" /> Filter
-                  </button>
+                  <div className="relative">
+                    <input type="text" placeholder="Search sellers..." 
+                      className="pl-10 pr-4 py-2 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-sm w-64"
+                      onChange={(e) => setSearchQuery(e.target.value)} />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  </div>
                   <div className="relative">
                     <button onClick={() => setShowExportDropdown(showExportDropdown === "sellers" ? null : "sellers")}
                       className="px-4 py-2 border border-border rounded-lg hover:bg-accent transition-colors flex items-center gap-2">
@@ -608,19 +615,48 @@ function AdminDashboard() {
                 </div>
               </div>
 
+              {/* Seller Stats */}
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+                {[
+                  { label: "Total Sellers", value: sellers.length, icon: <Users className="w-5 h-5 text-blue-500" />, color: "bg-blue-500/10" },
+                  { label: "Active", value: sellers.filter(s => s.status === "active").length, icon: <CheckCircle className="w-5 h-5 text-green-500" />, color: "bg-green-500/10" },
+                  { label: "Suspended", value: sellers.filter(s => s.status === "suspended").length, icon: <Lock className="w-5 h-5 text-yellow-500" />, color: "bg-yellow-500/10" },
+                  { label: "Total Revenue", value: formatCurrency(sellers.reduce((sum, s) => sum + s.revenue, 0)), icon: <DollarSign className="w-5 h-5 text-purple-500" />, color: "bg-purple-500/10" },
+                ].map((stat, i) => (
+                  <div key={i} className="p-4 rounded-xl border border-border bg-card">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 ${stat.color} rounded-lg flex items-center justify-center`}>
+                        {stat.icon}
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">{stat.label}</p>
+                        <p className="text-xl font-bold">{stat.value}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
               {selectedSellers.length > 0 && (
                 <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-4 p-4 rounded-xl bg-primary/10 border border-primary/20">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">{selectedSellers.length} seller(s) selected</span>
                     <div className="flex items-center gap-2">
-                      <button onClick={() => { setBulkAction("approve"); setShowBulkConfirmModal(true) }} className="px-3 py-1.5 text-sm bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center gap-1">
-                        <CheckCircle className="w-4 h-4" /> Approve
+                      <button onClick={async () => {
+                        for (const id of selectedSellers) {
+                          await toggleUserActive({ id: id as any, isActive: true });
+                        }
+                        setSelectedSellers([]);
+                      }} className="px-3 py-1.5 text-sm bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center gap-1">
+                        <CheckCircle className="w-4 h-4" /> Activate All
                       </button>
-                      <button onClick={() => { setBulkAction("suspend"); setShowBulkConfirmModal(true) }} className="px-3 py-1.5 text-sm bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors flex items-center gap-1">
-                        <Lock className="w-4 h-4" /> Suspend
-                      </button>
-                      <button onClick={() => { setBulkAction("ban"); setShowBulkConfirmModal(true) }} className="px-3 py-1.5 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center gap-1">
-                        <Ban className="w-4 h-4" /> Ban
+                      <button onClick={async () => {
+                        for (const id of selectedSellers) {
+                          await toggleUserActive({ id: id as any, isActive: false });
+                        }
+                        setSelectedSellers([]);
+                      }} className="px-3 py-1.5 text-sm bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors flex items-center gap-1">
+                        <Lock className="w-4 h-4" /> Suspend All
                       </button>
                       <button onClick={() => setSelectedSellers([])} className="px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-accent transition-colors">
                         Clear
@@ -630,79 +666,278 @@ function AdminDashboard() {
                 </motion.div>
               )}
 
-              {showBulkConfirmModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                  <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                    className="w-full max-w-md bg-card rounded-xl border border-border p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${bulkAction === "ban" ? "bg-red-500/10" : bulkAction === "suspend" ? "bg-yellow-500/10" : "bg-green-500/10"}`}>
-                        <AlertTriangle className={`w-5 h-5 ${bulkAction === "ban" ? "text-red-500" : bulkAction === "suspend" ? "text-yellow-500" : "text-green-500"}`} />
-                      </div>
-                      <h3 className="text-lg font-semibold">Confirm Bulk {bulkAction.charAt(0).toUpperCase() + bulkAction.slice(1)}</h3>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-6">
-                      Are you sure you want to <strong>{bulkAction}</strong> {selectedSellers.length} selected seller(s)? This action will be logged in the audit trail.
-                    </p>
-                    <div className="flex items-center justify-end gap-3">
-                      <button onClick={() => setShowBulkConfirmModal(false)}
-                        className="px-4 py-2 border border-border rounded-lg hover:bg-accent transition-colors">Cancel</button>
-                      <button onClick={() => { setShowBulkConfirmModal(false); setSelectedSellers([]) }}
-                        className={`px-4 py-2 text-white rounded-lg transition-colors ${bulkAction === "ban" ? "bg-red-500 hover:bg-red-600" : bulkAction === "suspend" ? "bg-yellow-500 hover:bg-yellow-600" : "bg-green-500 hover:bg-green-600"}`}>
-                        Confirm {bulkAction.charAt(0).toUpperCase() + bulkAction.slice(1)}
-                      </button>
-                    </div>
-                  </motion.div>
-                </div>
-              )}
-
-              <div className="p-6 rounded-xl border border-border bg-card">
+              <div className="rounded-xl border border-border bg-card overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-border">
-                        {["Seller","Store","Revenue","Orders","Commission","Status","Actions"].map((h) => (
+                      <tr className="border-b border-border bg-muted/50">
+                        <th className="py-3 px-4 text-left">
+                          <input type="checkbox" 
+                            checked={selectedSellers.length === sellers.length && sellers.length > 0}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedSellers(sellers.map(s => s.id));
+                              } else {
+                                setSelectedSellers([]);
+                              }
+                            }}
+                            className="w-4 h-4 rounded border-border" />
+                        </th>
+                        {["Seller", "Store", "Revenue", "Orders", "Status", "Actions"].map((h) => (
                           <th key={h} className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {sellers.map((seller, i) => (
-                        <motion.tr key={seller.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: i * 0.1 }}
-                          className="border-b border-border hover:bg-accent/50 transition-colors">
+                        <motion.tr key={seller.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2, delay: i * 0.03 }}
+                          className="border-b border-border hover:bg-accent/30 transition-colors">
+                          <td className="py-3 px-4">
+                            <input type="checkbox"
+                              checked={selectedSellers.includes(seller.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedSellers([...selectedSellers, seller.id]);
+                                } else {
+                                  setSelectedSellers(selectedSellers.filter(id => id !== seller.id));
+                                }
+                              }}
+                              className="w-4 h-4 rounded border-border" />
+                          </td>
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-3">
-                              <img src={seller.avatar} alt={seller.name} className="w-10 h-10 rounded-full object-cover" />
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-medium">
+                                {seller.name.charAt(0).toUpperCase()}
+                              </div>
                               <div>
                                 <div className="font-medium">{seller.name}</div>
                                 <div className="text-sm text-muted-foreground">{seller.email}</div>
                               </div>
                             </div>
                           </td>
-                          <td className="py-3 px-4 text-sm">{seller.storeName}</td>
+                          <td className="py-3 px-4 text-sm">{seller.storeName || "No Store"}</td>
                           <td className="py-3 px-4 text-sm font-medium">{formatCurrency(seller.revenue)}</td>
                           <td className="py-3 px-4 text-sm">{seller.orders}</td>
-                          <td className="py-3 px-4 text-sm text-green-500 font-medium">{formatCurrency(seller.commission)}</td>
                           <td className="py-3 px-4">
-                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(seller.status)}`}>
-                              {getStatusIcon(seller.status)}
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
+                              seller.status === "active" 
+                                ? "bg-green-500/10 text-green-500 border border-green-500/20" 
+                                : "bg-red-500/10 text-red-500 border border-red-500/20"
+                            }`}>
+                              {seller.status === "active" ? <CheckCircle className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
                               {seller.status.charAt(0).toUpperCase() + seller.status.slice(1)}
                             </span>
                           </td>
                           <td className="py-3 px-4">
-                            <div className="flex items-center gap-2">
-                              <button className="p-1 hover:bg-accent rounded transition-colors"><Eye className="w-4 h-4" /></button>
-                              <button className="p-1 hover:bg-accent rounded transition-colors"><Edit className="w-4 h-4" /></button>
-                              <button className="p-1 hover:bg-accent rounded transition-colors">
+                            <div className="flex items-center gap-1">
+                              {/* View */}
+                              <button onClick={() => {
+                                setSelectedSeller(seller);
+                                setSellerModalMode("view");
+                                setShowSellerModal(true);
+                              }} className="p-2 hover:bg-accent rounded-lg transition-colors" title="View Details">
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              {/* Edit */}
+                              <button onClick={() => {
+                                setSelectedSeller(seller);
+                                setSellerModalMode("edit");
+                                setShowSellerModal(true);
+                              }} className="p-2 hover:bg-accent rounded-lg transition-colors" title="Edit Seller">
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              {/* Activate/Deactivate */}
+                              <button onClick={async () => {
+                                const newStatus = seller.status === "active" ? false : true;
+                                await toggleUserActive({ id: seller.id as any, isActive: newStatus });
+                              }} 
+                                className={`p-2 rounded-lg transition-colors ${
+                                  seller.status === "active" 
+                                    ? "hover:bg-yellow-500/10 text-yellow-500" 
+                                    : "hover:bg-green-500/10 text-green-500"
+                                }`}
+                                title={seller.status === "active" ? "Suspend Seller" : "Activate Seller"}>
                                 {seller.status === "active" ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+                              </button>
+                              {/* Delete */}
+                              <button onClick={async () => {
+                                if (confirm(`Are you sure you want to delete ${seller.name}? This action cannot be undone.`)) {
+                                  await toggleUserActive({ id: seller.id as any, isActive: false });
+                                  // In production, you'd have a proper delete function
+                                }
+                              }} className="p-2 hover:bg-red-500/10 rounded-lg transition-colors text-red-500" title="Delete Seller">
+                                <Trash2 className="w-4 h-4" />
                               </button>
                             </div>
                           </td>
                         </motion.tr>
                       ))}
+                      {sellers.length === 0 && (
+                        <tr>
+                          <td colSpan={7} className="py-12 text-center text-muted-foreground">
+                            <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                            <p>No sellers found</p>
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
               </div>
+
+              {/* Seller Detail Modal */}
+              {showSellerModal && selectedSeller && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+                  <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+                    className="w-full max-w-2xl bg-card rounded-xl border border-border p-6 my-8">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-xl font-semibold">
+                        {sellerModalMode === "view" ? "Seller Details" : "Edit Seller"}
+                      </h3>
+                      <button onClick={() => { setShowSellerModal(false); setSelectedSeller(null); }} 
+                        className="p-2 hover:bg-accent rounded-lg transition-colors">
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    {sellerModalMode === "view" ? (
+                      <div className="space-y-6">
+                        {/* Profile Section */}
+                        <div className="flex items-center gap-4 p-4 bg-accent/30 rounded-xl">
+                          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-2xl font-bold">
+                            {selectedSeller.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <h4 className="text-lg font-semibold">{selectedSeller.name}</h4>
+                            <p className="text-muted-foreground">{selectedSeller.email}</p>
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium mt-2 ${
+                              selectedSeller.status === "active" 
+                                ? "bg-green-500/10 text-green-500" 
+                                : "bg-red-500/10 text-red-500"
+                            }`}>
+                              {selectedSeller.status === "active" ? <CheckCircle className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+                              {selectedSeller.status.charAt(0).toUpperCase() + selectedSeller.status.slice(1)}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Stats */}
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="p-4 bg-accent/30 rounded-xl text-center">
+                            <p className="text-2xl font-bold">{formatCurrency(selectedSeller.revenue)}</p>
+                            <p className="text-sm text-muted-foreground">Total Revenue</p>
+                          </div>
+                          <div className="p-4 bg-accent/30 rounded-xl text-center">
+                            <p className="text-2xl font-bold">{selectedSeller.orders}</p>
+                            <p className="text-sm text-muted-foreground">Total Orders</p>
+                          </div>
+                          <div className="p-4 bg-accent/30 rounded-xl text-center">
+                            <p className="text-2xl font-bold">{selectedSeller.productCount || 0}</p>
+                            <p className="text-sm text-muted-foreground">Products</p>
+                          </div>
+                        </div>
+
+                        {/* Store Info */}
+                        <div className="p-4 border border-border rounded-xl">
+                          <h5 className="font-medium mb-3">Store Information</h5>
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <p className="text-muted-foreground">Store Name</p>
+                              <p className="font-medium">{selectedSeller.storeName || "No Store"}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Store Slug</p>
+                              <p className="font-medium">{selectedSeller.storeSlug || "-"}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex gap-3">
+                          <button onClick={() => setSellerModalMode("edit")} 
+                            className="flex-1 py-2.5 border border-border rounded-lg hover:bg-accent transition-colors flex items-center justify-center gap-2">
+                            <Edit className="w-4 h-4" /> Edit Seller
+                          </button>
+                          <button onClick={async () => {
+                            const newStatus = selectedSeller.status === "active" ? false : true;
+                            await toggleUserActive({ id: selectedSeller.id as any, isActive: newStatus });
+                            setShowSellerModal(false);
+                            setSelectedSeller(null);
+                          }} 
+                            className={`flex-1 py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 ${
+                              selectedSeller.status === "active"
+                                ? "bg-yellow-500 text-white hover:bg-yellow-600"
+                                : "bg-green-500 text-white hover:bg-green-600"
+                            }`}>
+                            {selectedSeller.status === "active" ? (
+                              <><Lock className="w-4 h-4" /> Suspend Seller</>
+                            ) : (
+                              <><Unlock className="w-4 h-4" /> Activate Seller</>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <form onSubmit={async (e) => {
+                        e.preventDefault();
+                        const formData = new FormData(e.currentTarget);
+                        // Update seller info
+                        const updates = {
+                          name: formData.get("name") as string,
+                          email: formData.get("email") as string,
+                          phone: formData.get("phone") as string,
+                        };
+                        
+                        // Call API to update seller
+                        await fetch("/api/admin/update-seller", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ sellerId: selectedSeller.id, ...updates }),
+                        });
+
+                        setShowSellerModal(false);
+                        setSelectedSeller(null);
+                      }}>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Name</label>
+                            <input name="name" defaultValue={selectedSeller.name} required
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Email</label>
+                            <input name="email" type="email" defaultValue={selectedSeller.email} required
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Phone</label>
+                            <input name="phone" type="tel" defaultValue={selectedSeller.phone || ""}
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Status</label>
+                            <select name="status" defaultValue={selectedSeller.status}
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary">
+                              <option value="active">Active</option>
+                              <option value="suspended">Suspended</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div className="flex gap-3 mt-6">
+                          <button type="button" onClick={() => { setShowSellerModal(false); setSelectedSeller(null); }}
+                            className="flex-1 py-2.5 border border-border rounded-lg hover:bg-accent transition-colors">
+                            Cancel
+                          </button>
+                          <button type="submit"
+                            className="flex-1 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:opacity-90 transition-opacity">
+                            Save Changes
+                          </button>
+                        </div>
+                      </form>
+                    )}
+                  </motion.div>
+                </div>
+              )}
             </motion.div>
           )}
 

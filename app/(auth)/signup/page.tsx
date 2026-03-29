@@ -1,24 +1,41 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Zap, User, Mail, Lock, Phone, Eye, EyeOff, ArrowRight, Check, AlertCircle, ShoppingBag, Sparkles } from "lucide-react";
+import { Zap, User, Mail, Lock, Phone, Eye, EyeOff, ArrowRight, Check, AlertCircle, ShoppingBag, Sparkles, Gift } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { BackgroundPaths } from "@/components/ui/background-paths";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import bcrypt from "bcryptjs";
 
 export default function SignupPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const referralCode = searchParams.get("ref") || "";
+  
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", confirmPassword: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [referralApplied, setReferralApplied] = useState(false);
+  
   const createUser = useMutation(api.users.create);
+  const createReferral = useMutation(api.referrals.createReferral);
+  const completeReferral = useMutation(api.referrals.completeReferral);
+  const referrerSettings = useQuery(
+    api.referrals.getReferralCodeByCode,
+    referralCode ? { code: referralCode } : "skip"
+  );
+
+  useEffect(() => {
+    if (referralCode && referrerSettings) {
+      setReferralApplied(true);
+    }
+  }, [referralCode, referrerSettings]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -34,13 +51,30 @@ export default function SignupPage() {
     setError("");
     try {
       const passwordHash = await bcrypt.hash(form.password, 10);
-      await createUser({
+      const userId = await createUser({
         name: form.name,
         email: form.email,
         passwordHash,
         role: "seller",
         phone: form.phone || undefined,
       });
+
+      if (referralCode && referrerSettings && referrerSettings.userId) {
+        try {
+          const referralId = await createReferral({
+            referrerUserId: referrerSettings.userId,
+            referrerCode: referralCode,
+            referredUserEmail: form.email,
+          });
+          await completeReferral({
+            referralId,
+            referredUserId: userId,
+          });
+        } catch (refErr) {
+          console.error("Referral tracking error:", refErr);
+        }
+      }
+
       router.push("/login?registered=true");
     } catch (err: any) {
       setError(err.message || "Failed to create account. Email may already be registered.");
@@ -157,6 +191,20 @@ export default function SignupPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {referralApplied && referralCode && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }} 
+                  animate={{ opacity: 1, y: 0 }} 
+                  className="flex items-center gap-3 p-4 bg-green-500/10 border border-green-500/20 rounded-xl"
+                >
+                  <Gift className="w-5 h-5 text-green-500 shrink-0" />
+                  <div>
+                    <span className="text-sm font-medium text-green-600">Referral Code Applied: {referralCode}</span>
+                    <p className="text-xs text-green-500/80">You'll help your referrer earn rewards!</p>
+                  </div>
+                </motion.div>
+              )}
+              
               {[
                 { name: "name", label: "Full Name", type: "text", placeholder: "Sarah Nakato", icon: <User className="w-5 h-5" /> },
                 { name: "email", label: "Email Address", type: "email", placeholder: "you@example.com", icon: <Mail className="w-5 h-5" /> },

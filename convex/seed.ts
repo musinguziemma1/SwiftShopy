@@ -812,3 +812,86 @@ export const seedAll = mutation({
     };
   },
 });
+
+// ─── Seed Promotions ───────────────────────────────────────────────────
+export const seedPromotions = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+
+    const existing = await ctx.db.query("promotions").first();
+    if (existing) {
+      return { message: "Promotions already seeded" };
+    }
+
+    const promotions = [
+      {
+        name: "Refer & Earn Pro",
+        description: "Refer 3 sellers and earn 1 month of Pro plan free!",
+        type: "referral" as const,
+        rewardType: "free_month" as const,
+        rewardValue: 1,
+        triggerCondition: {
+          type: "referral_count" as const,
+          threshold: 3,
+          period: "total" as const,
+        },
+        isActive: true,
+        maxRedemptions: undefined,
+        currentRedemptions: 0,
+        startDate: now,
+        endDate: undefined,
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        name: "Performance Bonus",
+        description: "Process UGX 2,000,000+ monthly and get 10% discount on next subscription",
+        type: "performance" as const,
+        rewardType: "discount_percentage" as const,
+        rewardValue: 10,
+        triggerCondition: {
+          type: "transaction_volume" as const,
+          threshold: 2000000,
+          period: "monthly" as const,
+        },
+        isActive: true,
+        maxRedemptions: undefined,
+        currentRedemptions: 0,
+        startDate: now,
+        endDate: undefined,
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        name: "Loyalty Reward",
+        description: "Stay subscribed for 6+ months and earn exclusive rewards",
+        type: "loyalty" as const,
+        rewardType: "discount_percentage" as const,
+        rewardValue: 15,
+        triggerCondition: {
+          type: "subscription_months" as const,
+          threshold: 6,
+          period: "total" as const,
+        },
+        isActive: true,
+        maxRedemptions: undefined,
+        currentRedemptions: 0,
+        startDate: now,
+        endDate: undefined,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ];
+
+    for (const promo of promotions) {
+      await ctx.db.insert("promotions", promo);
+    }
+
+    return {
+      success: true,
+      message: "Promotions seeded successfully",
+      count: promotions.length,
+    };
+  },
+});

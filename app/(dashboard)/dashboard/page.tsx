@@ -10,13 +10,13 @@ import {
   ShoppingCart, Package, DollarSign, TrendingUp, Users, Search,
   Settings, LogOut, Menu, X, Plus, Edit, Trash2, Eye, Download,
   Filter, Calendar, ArrowUpRight, ArrowDownRight, MoreVertical,
-  Check, Clock, XCircle, MessageSquare, BarChart3, PieChart,
+  Check, Clock, XCircle, MessageSquare, BarChart3, PieChart, Gift,
   Activity, Star, AlertCircle, Copy, QrCode, ExternalLink, Share2, Zap,
   Send, Paperclip, Image as ImageIcon, Phone, Video, MoreHorizontal,
   Search as SearchIcon, RefreshCw, Link2, Smartphone, Globe,
   ChevronRight, Store, CreditCard, Upload, Save, Shield, Lock as LockIcon
 } from "lucide-react";
-import { useSellerData, useStoreMutations, useProductMutations, useOrderMutations } from "@/lib/hooks/useSellerData";
+import { useSellerData, useStoreMutations, useProductMutations, useOrderMutations, useSubscriptionMutations, useReferralMutations } from "@/lib/hooks/useSellerData";
 import { useWhatsAppChat, useWhatsAppMessages } from "@/lib/hooks/useWhatsAppChat";
 
 interface Product {
@@ -46,6 +46,7 @@ export default function SellerDashboardPage() {
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [linkPhone, setLinkPhone] = useState("");
   const [settingsSubTab, setSettingsSubTab] = useState("store");
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [storeForm, setStoreForm] = useState({
     name: "Nakato Styles", slug: "nakato-styles", phone: "+256772100001",
     description: "Trendy African fashion, handbags & accessories for the modern Ugandan woman.",
@@ -65,10 +66,12 @@ export default function SellerDashboardPage() {
   const { updateStore } = useStoreMutations();
   const { createProduct, updateProduct, deleteProduct, toggleProduct } = useProductMutations();
   const { updateOrderStatus } = useOrderMutations();
+  const { upgradePlan, renewSubscription, createSubscription } = useSubscriptionMutations();
+  const { generateReferralCode } = useReferralMutations();
 
   // Get seller store data from Convex using session email
   const userEmail = (session?.user as any)?.email;
-  const { store, storeId, products: convexProducts, orders: convexOrders, isLoading } = useSellerData(userEmail);
+  const { store, storeId, userId, products: convexProducts, orders: convexOrders, isLoading, subscription, billingInfo, referralStats, usageDiscount } = useSellerData(userEmail);
 
   // Calculate stats from real data
   const totalRevenue = convexOrders?.filter(o => o.status === "paid").reduce((sum, o) => sum + o.total, 0) ?? 0;
@@ -1264,6 +1267,7 @@ export default function SellerDashboardPage() {
               <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
                 {[
                   { id: "store", label: "Store Info", icon: <Store className="w-4 h-4" /> },
+                  { id: "subscription", label: "Subscription", icon: <Zap className="w-4 h-4" /> },
                   { id: "payment", label: "Payment Methods", icon: <CreditCard className="w-4 h-4" /> },
                 ].map((tab) => (
                   <button key={tab.id} onClick={() => setSettingsSubTab(tab.id)}
@@ -1479,6 +1483,272 @@ export default function SellerDashboardPage() {
                           Your store will be hidden from customers. You can reactivate it anytime.
                         </p>
                       </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Subscription */}
+              {settingsSubTab === "subscription" && (
+                <div className="grid lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2 space-y-6">
+                    <div className="p-6 glass rounded-xl">
+                      <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+                        <Zap className="w-5 h-5 text-primary" /> Current Subscription
+                      </h3>
+                      {subscription ? (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between p-4 rounded-xl border border-border bg-gradient-to-r from-primary/5 to-indigo-600/5">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                  subscription.plan === "enterprise" ? "bg-orange-500/10 text-orange-500" :
+                                  subscription.plan === "business" ? "bg-purple-500/10 text-purple-500" :
+                                  subscription.plan === "pro" ? "bg-blue-500/10 text-blue-500" :
+                                  "bg-gray-500/10 text-gray-500"
+                                }`}>
+                                  {subscription.plan.charAt(0).toUpperCase() + subscription.plan.slice(1)}
+                                </span>
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                  subscription.status === "active" ? "bg-green-500/10 text-green-500" :
+                                  "bg-red-500/10 text-red-500"
+                                }`}>
+                                  {subscription.status}
+                                </span>
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                {subscription.plan === "free" ? "Free Forever" : 
+                                  subscription.plan === "pro" ? "UGX 15,000/month" :
+                                  subscription.plan === "business" ? "UGX 35,000/month" :
+                                  "UGX 60,000/month"}
+                              </p>
+                            </div>
+                            <button 
+                              onClick={() => setShowUpgradeModal(true)}
+                              className="px-4 py-2 bg-gradient-to-r from-primary to-indigo-600 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+                            >
+                              {subscription.plan === "free" ? "Upgrade Plan" : "Renew/Upgrade"}
+                            </button>
+                          </div>
+                          
+                          <div className="grid sm:grid-cols-2 gap-4 mt-4">
+                            <div className="p-4 rounded-lg bg-accent/30">
+                              <p className="text-sm text-muted-foreground mb-1">Start Date</p>
+                              <p className="font-medium">{new Date(subscription.startDate).toLocaleDateString()}</p>
+                            </div>
+                            <div className="p-4 rounded-lg bg-accent/30">
+                              <p className="text-sm text-muted-foreground mb-1">End Date</p>
+                              <p className="font-medium">{new Date(subscription.endDate).toLocaleDateString()}</p>
+                            </div>
+                            <div className="p-4 rounded-lg bg-accent/30">
+                              <p className="text-sm text-muted-foreground mb-1">Days Remaining</p>
+                              <p className="font-medium">
+                                {Math.max(0, Math.ceil((subscription.endDate - Date.now()) / (1000 * 60 * 60 * 24)))} days
+                              </p>
+                            </div>
+                            <div className="p-4 rounded-lg bg-accent/30">
+                              <p className="text-sm text-muted-foreground mb-1">Auto Renew</p>
+                              <p className="font-medium">{subscription.autoRenew ? "Enabled" : "Disabled"}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <Zap className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+                          <p className="text-muted-foreground mb-4">No active subscription</p>
+                          <button 
+                            onClick={() => setShowUpgradeModal(true)}
+                            className="px-6 py-2.5 bg-gradient-to-r from-primary to-indigo-600 text-white rounded-xl text-sm font-medium"
+                          >
+                            Start Free Plan
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-6 glass rounded-xl">
+                      <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+                        <Gift className="w-5 h-5 text-primary" /> Available Promotions & Incentives
+                      </h3>
+                      <div className="space-y-4">
+                        {[
+                          { 
+                            title: "Refer a Friend", 
+                            desc: "Get 1 month free for each friend who subscribes",
+                            icon: <Users className="w-5 h-5" />,
+                            badge: referralStats && referralStats.completedReferrals > 0 ? `${referralStats.completedReferrals} referrals` : "Earn rewards"
+                          },
+                          { 
+                            title: "Usage Discount", 
+                            desc: "Get 10% off when you process UGX 2,000,000+ monthly",
+                            icon: <TrendingUp className="w-5 h-5" />,
+                            badge: usageDiscount?.eligible ? "Eligible!" : "Not eligible"
+                          },
+                          { 
+                            title: "Annual Discount", 
+                            desc: "Pay annually and save 20%",
+                            icon: <Calendar className="w-5 h-5" />,
+                            badge: "Coming soon"
+                          },
+                        ].map((promo, i) => (
+                          <div key={i} className="flex items-center justify-between p-4 rounded-xl border border-border hover:bg-accent/30 transition-colors">
+                            <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                                {promo.icon}
+                              </div>
+                              <div>
+                                <h4 className="font-medium">{promo.title}</h4>
+                                <p className="text-sm text-muted-foreground">{promo.desc}</p>
+                              </div>
+                            </div>
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                              promo.badge === "Eligible!" ? "bg-green-500/10 text-green-500" :
+                              promo.badge === "Coming soon" ? "bg-gray-500/10 text-gray-500" :
+                              "bg-blue-500/10 text-blue-500"
+                            }`}>
+                              {promo.badge}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Referral Code Card */}
+                    <div className="p-6 glass rounded-xl">
+                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <Share2 className="w-5 h-5 text-primary" /> Your Referral Code
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Share your unique code with other sellers. For every 3 successful referrals, you earn 1 month of Pro free!
+                      </p>
+                      {referralStats?.referralCode ? (
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-xl border border-purple-500/20">
+                            <div className="flex-1">
+                              <div className="text-2xl font-bold font-mono tracking-wider">{referralStats.referralCode}</div>
+                              <div className="text-xs text-muted-foreground mt-1">Your unique referral code</div>
+                            </div>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(referralStats.referralCode || "");
+                                alert("Referral code copied to clipboard!");
+                              }}
+                              className="p-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                              title="Copy code"
+                            >
+                              <Copy className="w-5 h-5" />
+                            </button>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                const shareUrl = `${window.location.origin}/auth/register?ref=${referralStats.referralCode}`;
+                                const message = `Join SwiftShopy with my referral code ${referralStats.referralCode} and get started with your online store! ${shareUrl}`;
+                                window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
+                              }}
+                              className="flex-1 py-2.5 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
+                            >
+                              <MessageSquare className="w-4 h-4" /> Share on WhatsApp
+                            </button>
+                            <button
+                              onClick={() => {
+                                const shareUrl = `${window.location.origin}/auth/register?ref=${referralStats.referralCode}`;
+                                navigator.clipboard.writeText(shareUrl);
+                                alert("Referral link copied to clipboard!");
+                              }}
+                              className="flex-1 py-2.5 border border-border rounded-lg text-sm font-medium hover:bg-accent transition-colors flex items-center justify-center gap-2"
+                            >
+                              <Link2 className="w-4 h-4" /> Copy Link
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-3 gap-3 mt-2">
+                            <div className="text-center p-3 bg-accent/30 rounded-lg">
+                              <div className="text-xl font-bold">{referralStats.completedReferrals ?? 0}</div>
+                              <div className="text-xs text-muted-foreground">Completed</div>
+                            </div>
+                            <div className="text-center p-3 bg-accent/30 rounded-lg">
+                              <div className="text-xl font-bold">{referralStats.pendingReferrals ?? 0}</div>
+                              <div className="text-xs text-muted-foreground">Pending</div>
+                            </div>
+                            <div className="text-center p-3 bg-accent/30 rounded-lg">
+                              <div className="text-xl font-bold">{referralStats.rewardsGranted ?? 0}</div>
+                              <div className="text-xs text-muted-foreground">Rewards Earned</div>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={async () => {
+                            if (userId) {
+                              try {
+                                const code = await generateReferralCode({ userId: userId as any });
+                                alert(`Your referral code is: ${code}`);
+                              } catch (e) {
+                                console.error("Failed to generate referral code:", e);
+                              }
+                            }
+                          }}
+                          className="w-full py-3 bg-gradient-to-r from-primary to-indigo-600 text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                        >
+                          <Zap className="w-4 h-4" /> Generate Referral Code
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div className="p-6 glass rounded-xl">
+                      <h3 className="text-lg font-semibold mb-4">Plan Benefits</h3>
+                      <div className="space-y-3 text-sm">
+                        <div className="flex items-center gap-2">
+                          <Check className="w-4 h-4 text-green-500" />
+                          <span>Up to {billingInfo?.productLimit ?? 10} products</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Check className="w-4 h-4 text-green-500" />
+                          <span>{billingInfo?.transactionFee ?? 4}% transaction fee</span>
+                        </div>
+                        {subscription?.plan !== "free" && (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <Check className="w-4 h-4 text-green-500" />
+                              <span>Analytics dashboard</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Check className="w-4 h-4 text-green-500" />
+                              <span>WhatsApp integration</span>
+                            </div>
+                          </>
+                        )}
+                        {subscription?.plan === "business" || subscription?.plan === "enterprise" && (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <Check className="w-4 h-4 text-green-500" />
+                              <span>Priority support</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Check className="w-4 h-4 text-green-500" />
+                              <span>Custom domain</span>
+                            </div>
+                          </>
+                        )}
+                        {subscription?.plan === "enterprise" && (
+                          <div className="flex items-center gap-2">
+                            <Check className="w-4 h-4 text-green-500" />
+                            <span>Unlimited products</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="p-6 glass rounded-xl">
+                      <h3 className="text-lg font-semibold mb-4">Need Help?</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Contact our support team for billing questions or upgrade assistance.
+                      </p>
+                      <button className="w-full py-2.5 border border-border rounded-xl text-sm font-medium hover:bg-accent transition-colors">
+                        Contact Support
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1820,6 +2090,111 @@ export default function SellerDashboardPage() {
           </>
         )}
       </AnimatePresence>
+
+      {/* ── Upgrade Plan Modal ── */}
+      {showUpgradeModal && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowUpgradeModal(false)}>
+          <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
+            className="bg-card rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold">Choose Your Plan</h2>
+              <button onClick={() => setShowUpgradeModal(false)} className="p-2 hover:bg-accent rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-muted-foreground mb-6">Select a plan that fits your business needs. All paid plans include a 30-day subscription.</p>
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { id: "free", name: "Free", price: 0, period: "Free forever", productLimit: 10, transactionFee: 4, color: "gray", features: ["Up to 10 products", "4% transaction fee", "Basic support"] },
+                { id: "pro", name: "Pro", price: 15000, period: "/month", productLimit: 25, transactionFee: 2.5, color: "blue", features: ["Up to 25 products", "2.5% transaction fee", "Analytics", "WhatsApp integration"] },
+                { id: "business", name: "Business", price: 35000, period: "/month", productLimit: 38, transactionFee: 1.5, color: "purple", features: ["Up to 38 products", "1.5% transaction fee", "Priority support", "Custom domain"] },
+                { id: "enterprise", name: "Enterprise", price: 60000, period: "/month", productLimit: Infinity, transactionFee: 1, color: "orange", features: ["Unlimited products", "1% transaction fee", "Dedicated support", "API access"] },
+              ].map((plan) => {
+                const isCurrentPlan = subscription?.plan === plan.id;
+                const isLoading = false;
+                return (
+                  <motion.div key={plan.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                    className={`relative p-6 rounded-xl border-2 transition-all ${
+                      isCurrentPlan
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/50"
+                    }`}>
+                    {isCurrentPlan && (
+                      <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-primary text-white text-xs font-medium rounded-full">
+                        Current Plan
+                      </span>
+                    )}
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${
+                      plan.color === "gray" ? "bg-gray-500/10 text-gray-500" :
+                      plan.color === "blue" ? "bg-blue-500/10 text-blue-500" :
+                      plan.color === "purple" ? "bg-purple-500/10 text-purple-500" :
+                      "bg-orange-500/10 text-orange-500"
+                    }`}>
+                      <Zap className="w-5 h-5" />
+                    </div>
+                    <h3 className="text-lg font-bold mb-1">{plan.name}</h3>
+                    <p className="text-2xl font-bold mb-1">
+                      UGX {plan.price.toLocaleString()}
+                      <span className="text-sm font-normal text-muted-foreground">{plan.period}</span>
+                    </p>
+                    <ul className="space-y-2 mb-6 mt-4 text-sm">
+                      {plan.features.map((f, i) => (
+                        <li key={i} className="flex items-center gap-2">
+                          <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
+                          <span>{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    {isCurrentPlan ? (
+                      <button className="w-full py-2.5 bg-accent text-muted-foreground rounded-lg text-sm font-medium cursor-default" disabled>
+                        Current Plan
+                      </button>
+                    ) : (
+                      <button
+                        onClick={async () => {
+                          if (!userId) return;
+                          try {
+                            if (subscription) {
+                              await upgradePlan({
+                                userId: userId as any,
+                                storeId: storeId as any,
+                                plan: plan.id as any,
+                              });
+                            } else {
+                              await createSubscription({
+                                userId: userId as any,
+                                storeId: storeId as any,
+                                plan: plan.id as any,
+                              });
+                            }
+                            setShowUpgradeModal(false);
+                          } catch (error) {
+                            console.error("Failed to upgrade plan:", error);
+                          }
+                        }}
+                        className={`w-full py-2.5 rounded-lg text-sm font-medium transition-opacity ${
+                          plan.price === 0
+                            ? "bg-accent hover:bg-accent/80"
+                            : "bg-gradient-to-r from-primary to-indigo-600 text-white hover:opacity-90"
+                        }`}>
+                        {subscription ? (plan.price > (subscription.plan === "free" ? 0 : 15000) ? "Upgrade" : "Downgrade") : "Get Started"}
+                      </button>
+                    )}
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            <div className="mt-6 p-4 rounded-xl bg-accent/30 text-sm text-muted-foreground text-center">
+              All paid plans are billed monthly. You can cancel anytime.
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
     </div>
   );
 }

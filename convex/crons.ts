@@ -17,4 +17,18 @@ crons.interval(
   { hoursThreshold: 48 }
 );
 
+crons.interval(
+  "check-subscription-expiry",
+  { hours: 1 },
+  api.subscriptions.checkAndExpireSubscriptions,
+  {}
+);
+
+crons.interval(
+  "grant-referral-bonuses",
+  { hours: 24 },
+  api.referrals.processAllReferralBonuses,
+  {}
+);
+
 export default crons;

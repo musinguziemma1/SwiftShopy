@@ -1,7 +1,6 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 
-// Email to store mapping for demo purposes
 const EMAIL_STORE_MAP: Record<string, { slug: string; userId: string }> = {
   "seller@swiftshopy.com": { slug: "nakato-styles", userId: "user_seller_1" },
   "mugisha@swiftshopy.com": { slug: "mugisha-electronics", userId: "user_seller_2" },
@@ -9,13 +8,13 @@ const EMAIL_STORE_MAP: Record<string, { slug: string; userId: string }> = {
 };
 
 export const useSellerData = (userEmail?: string | null) => {
-  // Get store by email
   const store = useQuery(
     api.stores.getByEmail,
     userEmail ? { email: userEmail } : "skip"
   );
 
   const storeId = store?._id;
+  const userId = store?.userId;
 
   const products = useQuery(
     api.products.getByStore,
@@ -27,11 +26,36 @@ export const useSellerData = (userEmail?: string | null) => {
     storeId ? { storeId: storeId as any } : "skip"
   );
 
+  const subscription = useQuery(
+    api.subscriptions.getByUser,
+    userId ? { userId: userId as any } : "skip"
+  );
+
+  const billingInfo = useQuery(
+    api.billing.getUserBillingInfo,
+    userId ? { userId: userId as any } : "skip"
+  );
+
+  const referralStats = useQuery(
+    api.referrals.getReferralStats,
+    userId ? { userId: userId as any } : "skip"
+  );
+
+  const usageDiscount = useQuery(
+    api.billing.checkUsageDiscountEligibility,
+    userId ? { userId: userId as any } : "skip"
+  );
+
   return {
     store: store ?? null,
     storeId: storeId ?? null,
+    userId: userId ?? null,
     products: products ?? [],
     orders: orders ?? [],
+    subscription: subscription ?? null,
+    billingInfo: billingInfo ?? null,
+    referralStats: referralStats ?? null,
+    usageDiscount: usageDiscount ?? null,
     isLoading: store === undefined || products === undefined || orders === undefined,
   };
 };
@@ -59,4 +83,20 @@ export const useOrderMutations = () => {
   const updateOrderStatus = useMutation(api.orders.updateStatus);
 
   return { createOrder, updateOrderStatus };
+};
+
+export const useSubscriptionMutations = () => {
+  const upgradePlan = useMutation(api.subscriptions.upgradePlan);
+  const renewSubscription = useMutation(api.subscriptions.renewSubscription);
+  const cancelSubscription = useMutation(api.subscriptions.cancelSubscription);
+  const createSubscription = useMutation(api.subscriptions.create);
+
+  return { upgradePlan, renewSubscription, cancelSubscription, createSubscription };
+};
+
+export const useReferralMutations = () => {
+  const generateReferralCode = useMutation(api.referrals.createReferralCode);
+  const createReferral = useMutation(api.referrals.createReferral);
+
+  return { generateReferralCode, createReferral };
 };

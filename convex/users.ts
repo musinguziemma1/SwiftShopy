@@ -24,7 +24,33 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const existing = await ctx.db.query("users").withIndex("by_email", q => q.eq("email", args.email)).first();
     if (existing) throw new Error("Email already registered");
-    return await ctx.db.insert("users", { ...args, isActive: true, joinDate: Date.now() });
+    const userId = await ctx.db.insert("users", { ...args, isActive: true, joinDate: Date.now() });
+    
+    const now = Date.now();
+    await ctx.db.insert("subscriptions", {
+      userId,
+      storeId: undefined,
+      plan: "free",
+      status: "active",
+      startDate: now,
+      endDate: now + 365 * 24 * 60 * 60 * 1000,
+      autoRenew: false,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    const referralCode = "SS-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+    await ctx.db.insert("billing_settings", {
+      userId,
+      walletBalance: 0,
+      discountEligible: false,
+      referralCode,
+      referralCount: 0,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return userId;
   },
 });
 

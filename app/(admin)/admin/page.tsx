@@ -14,6 +14,7 @@ import {
   Bell,
   Settings,
   LogOut,
+  Zap,
   Menu,
   X,
   Eye,
@@ -47,8 +48,12 @@ import {
   Plus,
   Copy,
   QrCode,
+  Gift,
+  Calendar,
 } from "lucide-react"
 import { useAdminData, useAdminMutations } from "@/lib/hooks/useAdminData"
+import { useMutation, useQuery } from "convex/react"
+import { api } from "@/convex/_generated/api"
 import { useAdminDashboardData } from "@/lib/hooks/useAdminDashboardData"
 
 // Types
@@ -98,6 +103,11 @@ function AdminDashboard() {
   const [showRoleModal, setShowRoleModal] = useState<string | null>(null)
   const [auditFilter, setAuditFilter] = useState("all")
   const [showCreateReportModal, setShowCreateReportModal] = useState(false)
+  const [billingSubTab, setBillingSubTab] = useState<"overview" | "plans" | "subscribers">("overview")
+  const [editingPlan, setEditingPlan] = useState<any>(null)
+  const [showPlanModal, setShowPlanModal] = useState(false)
+  const [editingPromotion, setEditingPromotion] = useState<any>(null)
+  const [showPromotionModal, setShowPromotionModal] = useState(false)
   
   // Settings state
   const [settingsSubTab, setSettingsSubTab] = useState("general")
@@ -152,8 +162,15 @@ function AdminDashboard() {
   }
 
   // Get real data from Convex
-  const { sellers: convexSellers, stores, orders, transactions, isLoading } = useAdminData()
-  const { toggleUserActive, updateOrderStatus } = useAdminMutations()
+  const { sellers: convexSellers, stores, orders, transactions, subscriptions, payments, billingAnalytics, revenueByPlan, referralStats, expiringSubscriptions, isLoading } = useAdminData()
+  const { toggleUserActive, updateOrderStatus, upgradePlan, renewSubscription, cancelSubscription, expireSubscription, updatePaymentStatus } = useAdminMutations()
+
+  // Promotions data and mutations
+  const promotions = useQuery(api.promotions.getAllPromotions)
+  const createPromotion = useMutation(api.promotions.createPromotion)
+  const updatePromotion = useMutation(api.promotions.updatePromotion)
+  const deletePromotion = useMutation(api.promotions.deletePromotion)
+  const togglePromotionStatus = useMutation(api.promotions.togglePromotionStatus)
 
   // Calculate stats from real data
   const totalRevenue = orders?.filter(o => o.status === "paid").reduce((sum, o) => sum + o.total, 0) ?? 0
@@ -349,7 +366,7 @@ function AdminDashboard() {
           <SidebarButton icon={<BarChart3 className="w-5 h-5" />} label="Overview" active={activeTab === "overview"} onClick={() => { setActiveTab("overview"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
           <SidebarButton icon={<Users className="w-5 h-5" />} label="Sellers" active={activeTab === "sellers"} onClick={() => { setActiveTab("sellers"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
           <SidebarButton icon={<DollarSign className="w-5 h-5" />} label="Transactions" active={activeTab === "transactions"} onClick={() => { setActiveTab("transactions"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
-          <SidebarButton icon={<CreditCard className="w-5 h-5" />} label="Commission" active={activeTab === "commission"} onClick={() => { setActiveTab("commission"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
+          <SidebarButton icon={<CreditCard className="w-5 h-5" />} label="Billing" active={activeTab === "billing"} onClick={() => { setActiveTab("billing"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
           <SidebarButton icon={<Shield className="w-5 h-5" />} label="Permissions" active={activeTab === "permissions"} onClick={() => { setActiveTab("permissions"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
           <SidebarButton icon={<Activity className="w-5 h-5" />} label="Analytics" active={activeTab === "analytics"} onClick={() => { setActiveTab("analytics"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
           <SidebarButton icon={<MessageSquare className="w-5 h-5" />} label="Support" active={activeTab === "support"} onClick={() => { setActiveTab("support"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
@@ -357,7 +374,7 @@ function AdminDashboard() {
           <SidebarButton icon={<FileBarChart className="w-5 h-5" />} label="Reports" active={activeTab === "reports"} onClick={() => { setActiveTab("reports"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
           <div className="pt-4 mt-4 border-t border-border">
             <SidebarButton icon={<Settings className="w-5 h-5" />} label="Settings" active={activeTab === "settings"} onClick={() => { setActiveTab("settings"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
-            <SidebarButton icon={<LogOut className="w-5 h-5" />} label="Logout" active={false} onClick={() => {}} collapsed={!sidebarOpen} />
+            <SidebarButton icon={<LogOut className="w-5 h-5" />} label="Logout" active={false} onClick={() => signOut({ callbackUrl: "/" })} collapsed={!sidebarOpen} />
           </div>
         </div>
       </aside>
@@ -743,6 +760,369 @@ function AdminDashboard() {
                   </table>
                 </div>
               </div>
+            </motion.div>
+          )}
+
+          {/* ── Billing Tab ── */}
+          {activeTab === "billing" && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+              <div className="mb-8">
+                <h1 className="text-3xl font-bold mb-2">Billing & Subscriptions</h1>
+                <p className="text-muted-foreground">Manage subscription plans, payments, and billing analytics</p>
+              </div>
+
+              {/* Billing Tabs */}
+              <div className="flex flex-wrap gap-2 mb-6">
+                {[
+                  { id: "overview", label: "Overview", icon: <BarChart3 className="w-4 h-4" /> },
+                  { id: "plans", label: "Manage Plans", icon: <Settings className="w-4 h-4" /> },
+                  { id: "subscribers", label: "Subscribers", icon: <Users className="w-4 h-4" /> },
+                ].map((tab) => (
+                  <button key={tab.id} onClick={() => setBillingSubTab(tab.id as any)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                      billingSubTab === tab.id
+                        ? "bg-gradient-to-r from-primary to-indigo-600 text-white shadow-lg"
+                        : "glass hover:bg-accent/50"
+                    }`}>
+                    {tab.icon} {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {billingSubTab === "overview" && (
+              <div>
+                {/* Billing Stats */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                  <div className="p-6 rounded-xl border border-border bg-card">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-muted-foreground">Monthly Recurring Revenue</span>
+                      <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center"><DollarSign className="w-5 h-5 text-green-500" /></div>
+                    </div>
+                    <p className="text-2xl font-bold">UGX {(billingAnalytics?.mrr ?? 0).toLocaleString()}</p>
+                    <p className="text-sm text-green-500">{billingAnalytics?.mrrGrowth ? (billingAnalytics.mrrGrowth > 0 ? "+" : "") + billingAnalytics.mrrGrowth.toFixed(1) + "%" : "+0%"} from last month</p>
+                  </div>
+                  <div className="p-6 rounded-xl border border-border bg-card">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-muted-foreground">Active Subscribers</span>
+                      <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center"><Users className="w-5 h-5 text-blue-500" /></div>
+                    </div>
+                    <p className="text-2xl font-bold">{billingAnalytics?.activeSubscribers ?? 0}</p>
+                    <p className="text-sm text-muted-foreground">{((billingAnalytics?.activeSubscribers ?? 0) / Math.max(1, totalSellers) * 100).toFixed(1)}% of total users</p>
+                  </div>
+                  <div className="p-6 rounded-xl border border-border bg-card">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-muted-foreground">ARPU</span>
+                      <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center"><TrendingUp className="w-5 h-5 text-purple-500" /></div>
+                    </div>
+                    <p className="text-2xl font-bold">UGX {(billingAnalytics?.arpu ?? 0).toLocaleString()}</p>
+                    <p className="text-sm text-muted-foreground">Average per user</p>
+                  </div>
+                  <div className="p-6 rounded-xl border border-border bg-card">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-muted-foreground">Churn Rate</span>
+                      <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center"><AlertTriangle className="w-5 h-5 text-orange-500" /></div>
+                    </div>
+                    <p className="text-2xl font-bold">{(billingAnalytics?.churnRate ?? 0).toFixed(1)}%</p>
+                    <p className="text-sm text-muted-foreground">Monthly churn</p>
+                  </div>
+                </div>
+
+                {/* Plan Distribution */}
+                <div className="grid lg:grid-cols-2 gap-6 mb-8">
+                  <div className="p-6 rounded-xl border border-border bg-card">
+                    <h3 className="text-lg font-semibold mb-6">Subscription Plans</h3>
+                    <div className="space-y-4">
+                      {[
+                        { plan: "Free", count: subscriptions.filter(s => s.plan === "free" && s.status === "active").length, color: "bg-gray-500", price: "UGX 0" },
+                        { plan: "Pro", count: subscriptions.filter(s => s.plan === "pro" && s.status === "active").length, color: "bg-blue-500", price: "UGX 15,000/mo" },
+                        { plan: "Business", count: subscriptions.filter(s => s.plan === "business" && s.status === "active").length, color: "bg-purple-500", price: "UGX 35,000/mo" },
+                        { plan: "Enterprise", count: subscriptions.filter(s => s.plan === "enterprise" && s.status === "active").length, color: "bg-orange-500", price: "UGX 60,000/mo" },
+                      ].map((p, i) => (
+                        <motion.div key={p.plan} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3, delay: i * 0.1 }}
+                          className="p-4 rounded-lg border border-border hover:bg-accent transition-colors">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-3 h-3 rounded-full ${p.color}`} />
+                              <span className="font-medium">{p.plan}</span>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-2xl font-bold">{p.count}</span>
+                              <span className="text-sm text-muted-foreground ml-2">users</span>
+                            </div>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{p.price}</p>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="p-6 rounded-xl border border-border bg-card">
+                    <h3 className="text-lg font-semibold mb-6">Revenue by Plan</h3>
+                    <div className="space-y-4">
+                      {revenueByPlan.length > 0 ? revenueByPlan.map((r: { plan: string; revenue: number }, i: number) => (
+                        <motion.div key={r.plan} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3, delay: i * 0.1 }}
+                          className="p-4 rounded-lg border border-border">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium capitalize">{r.plan}</span>
+                            <span className="text-lg font-bold text-green-500">UGX {r.revenue.toLocaleString()}</span>
+                          </div>
+                        </motion.div>
+                      )) : (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <DollarSign className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                          <p>No revenue data yet</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              )}
+
+              {billingSubTab === "plans" && (
+              <div className="space-y-6">
+                {/* Plans Header */}
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Subscription Plans</h3>
+                  <div className="text-sm text-muted-foreground">
+                    {subscriptions.filter(s => s.status === "active").length} active subscribers
+                  </div>
+                </div>
+
+                {/* Plan Cards */}
+                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {[
+                    { id: "free", name: "Free", price: 0, productLimit: 10, transactionFee: 4, color: "gray", features: ["Up to 10 products", "4% transaction fee", "Basic support", "WhatsApp order button"] },
+                    { id: "pro", name: "Pro", price: 15000, productLimit: 25, transactionFee: 2.5, color: "blue", features: ["Up to 25 products", "2.5% transaction fee", "Analytics dashboard", "WhatsApp integration", "Remove branding"] },
+                    { id: "business", name: "Business", price: 35000, productLimit: 38, transactionFee: 1.5, color: "purple", features: ["Up to 38 products", "1.5% transaction fee", "Priority support", "Custom domain", "Discount & coupons"] },
+                    { id: "enterprise", name: "Enterprise", price: 60000, productLimit: -1, transactionFee: 1, color: "orange", features: ["Unlimited products", "1% transaction fee", "Dedicated support", "API access", "Multi-store"] },
+                  ].map((plan) => {
+                    const subscriberCount = subscriptions.filter(s => s.plan === plan.id && s.status === "active").length;
+                    return (
+                      <motion.div key={plan.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                        className="p-6 rounded-xl border border-border bg-card hover:shadow-lg transition-shadow">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                              plan.color === "gray" ? "bg-gray-500/10 text-gray-500" :
+                              plan.color === "blue" ? "bg-blue-500/10 text-blue-500" :
+                              plan.color === "purple" ? "bg-purple-500/10 text-purple-500" :
+                              "bg-orange-500/10 text-orange-500"
+                            }`}>
+                              <Zap className="w-5 h-5" />
+                            </div>
+                            <h4 className="text-lg font-semibold">{plan.name}</h4>
+                          </div>
+                          <button onClick={() => { setEditingPlan(plan); setShowPlanModal(true) }} className="p-1.5 hover:bg-accent rounded-lg transition-colors">
+                            <Edit className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <p className="text-3xl font-bold mb-1">UGX {plan.price.toLocaleString()}</p>
+                        <p className="text-sm text-muted-foreground mb-4">per month</p>
+                        <div className="space-y-2 text-sm mb-6">
+                          {plan.features.map((f, i) => (
+                            <div key={i} className="flex items-center gap-2">
+                              <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
+                              <span>{f}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="pt-4 border-t border-border">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Subscribers</span>
+                            <span className="font-semibold">{subscriberCount}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm mt-1">
+                            <span className="text-muted-foreground">Revenue</span>
+                            <span className="font-semibold text-green-500">UGX {(plan.price * subscriberCount).toLocaleString()}</span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+
+                {/* Promotions & Incentives Management */}
+                <div className="mt-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-semibold">Promotions & Incentives</h3>
+                    <button onClick={() => { setEditingPromotion(null); setShowPromotionModal(true) }}
+                      className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-indigo-600 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">
+                      <Plus className="w-4 h-4" /> Add Promotion
+                    </button>
+                  </div>
+
+                  <div className="grid md:grid-cols-3 gap-6">
+                    {promotions && promotions.length > 0 ? promotions.map((promo: any, i: number) => (
+                      <motion.div key={promo._id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.1 }}
+                        className="p-6 rounded-xl border border-border bg-card hover:shadow-lg transition-shadow">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                            promo.type === "referral" ? "bg-purple-500/10 text-purple-500" :
+                            promo.type === "performance" ? "bg-green-500/10 text-green-500" :
+                            promo.type === "loyalty" ? "bg-orange-500/10 text-orange-500" :
+                            promo.type === "annual" ? "bg-blue-500/10 text-blue-500" :
+                            "bg-gray-500/10 text-gray-500"
+                          }`}>
+                            {promo.type === "referral" ? <Users className="w-6 h-6" /> :
+                             promo.type === "performance" ? <TrendingUp className="w-6 h-6" /> :
+                             promo.type === "loyalty" ? <Star className="w-6 h-6" /> :
+                             promo.type === "annual" ? <Calendar className="w-6 h-6" /> :
+                             <Gift className="w-6 h-6" />}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button onClick={async () => {
+                              await togglePromotionStatus({ id: promo._id })
+                            }} className={`px-2 py-1 rounded-full text-xs font-medium cursor-pointer transition-opacity hover:opacity-80 ${
+                              promo.isActive ? "bg-green-500/10 text-green-500" : "bg-gray-500/10 text-gray-500"
+                            }`}>
+                              {promo.isActive ? "Active" : "Inactive"}
+                            </button>
+                            <button onClick={() => { setEditingPromotion(promo); setShowPromotionModal(true) }}
+                              className="p-1.5 hover:bg-accent rounded-lg transition-colors">
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button onClick={async () => {
+                              if (confirm("Are you sure you want to delete this promotion?")) {
+                                await deletePromotion({ id: promo._id })
+                              }
+                            }} className="p-1.5 hover:bg-red-500/10 rounded-lg transition-colors text-red-500">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        <h4 className="font-semibold mb-2">{promo.name}</h4>
+                        <p className="text-sm text-muted-foreground mb-3">{promo.description}</p>
+                        <div className="space-y-2 text-xs">
+                          <div className="flex items-center justify-between p-2 bg-accent/30 rounded-lg">
+                            <span className="text-muted-foreground">Reward</span>
+                            <span className="font-medium">
+                              {promo.rewardType === "free_month" ? "1 Month Free" :
+                               promo.rewardType === "discount_percentage" ? `${promo.rewardValue}% Off` :
+                               promo.rewardType === "discount_fixed" ? `UGX ${promo.rewardValue.toLocaleString()}` :
+                               `UGX ${promo.rewardValue.toLocaleString()} Cash`}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between p-2 bg-accent/30 rounded-lg">
+                            <span className="text-muted-foreground">Trigger</span>
+                            <span className="font-medium">
+                              {promo.triggerCondition.type === "referral_count" ? `${promo.triggerCondition.threshold} Referrals` :
+                               promo.triggerCondition.type === "transaction_volume" ? `UGX ${promo.triggerCondition.threshold.toLocaleString()}` :
+                               promo.triggerCondition.type === "subscription_months" ? `${promo.triggerCondition.threshold} Months` :
+                               "Manual"}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between p-2 bg-accent/30 rounded-lg">
+                            <span className="text-muted-foreground">Redemptions</span>
+                            <span className="font-medium">{promo.currentRedemptions}{promo.maxRedemptions ? ` / ${promo.maxRedemptions}` : ""}</span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )) : (
+                      <div className="col-span-3 text-center py-12 text-muted-foreground">
+                        <Gift className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <p>No promotions yet. Create your first promotion!</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              )}
+
+              {billingSubTab === "subscribers" && (
+              <div className="p-6 rounded-xl border border-border bg-card">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-semibold">All Subscribers</h3>
+                  <div className="flex items-center gap-2">
+                    <button className="px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-accent transition-colors flex items-center gap-2">
+                      <Download className="w-4 h-4" /> Export CSV
+                    </button>
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-border">
+                        {["Seller", "Email", "Plan", "Status", "Start Date", "End Date", "Auto Renew", "Actions"].map((h) => (
+                          <th key={h} className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {subscriptions.length > 0 ? subscriptions.map((sub: { _id: string; userId: string; plan: string; status: string; startDate: number; endDate: number; autoRenew?: boolean }, i: number) => {
+                        const seller = convexSellers?.find((s: any) => s._id === sub.userId);
+                        return (
+                          <motion.tr key={sub._id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: i * 0.05 }}
+                            className="border-b border-border hover:bg-accent/50 transition-colors">
+                            <td className="py-3 px-4 text-sm font-medium">{seller?.name ?? "Unknown Seller"}</td>
+                            <td className="py-3 px-4 text-sm text-muted-foreground">{seller?.email ?? "-"}</td>
+                            <td className="py-3 px-4">
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                sub.plan === "enterprise" ? "bg-orange-500/10 text-orange-500" :
+                                sub.plan === "business" ? "bg-purple-500/10 text-purple-500" :
+                                sub.plan === "pro" ? "bg-blue-500/10 text-blue-500" :
+                                "bg-gray-500/10 text-gray-500"
+                              }`}>
+                                {sub.plan.charAt(0).toUpperCase() + sub.plan.slice(1)}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${
+                                sub.status === "active" ? "bg-green-500/10 text-green-500 border-green-500/20" :
+                                sub.status === "expired" ? "bg-red-500/10 text-red-500 border-red-500/20" :
+                                "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
+                              }`}>
+                                {sub.status === "active" ? <CheckCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                                {sub.status.charAt(0).toUpperCase() + sub.status.slice(1)}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-sm">{new Date(sub.startDate).toLocaleDateString()}</td>
+                            <td className="py-3 px-4 text-sm">{new Date(sub.endDate).toLocaleDateString()}</td>
+                            <td className="py-3 px-4">
+                              {sub.autoRenew ? (
+                                <span className="inline-flex items-center gap-1 text-sm text-green-500"><Check className="w-4 h-4" /> Yes</span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-sm text-muted-foreground"><X className="w-4 h-4" /> No</span>
+                              )}
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-2">
+                                <button className="p-1 hover:bg-accent rounded transition-colors" title="View Details">
+                                  <Eye className="w-4 h-4" />
+                                </button>
+                                {sub.status === "active" && (
+                                  <button onClick={async () => {
+                                    if (confirm("Cancel this subscription?")) {
+                                      await cancelSubscription({ id: sub._id as any });
+                                    }
+                                  }} className="p-1 hover:bg-accent rounded transition-colors text-red-500" title="Cancel">
+                                    <Ban className="w-4 h-4" />
+                                  </button>
+                                )}
+                                {sub.status === "expired" && (
+                                  <button onClick={async () => {
+                                    await renewSubscription({ userId: sub.userId as any, plan: sub.plan as any });
+                                  }} className="p-1 hover:bg-accent rounded transition-colors text-green-500" title="Renew">
+                                    <ArrowUpRight className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </motion.tr>
+                        );
+                      }) : (
+                        <tr>
+                          <td colSpan={8} className="py-8 text-center text-muted-foreground">
+                            No subscribers found
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              )}
             </motion.div>
           )}
 
@@ -1667,6 +2047,222 @@ function AdminDashboard() {
 
         </div>
       </main>
+
+      {/* ── Plan Edit Modal ── */}
+      {showPlanModal && editingPlan && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => { setShowPlanModal(false); setEditingPlan(null); }}>
+          <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
+            className="bg-card rounded-2xl w-full max-w-lg p-6"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold">Edit {editingPlan.name} Plan</h2>
+              <button onClick={() => { setShowPlanModal(false); setEditingPlan(null); }} className="p-2 hover:bg-accent rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Plan Name</label>
+                <input type="text" value={editingPlan.name}
+                  onChange={(e) => setEditingPlan({ ...editingPlan, name: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Monthly Price (UGX)</label>
+                <input type="number" value={editingPlan.price}
+                  onChange={(e) => setEditingPlan({ ...editingPlan, price: parseInt(e.target.value) || 0 })}
+                  className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Product Limit</label>
+                <input type="number" value={editingPlan.productLimit}
+                  onChange={(e) => setEditingPlan({ ...editingPlan, productLimit: parseInt(e.target.value) || -1 })}
+                  className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary" />
+                <p className="text-xs text-muted-foreground mt-1">Use -1 for unlimited</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Transaction Fee (%)</label>
+                <input type="number" step="0.1" value={editingPlan.transactionFee}
+                  onChange={(e) => setEditingPlan({ ...editingPlan, transactionFee: parseFloat(e.target.value) || 0 })}
+                  className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary" />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => { setShowPlanModal(false); setEditingPlan(null); }}
+                className="flex-1 py-2.5 border border-border rounded-lg hover:bg-accent transition-colors">
+                Cancel
+              </button>
+              <button onClick={() => {
+                // In a real app, this would call a mutation to update plan settings in the database
+                // For now, the plan limits are defined in subscriptions.ts
+                alert(`Plan settings for "${editingPlan.name}" would be saved.\n\nNote: Plan configuration is currently defined in convex/subscriptions.ts.\nContact your developer to update plan limits in the backend.`);
+                setShowPlanModal(false);
+                setEditingPlan(null);
+              }}
+                className="flex-1 py-2.5 bg-gradient-to-r from-primary to-indigo-600 text-white rounded-lg hover:opacity-90 transition-opacity">
+                Save Changes
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* ── Promotion Edit Modal ── */}
+      {showPromotionModal && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto"
+          onClick={() => { setShowPromotionModal(false); setEditingPromotion(null); }}>
+          <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
+            className="bg-card rounded-2xl w-full max-w-lg p-6 my-8"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold">{editingPromotion ? "Edit" : "Create"} Promotion</h2>
+              <button onClick={() => { setShowPromotionModal(false); setEditingPromotion(null); }} className="p-2 hover:bg-accent rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const data = {
+                name: formData.get("name") as string,
+                description: formData.get("description") as string,
+                type: formData.get("type") as any,
+                rewardType: formData.get("rewardType") as any,
+                rewardValue: parseFloat(formData.get("rewardValue") as string),
+                triggerCondition: {
+                  type: formData.get("triggerType") as any,
+                  threshold: parseFloat(formData.get("threshold") as string),
+                  period: formData.get("period") as any || undefined,
+                },
+                isActive: formData.get("isActive") === "true",
+                maxRedemptions: formData.get("maxRedemptions") ? parseInt(formData.get("maxRedemptions") as string) : undefined,
+                startDate: new Date(formData.get("startDate") as string).getTime(),
+                endDate: formData.get("endDate") ? new Date(formData.get("endDate") as string).getTime() : undefined,
+              };
+
+              try {
+                if (editingPromotion) {
+                  await updatePromotion({ id: editingPromotion._id, ...data });
+                } else {
+                  await createPromotion(data);
+                }
+                setShowPromotionModal(false);
+                setEditingPromotion(null);
+              } catch (err: any) {
+                alert(err.message || "Failed to save promotion");
+              }
+            }}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Name</label>
+                  <input name="name" type="text" defaultValue={editingPromotion?.name || ""}
+                    required className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Description</label>
+                  <textarea name="description" defaultValue={editingPromotion?.description || ""}
+                    required rows={2} className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary resize-none" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Type</label>
+                    <select name="type" defaultValue={editingPromotion?.type || "referral"}
+                      className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary">
+                      <option value="referral">Referral</option>
+                      <option value="performance">Performance</option>
+                      <option value="loyalty">Loyalty</option>
+                      <option value="annual">Annual</option>
+                      <option value="custom">Custom</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Status</label>
+                    <select name="isActive" defaultValue={editingPromotion?.isActive?.toString() || "true"}
+                      className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary">
+                      <option value="true">Active</option>
+                      <option value="false">Inactive</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Reward Type</label>
+                    <select name="rewardType" defaultValue={editingPromotion?.rewardType || "free_month"}
+                      className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary">
+                      <option value="free_month">Free Month</option>
+                      <option value="discount_percentage">Discount (%)</option>
+                      <option value="discount_fixed">Discount (Fixed)</option>
+                      <option value="cash_reward">Cash Reward</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Reward Value</label>
+                    <input name="rewardValue" type="number" step="0.01"
+                      defaultValue={editingPromotion?.rewardValue || 0}
+                      className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Trigger Type</label>
+                    <select name="triggerType" defaultValue={editingPromotion?.triggerCondition?.type || "referral_count"}
+                      className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary">
+                      <option value="referral_count">Referral Count</option>
+                      <option value="transaction_volume">Transaction Volume</option>
+                      <option value="subscription_months">Subscription Months</option>
+                      <option value="manual">Manual</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Threshold</label>
+                    <input name="threshold" type="number"
+                      defaultValue={editingPromotion?.triggerCondition?.threshold || 3}
+                      className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Start Date</label>
+                    <input name="startDate" type="date" required
+                      defaultValue={editingPromotion ? new Date(editingPromotion.startDate).toISOString().split("T")[0] : new Date().toISOString().split("T")[0]}
+                      className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">End Date (Optional)</label>
+                    <input name="endDate" type="date"
+                      defaultValue={editingPromotion?.endDate ? new Date(editingPromotion.endDate).toISOString().split("T")[0] : ""}
+                      className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Max Redemptions (Optional)</label>
+                  <input name="maxRedemptions" type="number"
+                    defaultValue={editingPromotion?.maxRedemptions || ""}
+                    placeholder="Leave empty for unlimited"
+                    className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary" />
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button type="button" onClick={() => { setShowPromotionModal(false); setEditingPromotion(null); }}
+                  className="flex-1 py-2.5 border border-border rounded-lg hover:bg-accent transition-colors">
+                  Cancel
+                </button>
+                <button type="submit"
+                  className="flex-1 py-2.5 bg-gradient-to-r from-primary to-indigo-600 text-white rounded-lg hover:opacity-90 transition-opacity">
+                  {editingPromotion ? "Save Changes" : "Create Promotion"}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </motion.div>
+      )}
     </div>
   )
 }

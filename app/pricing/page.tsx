@@ -1,0 +1,667 @@
+"use client"
+
+import React, { useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
+import { ThemeToggle } from "@/components/ui/theme-toggle"
+import { HeroMotionBackground } from "@/components/ui/hero-motion-background"
+import { DottedSurface } from "@/components/ui/dotted-surface"
+import { BackgroundPaths } from "@/components/ui/background-paths"
+import {
+  Check,
+  X,
+  Zap,
+  ArrowRight,
+  Star,
+  Shield,
+  ChevronDown,
+  ChevronUp,
+  Store,
+  BarChart3,
+  Package,
+  CreditCard,
+  Users,
+  MessageSquare,
+  FileText,
+  Settings,
+  Globe,
+  TrendingUp,
+  Gift,
+  Phone,
+  Mail,
+  HelpCircle,
+  Sparkles,
+  Crown,
+  Menu,
+  ShoppingCart,
+  Facebook,
+  Twitter,
+  Instagram,
+  Linkedin,
+  MapPin,
+} from "lucide-react"
+
+interface Plan {
+  id: string
+  name: string
+  price: number
+  priceDisplay: string
+  period: string
+  transactionFee: number
+  productLimit: number | string
+  highlighted: boolean
+  badge?: string
+  color: string
+  cta: string
+  features: string[]
+  featureDescription: string
+}
+
+interface ComparisonFeature {
+  name: string
+  free: boolean | string
+  pro: boolean | string
+  business: boolean | string
+  enterprise: boolean | string
+  category: string
+}
+
+interface FAQ {
+  question: string
+  answer: string
+}
+
+export default function PricingPage() {
+  const router = useRouter()
+  const { data: session } = useSession()
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly")
+  const [expandedFaq, setExpandedFaq] = useState<number | null>(null)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  const plans: Plan[] = [
+    {
+      id: "free",
+      name: "Free",
+      price: 0,
+      priceDisplay: "UGX 0",
+      period: "Free forever",
+      transactionFee: 4,
+      productLimit: 10,
+      highlighted: false,
+      color: "gray",
+      cta: "Start Free",
+      features: [
+        "Up to 10 products",
+        "WhatsApp order button",
+        "MTN Mobile Money payments",
+        "Basic order tracking",
+        "Simple dashboard",
+        "Basic customer list",
+        "Payment status tracking",
+        "SwiftShopy branding included",
+      ],
+      featureDescription: "Perfect for getting started with online selling",
+    },
+    {
+      id: "pro",
+      name: "Pro",
+      price: 15000,
+      priceDisplay: billingCycle === "monthly" ? "UGX 15,000" : "UGX 144,000",
+      period: billingCycle === "monthly" ? "/month" : "/year (save 20%)",
+      transactionFee: 2.5,
+      productLimit: 25,
+      highlighted: true,
+      badge: "MOST POPULAR",
+      color: "blue",
+      cta: "Upgrade to Pro",
+      features: [
+        "Everything in Free, plus:",
+        "Remove SwiftShopy branding",
+        "Custom store link",
+        "Auto payment confirmation",
+        "Daily & weekly analytics",
+        "Customer insights (repeat buyers)",
+        "Order notifications",
+        "Quick reorder functionality",
+        "Basic promotional tools",
+      ],
+      featureDescription: "Best for growing businesses",
+    },
+    {
+      id: "business",
+      name: "Business",
+      price: 35000,
+      priceDisplay: billingCycle === "monthly" ? "UGX 35,000" : "UGX 336,000",
+      period: billingCycle === "monthly" ? "/month" : "/year (save 20%)",
+      transactionFee: 1.5,
+      productLimit: "50-75",
+      highlighted: false,
+      color: "purple",
+      cta: "Get Business",
+      features: [
+        "Everything in Pro, plus:",
+        "Advanced analytics & trends",
+        "Inventory management",
+        "Stock tracking & alerts",
+        "Order status management",
+        "Customer tagging (VIP, repeat)",
+        "Bulk product upload",
+        "Discount & coupon system",
+        "Export reports (PDF/CSV)",
+        "Custom branding (logo, colors)",
+      ],
+      featureDescription: "For established businesses scaling up",
+    },
+    {
+      id: "enterprise",
+      name: "Enterprise",
+      price: 60000,
+      priceDisplay: billingCycle === "monthly" ? "UGX 60,000" : "UGX 576,000",
+      period: billingCycle === "monthly" ? "/month" : "/year (save 20%)",
+      transactionFee: 1,
+      productLimit: "Unlimited",
+      highlighted: false,
+      badge: "BEST VALUE",
+      color: "orange",
+      cta: "Contact Sales",
+      features: [
+        "Everything in Business, plus:",
+        "Multi-user/team accounts",
+        "API access for integrations",
+        "Advanced financial reporting",
+        "Custom payment workflows",
+        "Priority payment processing",
+        "Dedicated account manager",
+        "White-label capabilities",
+        "Multi-store management",
+        "Automated reconciliation",
+      ],
+      featureDescription: "Full-featured for large operations",
+    },
+  ]
+
+  const comparisonFeatures: ComparisonFeature[] = [
+    { name: "Product Listings", free: "10 products", pro: "25 products", business: "50-75 products", enterprise: "Unlimited", category: "Store & Products" },
+    { name: "Store Customization", free: "Basic", pro: "Advanced", business: "Full brand control", enterprise: "White-label", category: "Store & Products" },
+    { name: "Custom Store Link", free: false, pro: true, business: true, enterprise: true, category: "Store & Products" },
+    { name: "Bulk Product Upload", free: false, pro: false, business: true, enterprise: true, category: "Store & Products" },
+    { name: "Inventory Management", free: false, pro: false, business: true, enterprise: true, category: "Store & Products" },
+    { name: "Transaction Fee", free: "4%", pro: "2.5%", business: "1.5%", enterprise: "1%", category: "Payments" },
+    { name: "MTN Mobile Money", free: true, pro: true, business: true, enterprise: true, category: "Payments" },
+    { name: "Airtel Money", free: true, pro: true, business: true, enterprise: true, category: "Payments" },
+    { name: "Auto Payment Confirmation", free: false, pro: true, business: true, enterprise: true, category: "Payments" },
+    { name: "Priority Payment Processing", free: false, pro: false, business: false, enterprise: true, category: "Payments" },
+    { name: "Basic Dashboard", free: true, pro: true, business: true, enterprise: true, category: "Analytics" },
+    { name: "Daily & Weekly Analytics", free: false, pro: true, business: true, enterprise: true, category: "Analytics" },
+    { name: "Monthly Reports & Trends", free: false, pro: false, business: true, enterprise: true, category: "Analytics" },
+    { name: "Customer Insights", free: false, pro: "Basic", business: "Advanced", enterprise: "Full", category: "Analytics" },
+    { name: "Export Reports (PDF/CSV)", free: false, pro: false, business: true, enterprise: true, category: "Analytics" },
+    { name: "WhatsApp Order Button", free: true, pro: true, business: true, enterprise: true, category: "Marketing & Growth" },
+    { name: "Promotional Tools", free: false, pro: "Basic", business: "Advanced", enterprise: "Full", category: "Marketing & Growth" },
+    { name: "Discount & Coupon System", free: false, pro: false, business: true, enterprise: true, category: "Marketing & Growth" },
+    { name: "Customer Tagging", free: false, pro: false, business: true, enterprise: true, category: "Marketing & Growth" },
+    { name: "Email Support", free: true, pro: true, business: true, enterprise: true, category: "Support" },
+    { name: "Priority Support", free: false, pro: false, business: true, enterprise: true, category: "Support" },
+    { name: "Dedicated Account Manager", free: false, pro: false, business: false, enterprise: true, category: "Support" },
+    { name: "API Access", free: false, pro: false, business: false, enterprise: true, category: "Support" },
+  ]
+
+  const faqs: FAQ[] = [
+    { question: "Can I try SwiftShopy for free?", answer: "Yes! Our Free plan lets you create a store with up to 10 products and accept payments via MTN Mobile Money. No credit card required to start." },
+    { question: "How do I pay for my subscription?", answer: "You can pay using MTN Mobile Money or Airtel Money. Simply enter your phone number, confirm the payment on your mobile, and your subscription activates immediately." },
+    { question: "What happens when my subscription expires?", answer: "Your store will downgrade to the Free plan automatically. You'll still have access to your data and can renew anytime to regain premium features." },
+    { question: "Can I upgrade or downgrade my plan anytime?", answer: "Yes! You can upgrade anytime and the new features activate immediately. If you downgrade, the change takes effect at your next billing cycle." },
+    { question: "Are there any hidden fees?", answer: "No hidden fees. You only pay the monthly subscription fee and the transaction fee on successful payments. No setup fees, no cancellation fees." },
+    { question: "How does the referral program work?", answer: "Share your unique referral code with other sellers. For every 3 sellers who join using your code, you get 1 month of Pro plan free!" },
+    { question: "Can I get a discount?", answer: "Yes! If you process over UGX 2,000,000 in transactions per month, you qualify for a 10% discount on your next subscription. We also offer 20% off annual plans." },
+    { question: "Is my payment data secure?", answer: "Absolutely. We use industry-standard encryption and work directly with MTN and Airtel payment systems. Your payment details are never stored on our servers." },
+  ]
+
+  const handleGetStarted = (planId: string) => {
+    if (session) {
+      router.push(`/dashboard?tab=settings&subtab=subscription&plan=${planId}`)
+    } else {
+      router.push(`/login?callbackUrl=/pricing`)
+    }
+  }
+
+  const renderFeatureValue = (value: boolean | string) => {
+    if (value === true) return <Check className="w-5 h-5 text-green-500" />
+    if (value === false) return <X className="w-5 h-5 text-muted-foreground/30" />
+    return <span className="text-sm font-medium">{value}</span>
+  }
+
+  const categories = [...new Set(comparisonFeatures.map(f => f.category))]
+
+  return (
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Navigation - Same as landing page */}
+      <nav className="fixed top-0 w-full glass border-b border-border/50 z-50">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 bg-gradient-to-br from-primary to-indigo-600 rounded-xl flex items-center justify-center shadow-lg glow-primary">
+                <ShoppingCart className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-xl font-bold text-gradient">SwiftShopy</span>
+            </div>
+
+            <div className="hidden md:flex items-center gap-6">
+              <Link href="/" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
+                Home
+              </Link>
+              <Link href="/pricing" className="text-sm font-medium text-primary">
+                Pricing
+              </Link>
+              <Link href="/#testimonials" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
+                Testimonials
+              </Link>
+              <Link href="/#faq" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
+                FAQ
+              </Link>
+              <div className="w-px h-6 bg-border mx-2" />
+              <ThemeToggle />
+              <Link
+                href="/dashboard"
+                className="px-4 py-2 text-sm font-medium border border-border rounded-lg hover:bg-accent hover:scale-105 transition-all"
+              >
+                Dashboard
+              </Link>
+              <Link
+                href="/signup"
+                className="px-5 py-2.5 text-sm font-medium bg-gradient-to-r from-primary to-indigo-600 text-primary-foreground rounded-xl hover:scale-105 hover:shadow-xl transition-all shadow-lg"
+              >
+                Get Started
+              </Link>
+            </div>
+
+            <div className="flex items-center gap-3 md:hidden">
+              <ThemeToggle />
+              <button className="p-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+                {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="md:hidden border-t border-border glass"
+            >
+              <div className="container mx-auto px-4 py-4 space-y-4">
+                <Link href="/" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
+                  Home
+                </Link>
+                <Link href="/pricing" className="block py-2 text-sm font-medium text-primary">
+                  Pricing
+                </Link>
+                <Link href="/dashboard" className="w-full block px-4 py-2 text-sm font-medium text-center border border-border rounded-lg hover:bg-accent transition-colors">
+                  Dashboard
+                </Link>
+                <Link href="/signup" className="w-full block px-4 py-2 text-sm font-medium text-center bg-gradient-to-r from-primary to-indigo-600 text-primary-foreground rounded-xl transition-colors">
+                  Get Started
+                </Link>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </nav>
+
+      {/* Hero Section with Motion Background */}
+      <section className="relative pt-32 pb-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        <HeroMotionBackground />
+        <div className="container mx-auto relative z-10">
+          <div className="max-w-4xl mx-auto text-center">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.1 }}
+                className="inline-flex items-center gap-2 px-4 py-2 glass rounded-full mb-6"
+              >
+                <Sparkles className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium">Simple, Transparent Pricing</span>
+              </motion.div>
+              
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6">
+                Choose the Right Plan for{" "}
+                <span className="text-gradient">Your Business</span>
+              </h1>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
+                Start free, upgrade as you grow. No hidden fees, no contracts. Cancel anytime.
+              </p>
+            </motion.div>
+
+            {/* Billing Toggle */}
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
+              className="flex items-center justify-center gap-4 mb-12">
+              <span className={`text-sm font-medium ${billingCycle === "monthly" ? "text-foreground" : "text-muted-foreground"}`}>Monthly</span>
+              <button onClick={() => setBillingCycle(billingCycle === "monthly" ? "yearly" : "monthly")}
+                className={`relative w-14 h-7 rounded-full transition-colors ${billingCycle === "yearly" ? "bg-gradient-to-r from-primary to-indigo-600" : "bg-muted"}`}>
+                <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all ${billingCycle === "yearly" ? "right-1" : "left-1"}`} />
+              </button>
+              <span className={`text-sm font-medium ${billingCycle === "yearly" ? "text-foreground" : "text-muted-foreground"}`}>
+                Yearly <span className="text-green-500 text-xs font-bold">Save 20%</span>
+              </span>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Cards */}
+      <section className="relative px-4 sm:px-6 lg:px-8 pb-20">
+        <DottedSurface className="absolute inset-0 opacity-10" />
+        <div className="container mx-auto relative z-10">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+            {plans.map((plan, index) => (
+              <motion.div key={plan.id}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                whileHover={{ y: -8, scale: 1.02 }}
+                className={`relative rounded-2xl p-6 flex flex-col transition-all ${
+                  plan.highlighted
+                    ? "glass gradient-border shadow-xl scale-105 lg:scale-110"
+                    : "glass hover:shadow-lg"
+                }`}>
+                {plan.badge && (
+                  <div className={`absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-bold shadow-lg ${
+                    plan.highlighted ? "bg-gradient-to-r from-primary to-indigo-600 text-white" : "bg-gradient-to-r from-orange-500 to-amber-500 text-white"
+                  }`}>
+                    {plan.badge}
+                  </div>
+                )}
+
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${
+                  plan.color === "gray" ? "bg-gray-500/20 text-gray-500" :
+                  plan.color === "blue" ? "bg-blue-500/20 text-blue-500" :
+                  plan.color === "purple" ? "bg-purple-500/20 text-purple-500" :
+                  "bg-orange-500/20 text-orange-500"
+                }`}>
+                  {plan.color === "gray" ? <Package className="w-6 h-6" /> :
+                   plan.color === "blue" ? <Zap className="w-6 h-6" /> :
+                   plan.color === "purple" ? <TrendingUp className="w-6 h-6" /> :
+                   <Crown className="w-6 h-6" />}
+                </div>
+
+                <h3 className="text-xl font-bold mb-2">{plan.name}</h3>
+                <p className="text-sm text-muted-foreground mb-4">{plan.featureDescription}</p>
+
+                <div className="mb-6">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl font-bold">{plan.priceDisplay}</span>
+                    <span className="text-sm text-muted-foreground">{plan.period}</span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+                    <span>{plan.transactionFee}% per transaction</span>
+                    <span className="text-border">|</span>
+                    <span>{plan.productLimit} products</span>
+                  </div>
+                </div>
+
+                <button onClick={() => handleGetStarted(plan.id)}
+                  className={`w-full py-3 rounded-xl font-medium transition-all hover:scale-105 flex items-center justify-center gap-2 mb-6 ${
+                    plan.highlighted
+                      ? "bg-gradient-to-r from-primary to-indigo-600 text-white shadow-lg hover:shadow-xl"
+                      : "glass hover:bg-accent/50"
+                  }`}>
+                  {plan.cta}
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+
+                <div className="flex-1 space-y-3">
+                  {plan.features.map((feature, i) => (
+                    <div key={i} className="flex items-start gap-2 text-sm">
+                      <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span>{feature}</span>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Feature Comparison Table */}
+      <section className="relative py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        <BackgroundPaths variant="minimal" className="absolute inset-0" />
+        <div className="container mx-auto relative z-10 max-w-6xl">
+          <div className="text-center mb-12">
+            <motion.h2 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+              className="text-3xl sm:text-4xl font-bold mb-4">Compare All Features</motion.h2>
+            <p className="text-muted-foreground">See exactly what each plan offers</p>
+          </div>
+
+          <div className="overflow-x-auto glass rounded-2xl p-6">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border/50">
+                  <th className="text-left py-4 px-4 w-1/3">Feature</th>
+                  <th className="text-center py-4 px-4">Free</th>
+                  <th className="text-center py-4 px-4 bg-primary/5 rounded-t-lg">Pro</th>
+                  <th className="text-center py-4 px-4">Business</th>
+                  <th className="text-center py-4 px-4">Enterprise</th>
+                </tr>
+              </thead>
+              <tbody>
+                {categories.map((category) => (
+                  <React.Fragment key={category}>
+                    <tr>
+                      <td colSpan={5} className="pt-6 pb-2 px-4">
+                        <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                          {category === "Store & Products" && <Store className="w-4 h-4" />}
+                          {category === "Payments" && <CreditCard className="w-4 h-4" />}
+                          {category === "Analytics" && <BarChart3 className="w-4 h-4" />}
+                          {category === "Marketing & Growth" && <Gift className="w-4 h-4" />}
+                          {category === "Support" && <HelpCircle className="w-4 h-4" />}
+                          {category}
+                        </div>
+                      </td>
+                    </tr>
+                    {comparisonFeatures.filter(f => f.category === category).map((feature, i) => (
+                      <tr key={i} className="border-b border-border/30 hover:bg-accent/30 transition-colors">
+                        <td className="py-3 px-4 text-sm font-medium">{feature.name}</td>
+                        <td className="py-3 px-4 text-center">{renderFeatureValue(feature.free)}</td>
+                        <td className="py-3 px-4 text-center bg-primary/5">{renderFeatureValue(feature.pro)}</td>
+                        <td className="py-3 px-4 text-center">{renderFeatureValue(feature.business)}</td>
+                        <td className="py-3 px-4 text-center">{renderFeatureValue(feature.enterprise)}</td>
+                      </tr>
+                    ))}
+                  </React.Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      {/* Promotions & Incentives */}
+      <section className="relative py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        <DottedSurface className="absolute inset-0 opacity-10" />
+        <div className="container mx-auto relative z-10 max-w-6xl">
+          <div className="text-center mb-12">
+            <motion.h2 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+              className="text-3xl sm:text-4xl font-bold mb-4">Growth Incentives</motion.h2>
+            <p className="text-muted-foreground">Earn rewards as your business grows</p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              {
+                icon: <Users className="w-8 h-8" />,
+                title: "Refer & Earn",
+                description: "Refer 3 sellers and get 1 month of Pro plan completely free!",
+                reward: "1 Month Pro Free",
+                color: "from-purple-500 to-indigo-500",
+                bg: "bg-purple-500/20",
+              },
+              {
+                icon: <TrendingUp className="w-8 h-8" />,
+                title: "Performance Bonus",
+                description: "Process UGX 2,000,000+ monthly and unlock a 10% discount.",
+                reward: "10% Off Next Plan",
+                color: "from-green-500 to-emerald-500",
+                bg: "bg-green-500/20",
+              },
+              {
+                icon: <Star className="w-8 h-8" />,
+                title: "Annual Savings",
+                description: "Pay yearly and save 20% on any plan. Best value for serious sellers.",
+                reward: "20% Annual Discount",
+                color: "from-orange-500 to-amber-500",
+                bg: "bg-orange-500/20",
+              },
+            ].map((incentive, i) => (
+              <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                whileHover={{ y: -5 }}
+                className="p-6 glass rounded-2xl hover:shadow-elevated transition-all">
+                <div className={`w-16 h-16 rounded-2xl ${incentive.bg} flex items-center justify-center mb-4`}>
+                  <div className={`bg-gradient-to-br ${incentive.color} bg-clip-text text-transparent`}>
+                    {incentive.icon}
+                  </div>
+                </div>
+                <h3 className="text-xl font-bold mb-2">{incentive.title}</h3>
+                <p className="text-muted-foreground mb-4">{incentive.description}</p>
+                <span className={`inline-block px-4 py-1.5 rounded-full text-sm font-medium bg-gradient-to-r ${incentive.color} text-white`}>
+                  {incentive.reward}
+                </span>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="relative py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        <BackgroundPaths variant="section" className="absolute inset-0" />
+        <div className="container mx-auto relative z-10 max-w-3xl">
+          <div className="text-center mb-12">
+            <motion.h2 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+              className="text-3xl sm:text-4xl font-bold mb-4">Frequently Asked Questions</motion.h2>
+            <p className="text-muted-foreground">Everything you need to know</p>
+          </div>
+
+          <div className="space-y-4">
+            {faqs.map((faq, i) => (
+              <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+                transition={{ delay: i * 0.05 }}
+                className="glass rounded-xl overflow-hidden">
+                <button onClick={() => setExpandedFaq(expandedFaq === i ? null : i)}
+                  className="w-full flex items-center justify-between p-5 text-left hover:bg-accent/30 transition-colors">
+                  <span className="font-semibold pr-4">{faq.question}</span>
+                  <motion.div
+                    animate={{ rotate: expandedFaq === i ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                  </motion.div>
+                </button>
+                <AnimatePresence>
+                  {expandedFaq === i && (
+                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden">
+                      <div className="px-5 pb-5 text-muted-foreground border-t border-border/50 pt-4">{faq.answer}</div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="relative py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-indigo-500/10 to-purple-500/10" />
+        <HeroMotionBackground className="opacity-50" />
+        <div className="container mx-auto relative z-10 max-w-4xl text-center">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">Ready to Start Selling?</h2>
+            <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
+              Join thousands of Ugandan businesses growing with SwiftShopy
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <button onClick={() => handleGetStarted("free")}
+                className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-primary to-indigo-600 text-white rounded-xl font-medium text-lg hover:scale-105 hover:shadow-xl transition-all shadow-lg flex items-center justify-center gap-2">
+                Start Selling Free <ArrowRight className="w-5 h-5" />
+              </button>
+              <Link href="/login"
+                className="w-full sm:w-auto px-8 py-4 glass rounded-xl font-medium text-lg hover:bg-accent/50 transition-all text-center">
+                Sign In
+              </Link>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Footer - Same as landing page */}
+      <footer className="py-16 px-4 sm:px-6 lg:px-8 border-t border-border bg-gradient-to-b from-background to-accent/20">
+        <div className="container mx-auto">
+          <div className="grid md:grid-cols-4 gap-8 mb-12">
+            <div>
+              <div className="flex items-center gap-2 mb-6">
+                <div className="w-10 h-10 bg-gradient-to-br from-primary to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <ShoppingCart className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-xl font-bold text-gradient">SwiftShopy</span>
+              </div>
+              <p className="text-sm text-muted-foreground mb-6">
+                Empowering Ugandan businesses to sell online with ease.
+              </p>
+              <div className="flex gap-3">
+                {[Facebook, Twitter, Instagram, Linkedin].map((Icon, i) => (
+                  <a
+                    key={i}
+                    href="#"
+                    className="w-10 h-10 glass rounded-xl flex items-center justify-center hover:bg-accent/50 transition-all hover:scale-110"
+                  >
+                    <Icon className="w-4 h-4" />
+                  </a>
+                ))}
+              </div>
+            </div>
+
+            {[
+              { title: "Product", links: ["Features", "Pricing", "Security", "Roadmap"] },
+              { title: "Company", links: ["About", "Blog", "Careers", "Contact"] },
+              { title: "Legal", links: ["Privacy", "Terms", "Cookie Policy", "Licenses"] },
+            ].map((col, i) => (
+              <div key={i}>
+                <h3 className="font-semibold mb-6">{col.title}</h3>
+                <ul className="space-y-3 text-sm text-muted-foreground">
+                  {col.links.map((link, j) => (
+                    <li key={j}>
+                      <a href="#" className="hover:text-foreground transition-colors hover:translate-x-1 inline-block">
+                        {link}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+
+          <div className="pt-8 border-t border-border/50 flex flex-col md:flex-row items-center justify-between gap-4">
+            <p className="text-sm text-muted-foreground">
+              © 2024 SwiftShopy. All rights reserved.
+            </p>
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                All systems operational
+              </span>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  )
+}

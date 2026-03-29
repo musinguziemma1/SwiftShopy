@@ -343,7 +343,18 @@ export default defineSchema({
       v.literal("whatsapp_message"),
       v.literal("whatsapp_connected"),
       v.literal("system_alert"),
-      v.literal("sla_breach")
+      v.literal("sla_breach"),
+      v.literal("subscription_created"),
+      v.literal("subscription_renewed"),
+      v.literal("subscription_expired"),
+      v.literal("subscription_upgraded"),
+      v.literal("subscription_downgraded"),
+      v.literal("payment_pending"),
+      v.literal("payment_success"),
+      v.literal("payment_failed"),
+      v.literal("product_limit_reached"),
+      v.literal("referral_bonus"),
+      v.literal("usage_discount_applied")
     ),
     title: v.string(),
     message: v.string(),
@@ -394,4 +405,133 @@ export default defineSchema({
     .index("by_store", ["storeId"])
     .index("by_status", ["status"])
     .index("by_date", ["createdAt"]),
+
+  // ─── Subscriptions ─────────────────────────────────────────
+  subscriptions: defineTable({
+    userId: v.id("users"),
+    storeId: v.optional(v.id("stores")),
+    plan: v.union(v.literal("free"), v.literal("pro"), v.literal("business"), v.literal("enterprise")),
+    status: v.union(v.literal("active"), v.literal("expired"), v.literal("cancelled")),
+    startDate: v.number(),
+    endDate: v.number(),
+    autoRenew: v.optional(v.boolean()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_store", ["storeId"])
+    .index("by_status", ["status"])
+    .index("by_endDate", ["endDate"]),
+
+  // ─── Subscription Payments ─────────────────────────────────
+  subscription_payments: defineTable({
+    userId: v.id("users"),
+    subscriptionId: v.optional(v.id("subscriptions")),
+    amount: v.number(),
+    currency: v.string(),
+    phone: v.string(),
+    plan: v.union(v.literal("free"), v.literal("pro"), v.literal("business"), v.literal("enterprise")),
+    status: v.union(v.literal("pending"), v.literal("success"), v.literal("failed"), v.literal("cancelled")),
+    provider: v.union(v.literal("mtn_momo"), v.literal("airtel_money")),
+    providerRef: v.optional(v.string()),
+    externalRef: v.string(),
+    failureReason: v.optional(v.string()),
+    createdAt: v.number(),
+    processedAt: v.optional(v.number()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_subscription", ["subscriptionId"])
+    .index("by_status", ["status"])
+    .index("by_externalRef", ["externalRef"])
+    .index("by_date", ["createdAt"]),
+
+  // ─── Usage Tracking ─────────────────────────────────────────
+  usage_tracking: defineTable({
+    userId: v.id("users"),
+    storeId: v.optional(v.id("stores")),
+    month: v.string(),
+    year: v.number(),
+    totalTransactionAmount: v.number(),
+    transactionCount: v.number(),
+    platformFee: v.number(),
+    lastUpdated: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_store", ["storeId"])
+    .index("by_month", ["month", "year"]),
+
+  // ─── Referrals ─────────────────────────────────────────────
+  referrals: defineTable({
+    referrerUserId: v.id("users"),
+    referrerUserCode: v.string(),
+    referredUserId: v.optional(v.id("users")),
+    referredUserEmail: v.string(),
+    status: v.union(v.literal("pending"), v.literal("completed"), v.literal("cancelled")),
+    rewardGranted: v.boolean(),
+    rewardType: v.optional(v.union(v.literal("free_month"), v.literal("discount"), v.literal("cash"))),
+    rewardAmount: v.optional(v.number()),
+    createdAt: v.number(),
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_referrer", ["referrerUserId"])
+    .index("by_referred", ["referredUserId"])
+    .index("by_code", ["referrerUserCode"])
+    .index("by_status", ["status"]),
+
+  // ─── Billing Settings ───────────────────────────────────────
+  billing_settings: defineTable({
+    userId: v.id("users"),
+    walletBalance: v.optional(v.number()),
+    discountEligible: v.optional(v.boolean()),
+    discountPercentage: v.optional(v.number()),
+    discountReason: v.optional(v.string()),
+    lastDiscountApplied: v.optional(v.number()),
+    referralCode: v.string(),
+    referralCount: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_referral_code", ["referralCode"]),
+
+  // ─── Promotions & Incentives ──────────────────────────────
+  promotions: defineTable({
+    name: v.string(),
+    description: v.string(),
+    type: v.union(
+      v.literal("referral"),
+      v.literal("performance"),
+      v.literal("loyalty"),
+      v.literal("annual"),
+      v.literal("custom")
+    ),
+    rewardType: v.union(
+      v.literal("free_month"),
+      v.literal("discount_percentage"),
+      v.literal("discount_fixed"),
+      v.literal("cash_reward")
+    ),
+    rewardValue: v.number(),
+    triggerCondition: v.object({
+      type: v.union(
+        v.literal("referral_count"),
+        v.literal("transaction_volume"),
+        v.literal("subscription_months"),
+        v.literal("manual")
+      ),
+      threshold: v.number(),
+      period: v.optional(v.union(v.literal("monthly"), v.literal("yearly"), v.literal("total"))),
+    }),
+    isActive: v.boolean(),
+    maxRedemptions: v.optional(v.number()),
+    currentRedemptions: v.number(),
+    startDate: v.number(),
+    endDate: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    createdBy: v.optional(v.string()),
+  })
+    .index("by_type", ["type"])
+    .index("by_active", ["isActive"])
+    .index("by_dates", ["startDate", "endDate"]),
 });

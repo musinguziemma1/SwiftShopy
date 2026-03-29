@@ -372,3 +372,115 @@ export interface WhatsAppAnalytics {
   avgResponseTime: number; // in seconds
   responseRate: number; // percentage
 }
+
+// ─── Subscriptions & Billing ───────────────────────────────
+export type SubscriptionPlan = "free" | "pro" | "business" | "enterprise";
+export type SubscriptionStatus = "active" | "expired" | "cancelled";
+export type PaymentStatus = "pending" | "success" | "failed" | "cancelled";
+export type RewardType = "free_month" | "discount" | "cash";
+
+export interface Subscription {
+  _id: string;
+  userId: string;
+  storeId?: string;
+  plan: SubscriptionPlan;
+  status: SubscriptionStatus;
+  startDate: number;
+  endDate: number;
+  autoRenew?: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface SubscriptionPayment {
+  _id: string;
+  userId: string;
+  subscriptionId?: string;
+  amount: number;
+  currency: string;
+  phone: string;
+  plan: SubscriptionPlan;
+  status: PaymentStatus;
+  provider: PaymentProvider;
+  providerRef?: string;
+  externalRef: string;
+  failureReason?: string;
+  createdAt: number;
+  processedAt?: number;
+}
+
+export interface UsageTracking {
+  _id: string;
+  userId: string;
+  storeId?: string;
+  month: string;
+  year: number;
+  totalTransactionAmount: number;
+  transactionCount: number;
+  platformFee: number;
+  lastUpdated: number;
+}
+
+export interface Referral {
+  _id: string;
+  referrerUserId: string;
+  referrerUserCode: string;
+  referredUserId?: string;
+  referredUserEmail: string;
+  status: "pending" | "completed" | "cancelled";
+  rewardGranted: boolean;
+  rewardType?: RewardType;
+  rewardAmount?: number;
+  createdAt: number;
+  completedAt?: number;
+}
+
+export interface BillingSettings {
+  _id: string;
+  userId: string;
+  walletBalance?: number;
+  discountEligible?: boolean;
+  discountPercentage?: number;
+  discountReason?: string;
+  lastDiscountApplied?: number;
+  referralCode: string;
+  referralCount?: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface PlanLimits {
+  productLimit: number | "Unlimited";
+  monthlyFee: number;
+  transactionFee: number;
+}
+
+export interface BillingAnalytics {
+  mrr: number;
+  mrrGrowth: number;
+  totalRevenue: number;
+  activeSubscribers: number;
+  freeUsers: number;
+  proUsers: number;
+  businessUsers: number;
+  enterpriseUsers: number;
+  paidUsers: number;
+  arpu: number;
+  conversionRate: number;
+  churnRate: number;
+  totalPayments: number;
+  successfulPayments: number;
+}
+
+export interface UserBillingInfo {
+  plan: SubscriptionPlan;
+  status: SubscriptionStatus;
+  startDate?: number;
+  endDate?: number;
+  productLimit: number;
+  productCount: number;
+  transactionFee: number;
+  monthlyFee: number;
+  totalPaid: number;
+  daysRemaining: number;
+}

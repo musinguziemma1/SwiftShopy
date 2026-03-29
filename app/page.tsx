@@ -53,6 +53,7 @@ interface PricingTier {
   features: string[]
   highlighted?: boolean
   cta: string
+  href?: string
 }
 
 interface Testimonial {
@@ -133,48 +134,52 @@ function SwiftShopyLanding({ className = "" }: SwiftShopyLandingProps) {
 
   const pricingTiers: PricingTier[] = [
     {
-      name: "Starter",
-      price: "Free",
+      name: "Free",
+      price: "UGX 0",
       period: "forever",
       features: [
         "Up to 10 products",
-        "Basic storefront",
-        "WhatsApp integration",
-        "Mobile money payments",
-        "Basic analytics",
+        "WhatsApp order button",
+        "MTN Mobile Money payments",
+        "Basic order tracking",
+        "Simple dashboard",
+        "SwiftShopy branding included",
       ],
-      cta: "Get Started",
+      cta: "Start Free",
+      href: "/signup",
+    },
+    {
+      name: "Pro",
+      price: "UGX 15,000",
+      period: "per month",
+      features: [
+        "Everything in Free, plus:",
+        "Remove SwiftShopy branding",
+        "Custom store link",
+        "Auto payment confirmation",
+        "Daily & weekly analytics",
+        "Customer insights",
+        "Basic promotional tools",
+      ],
+      highlighted: true,
+      cta: "Upgrade to Pro",
+      href: "/pricing",
     },
     {
       name: "Business",
-      price: "UGX 50,000",
+      price: "UGX 35,000",
       period: "per month",
       features: [
-        "Unlimited products",
-        "Custom store design",
-        "Priority WhatsApp support",
-        "Advanced analytics",
-        "Multiple payment methods",
-        "Custom domain",
-        "Email notifications",
+        "Everything in Pro, plus:",
+        "Advanced analytics & trends",
+        "Inventory management",
+        "Stock tracking & alerts",
+        "Discount & coupon system",
+        "Bulk product upload",
+        "Custom branding (logo, colors)",
       ],
-      highlighted: true,
-      cta: "Start Free Trial",
-    },
-    {
-      name: "Enterprise",
-      price: "Custom",
-      period: "contact us",
-      features: [
-        "Everything in Business",
-        "Multi-store management",
-        "API access",
-        "Dedicated account manager",
-        "Custom integrations",
-        "White-label solution",
-        "24/7 priority support",
-      ],
-      cta: "Contact Sales",
+      cta: "Get Business",
+      href: "/pricing",
     },
   ]
 
@@ -270,9 +275,9 @@ function SwiftShopyLanding({ className = "" }: SwiftShopyLandingProps) {
               <a href="#features" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
                 Features
               </a>
-              <a href="#pricing" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
+              <Link href="/pricing" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
                 Pricing
-              </a>
+              </Link>
               <a href="#testimonials" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
                 Testimonials
               </a>
@@ -316,9 +321,9 @@ function SwiftShopyLanding({ className = "" }: SwiftShopyLandingProps) {
                 <a href="#features" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
                   Features
                 </a>
-                <a href="#pricing" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
+                <Link href="/pricing" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
                   Pricing
-                </a>
+                </Link>
                 <a href="#testimonials" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
                   Testimonials
                 </a>
@@ -698,7 +703,7 @@ function SwiftShopyLanding({ className = "" }: SwiftShopyLandingProps) {
                 </ul>
 
                 <Link
-                  href="/signup"
+                  href={tier.href || "/pricing"}
                   className={`w-full block text-center py-3 rounded-xl font-medium transition-all hover:scale-105 ${
                     tier.highlighted
                       ? "bg-gradient-to-r from-primary to-indigo-600 text-primary-foreground shadow-lg"

@@ -56,7 +56,6 @@ export const create = mutation({
 });
 
 // ─── Notify Admin ──────────────────────────────────────────────────────
-// Sends notification to all admin users
 export const notifyAdmin = mutation({
   args: {
     type: v.union(
@@ -101,7 +100,7 @@ export const notifyAdmin = mutation({
   },
   handler: async (ctx, args) => {
     const now = Date.now();
-    // Insert notification for admin (userId="admin")
+    
     await ctx.db.insert("notifications", {
       userId: "admin",
       type: args.type,
@@ -112,12 +111,12 @@ export const notifyAdmin = mutation({
       metadata: args.metadata,
       createdAt: now,
     });
+
     return { success: true };
   },
 });
 
 // ─── Notify Seller ─────────────────────────────────────────────────────
-// Sends notification to a specific seller
 export const notifySeller = mutation({
   args: {
     userId: v.string(),
@@ -164,6 +163,7 @@ export const notifySeller = mutation({
   },
   handler: async (ctx, args) => {
     const now = Date.now();
+    
     await ctx.db.insert("notifications", {
       userId: args.userId,
       storeId: args.storeId,
@@ -175,6 +175,7 @@ export const notifySeller = mutation({
       metadata: args.metadata,
       createdAt: now,
     });
+
     return { success: true };
   },
 });
@@ -228,8 +229,7 @@ export const notifyBoth = mutation({
   },
   handler: async (ctx, args) => {
     const now = Date.now();
-    
-    // Notify admin
+
     await ctx.db.insert("notifications", {
       userId: "admin",
       type: args.type,
@@ -241,7 +241,6 @@ export const notifyBoth = mutation({
       createdAt: now,
     });
 
-    // Notify seller if sellerId provided
     if (args.sellerId) {
       await ctx.db.insert("notifications", {
         userId: args.sellerId,

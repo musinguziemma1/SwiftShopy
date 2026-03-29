@@ -564,13 +564,13 @@ export default defineSchema({
   // ─── Admin Invitations ──────────────────────────────────
   admin_invitations: defineTable({
     email: v.string(),
-    invitedBy: v.id("users"),
+    invitedBy: v.string(),
     invitedByName: v.string(),
     role: v.union(v.literal("super_admin"), v.literal("admin"), v.literal("support"), v.literal("analyst")),
     permissions: v.array(v.string()),
     token: v.string(),
     status: v.union(v.literal("pending"), v.literal("accepted"), v.literal("expired"), v.literal("cancelled")),
-    acceptedBy: v.optional(v.id("users")),
+    acceptedBy: v.optional(v.string()),
     expiresAt: v.number(),
     createdAt: v.number(),
     acceptedAt: v.optional(v.number()),

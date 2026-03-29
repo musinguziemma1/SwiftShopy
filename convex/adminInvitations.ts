@@ -16,7 +16,7 @@ export const inviteAdmin = mutation({
     email: v.string(),
     role: v.union(v.literal("super_admin"), v.literal("admin"), v.literal("support"), v.literal("analyst")),
     permissions: v.array(v.string()),
-    invitedBy: v.id("users"),
+    invitedBy: v.string(),
     invitedByName: v.string(),
   },
   handler: async (ctx, args) => {
@@ -101,7 +101,7 @@ export const getByToken = query({
 export const acceptInvitation = mutation({
   args: {
     token: v.string(),
-    userId: v.id("users"),
+    userId: v.string(),
     userName: v.string(),
   },
   handler: async (ctx, args) => {

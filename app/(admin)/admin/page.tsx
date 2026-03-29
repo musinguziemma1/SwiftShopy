@@ -1423,37 +1423,33 @@ function AdminDashboard() {
                           email,
                           role,
                           permissions: rolePermissions[role] || [],
-                          invitedBy: (session?.user as any)?.id as any,
+                          invitedBy: (session?.user as any)?.id || "admin",
                           invitedByName: session?.user?.name || "Admin",
                         });
 
                         if (result.success) {
                           const inviteLink = `${window.location.origin}/invite?token=${result.token}`;
                           
-                          // Send invitation email
-                          await fetch("/api/notify/email", {
+                          // Send invitation email via dedicated endpoint
+                          const emailResponse = await fetch("/api/invite-admin", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
-                              to: email,
-                              subject: "You've been invited to join SwiftShopy as an Admin",
-                              html: `
-                                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                                  <div style="background: linear-gradient(135deg, #7c3aed, #ec4899); padding: 30px; text-align: center;">
-                                    <h1 style="color: white; margin: 0;">Admin Invitation</h1>
-                                  </div>
-                                  <div style="padding: 30px; background: #f9fafb;">
-                                    <p style="color: #4b5563;">You've been invited to join SwiftShopy as <strong>${role.replace("_", " ")}</strong>.</p>
-                                    <p style="color: #4b5563;">Click the button below to accept:</p>
-                                    <a href="${inviteLink}" style="display: inline-block; background: linear-gradient(135deg, #7c3aed, #ec4899); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin-top: 20px;">Accept Invitation</a>
-                                    <p style="color: #9ca3af; font-size: 12px; margin-top: 20px;">This invitation expires in 7 days.</p>
-                                  </div>
-                                </div>
-                              `,
+                              email,
+                              role,
+                              inviterName: session?.user?.name || "Admin",
+                              inviteLink,
                             }),
                           });
 
-                          alert(`Invitation sent to ${email}!`);
+                          const emailResult = await emailResponse.json();
+                          
+                          if (emailResult.success) {
+                            alert(`Invitation email sent to ${email}!`);
+                          } else {
+                            alert(`Invitation created but email failed to send. Copy the link manually.`);
+                          }
+                          
                           setShowInviteModal(false);
                         } else {
                           alert(result.error);

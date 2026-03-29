@@ -5,11 +5,15 @@ import { motion, AnimatePresence } from "framer-motion"
 import { 
   Bell, ShoppingCart, Users, DollarSign, AlertCircle, CheckCircle, X, Settings, MessageSquare,
   Package, Store, CreditCard, UserPlus, UserMinus, Gift, TrendingUp, ArrowUpRight, 
-  Percent, HelpCircle, FileText, Wallet, Star, Zap
+  Percent, HelpCircle, FileText, Wallet, Star, Zap, Clock
 } from "lucide-react"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "@/convex/_generated/api"
 import { useSession } from "next-auth/react"
+
+interface NotificationsCenterProps {
+  adminMode?: boolean;
+}
 
 const iconMap: Record<string, React.ReactNode> = {
   order_new: <ShoppingCart className="w-4 h-4" />,
@@ -94,26 +98,39 @@ function getTimeAgo(timestamp: number): string {
   return `${days}d ago`
 }
 
-export function NotificationsCenter() {
+export function NotificationsCenter({ adminMode = false }: NotificationsCenterProps) {
   const { data: session } = useSession()
-  const userId = (session?.user as any)?.id
+  const userId = adminMode ? "admin" : (session?.user as any)?.id
   const [open, setOpen] = useState(false)
 
-  const notifications = useQuery(
-    api.notifications.getByUser,
-    userId ? { userId, limit: 20 } : "skip"
+  // For admin mode, use getAllAdmin; for seller mode, use getByUser
+  const adminNotifications = useQuery(
+    api.notifications.getAllAdmin,
+    adminMode ? { limit: 50 } : "skip"
   )
 
-  const unreadCount = useQuery(
+  const userNotifications = useQuery(
+    api.notifications.getByUser,
+    !adminMode && userId ? { userId, limit: 50 } : "skip"
+  )
+
+  const adminUnreadCount = useQuery(
     api.notifications.getUnreadCount,
-    userId ? { userId } : "skip"
+    adminMode ? { userId: "admin" } : "skip"
+  )
+
+  const userUnreadCount = useQuery(
+    api.notifications.getUnreadCount,
+    !adminMode && userId ? { userId } : "skip"
   )
 
   const markAsRead = useMutation(api.notifications.markAsRead)
   const markAllAsRead = useMutation(api.notifications.markAllAsRead)
   const deleteNotification = useMutation(api.notifications.delete_)
 
-  const notifList = notifications ?? []
+  const notifList = adminMode ? (adminNotifications ?? []) : (userNotifications ?? [])
+  const unreadCount = adminMode ? adminUnreadCount : userUnreadCount
+  const effectiveUserId = adminMode ? "admin" : userId
 
   return (
     <div className="relative">
@@ -159,9 +176,9 @@ export function NotificationsCenter() {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  {(unreadCount ?? 0) > 0 && userId && (
+                  {(unreadCount ?? 0) > 0 && effectiveUserId && (
                     <button
-                      onClick={() => markAllAsRead({ userId })}
+                      onClick={() => markAllAsRead({ userId: effectiveUserId })}
                       className="text-xs text-purple-500 hover:underline font-medium"
                     >
                       Mark all read
@@ -237,8 +254,5 @@ export function NotificationsCenter() {
     </div>
   )
 }
-
-// Import Clock icon for pending status
-import { Clock } from "lucide-react"
 
 export default NotificationsCenter

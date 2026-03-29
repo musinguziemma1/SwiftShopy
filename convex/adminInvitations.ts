@@ -171,6 +171,19 @@ export const cancelInvitation = mutation({
     }
 
     await ctx.db.patch(id, { status: "cancelled" });
+
+    // Notify about cancellation
+    await ctx.db.insert("notifications", {
+      userId: "admin",
+      type: "system_alert",
+      title: "Invitation Cancelled",
+      message: `Invitation to ${invitation.email} has been cancelled`,
+      isRead: false,
+      actionUrl: "/admin?tab=permissions",
+      metadata: { email: invitation.email, role: invitation.role },
+      createdAt: Date.now(),
+    });
+
     return { success: true };
   },
 });

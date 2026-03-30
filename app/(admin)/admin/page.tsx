@@ -182,6 +182,7 @@ function AdminDashboard() {
   })
   const [settingsSaving, setSettingsSaving] = useState(false)
   const [settingsSaved, setSettingsSaved] = useState(false)
+  const [settingsError, setSettingsError] = useState("")
 
   // Convex mutations
   const bulkUpdateSettings = useMutation(api.platformSettings.bulkUpdate)
@@ -190,6 +191,7 @@ function AdminDashboard() {
   const saveSettings = async () => {
     setSettingsSaving(true)
     setSettingsSaved(false)
+    setSettingsError("")
     try {
       // Save to database
       await bulkUpdateSettings({
@@ -220,7 +222,7 @@ function AdminDashboard() {
       })
 
       // Update .env.local file
-      await fetch("/api/settings", {
+      const response = await fetch("/api/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -249,10 +251,19 @@ function AdminDashboard() {
         }),
       })
 
+      const result = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to update .env.local")
+      }
+
+      console.log("Settings saved:", result)
       setSettingsSaved(true)
-      setTimeout(() => setSettingsSaved(false), 3000)
-    } catch (error) {
+      setTimeout(() => setSettingsSaved(false), 5000)
+    } catch (error: any) {
       console.error("Failed to save settings:", error)
+      setSettingsError(error.message || "Failed to save settings")
+      setTimeout(() => setSettingsError(""), 5000)
     } finally {
       setSettingsSaving(false)
     }
@@ -2367,12 +2378,20 @@ function AdminDashboard() {
                   <h1 className="text-3xl font-bold mb-2">Platform Settings</h1>
                   <p className="text-muted-foreground">Configure global platform settings and preferences</p>
                 </div>
-                {settingsSaved && (
-                  <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
-                    className="px-4 py-2 bg-green-500/10 text-green-500 rounded-lg flex items-center gap-2">
-                    <Check className="w-4 h-4" /> Settings saved!
-                  </motion.div>
-                )}
+                <div className="flex items-center gap-4">
+                  {settingsError && (
+                    <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
+                      className="px-4 py-2 bg-red-500/10 text-red-500 rounded-lg flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4" /> {settingsError}
+                    </motion.div>
+                  )}
+                  {settingsSaved && (
+                    <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
+                      className="px-4 py-2 bg-green-500/10 text-green-500 rounded-lg flex items-center gap-2">
+                      <Check className="w-4 h-4" /> Settings saved! Restart server to apply.
+                    </motion.div>
+                  )}
+                </div>
               </div>
 
               <div className="grid lg:grid-cols-4 gap-6">

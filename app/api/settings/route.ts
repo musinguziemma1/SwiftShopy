@@ -2,12 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 
-// ─── Update .env.local with API settings ───────────────────────────────
-
-interface EnvUpdate {
-  [key: string]: string;
-}
-
 // Map setting keys to env variable names
 const KEY_TO_ENV: Record<string, string> = {
   mtn_sandbox_base_url: "MTN_SANDBOX_BASE_URL",
@@ -42,19 +36,29 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { settings } = body as { settings: Record<string, string> };
 
+    console.log("Received settings:", Object.keys(settings));
+
     if (!settings || typeof settings !== "object") {
       return NextResponse.json({ error: "Invalid settings format" }, { status: 400 });
     }
 
-    const envPath = path.join(process.cwd(), ".env.local");
+    // Get the absolute path to .env.local
+    const rootDir = process.cwd();
+    const envPath = path.resolve(rootDir, ".env.local");
+    
+    console.log("Writing to:", envPath);
     
     // Read existing env file
     let envContent = "";
     try {
-      envContent = fs.readFileSync(envPath, "utf-8");
-    } catch (e) {
-      // File doesn't exist, create new
-      envContent = "";
+      if (fs.existsSync(envPath)) {
+        envContent = fs.readFileSync(envPath, "utf-8");
+        console.log("Existing .env.local found, length:", envContent.length);
+      } else {
+        console.log(".env.local not found, will create new file");
+      }
+    } catch (e: any) {
+      console.error("Error reading .env.local:", e.message);
     }
 
     // Parse existing env vars
@@ -64,9 +68,11 @@ export async function POST(request: NextRequest) {
     for (const line of envLines) {
       const trimmed = line.trim();
       if (trimmed && !trimmed.startsWith("#")) {
-        const [key, ...valueParts] = trimmed.split("=");
-        if (key) {
-          envMap[key.trim()] = valueParts.join("=").trim();
+        const equalIndex = trimmed.indexOf("=");
+        if (equalIndex > 0) {
+          const key = trimmed.substring(0, equalIndex).trim();
+          const value = trimmed.substring(equalIndex + 1).trim();
+          envMap[key] = value;
         }
       }
     }
@@ -75,13 +81,16 @@ export async function POST(request: NextRequest) {
     const updatedKeys: string[] = [];
     for (const [settingKey, value] of Object.entries(settings)) {
       const envKey = KEY_TO_ENV[settingKey];
-      if (envKey && value) {
+      if (envKey && value !== undefined && value !== "") {
         envMap[envKey] = value;
         updatedKeys.push(envKey);
+        console.log(`Mapped ${settingKey} -> ${envKey}`);
       }
     }
 
-    // Build new env content
+    console.log("Updated keys:", updatedKeys);
+
+    // Build new env content preserving structure
     const newEnvLines: string[] = [];
     const processedKeys = new Set<string>();
 
@@ -91,11 +100,15 @@ export async function POST(request: NextRequest) {
       if (trimmed.startsWith("#") || !trimmed) {
         newEnvLines.push(line);
       } else {
-        const [key] = trimmed.split("=");
-        const keyName = key?.trim();
-        if (keyName && envMap[keyName] !== undefined) {
-          newEnvLines.push(`${keyName}=${envMap[keyName]}`);
-          processedKeys.add(keyName);
+        const equalIndex = trimmed.indexOf("=");
+        if (equalIndex > 0) {
+          const keyName = trimmed.substring(0, equalIndex).trim();
+          if (envMap[keyName] !== undefined) {
+            newEnvLines.push(`${keyName}=${envMap[keyName]}`);
+            processedKeys.add(keyName);
+          } else {
+            newEnvLines.push(line);
+          }
         } else {
           newEnvLines.push(line);
         }
@@ -103,24 +116,28 @@ export async function POST(request: NextRequest) {
     }
 
     // Add any new keys that weren't in the original file
-    for (const [key, value] of Object.entries(envMap)) {
-      if (!processedKeys.has(key) && updatedKeys.includes(key)) {
-        newEnvLines.push(`${key}=${value}`);
+    for (const key of updatedKeys) {
+      if (!processedKeys.has(key)) {
+        newEnvLines.push(`${key}=${envMap[key]}`);
+        console.log(`Added new key: ${key}`);
       }
     }
 
     // Write back to file
-    fs.writeFileSync(envPath, newEnvLines.join("\n"), "utf-8");
+    const newContent = newEnvLines.join("\n");
+    fs.writeFileSync(envPath, newContent, "utf-8");
+    console.log("Successfully wrote to .env.local");
 
     return NextResponse.json({
       success: true,
       message: `Updated ${updatedKeys.length} environment variables`,
       updatedKeys,
+      filePath: envPath,
     });
   } catch (error: any) {
     console.error("Error updating .env.local:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to update environment file" },
+      { error: error.message || "Failed to update environment file", stack: error.stack },
       { status: 500 }
     );
   }

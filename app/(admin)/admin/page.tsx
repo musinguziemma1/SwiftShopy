@@ -495,6 +495,7 @@ function AdminDashboard() {
           <SidebarButton icon={<BarChart3 className="w-5 h-5" />} label="Overview" active={activeTab === "overview"} onClick={() => { setActiveTab("overview"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
           <SidebarButton icon={<Users className="w-5 h-5" />} label="Sellers" active={activeTab === "sellers"} onClick={() => { setActiveTab("sellers"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
           <SidebarButton icon={<DollarSign className="w-5 h-5" />} label="Transactions" active={activeTab === "transactions"} onClick={() => { setActiveTab("transactions"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
+          <SidebarButton icon={<ArrowUpRight className="w-5 h-5" />} label="Disbursements" active={activeTab === "disbursements"} onClick={() => { setActiveTab("disbursements"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
           <SidebarButton icon={<CreditCard className="w-5 h-5" />} label="Billing" active={activeTab === "billing"} onClick={() => { setActiveTab("billing"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
           <SidebarButton icon={<Shield className="w-5 h-5" />} label="Permissions" active={activeTab === "permissions"} onClick={() => { setActiveTab("permissions"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
           <SidebarButton icon={<Activity className="w-5 h-5" />} label="Analytics" active={activeTab === "analytics"} onClick={() => { setActiveTab("analytics"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
@@ -1121,54 +1122,68 @@ function AdminDashboard() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
               <div className="flex items-center justify-between mb-8">
                 <div>
-                  <h1 className="text-3xl font-bold mb-2">Transactions & Payouts</h1>
-                  <p className="text-muted-foreground">Manage transactions and process bulk payouts to sellers</p>
+                  <h1 className="text-3xl font-bold mb-2">Transactions</h1>
+                  <p className="text-muted-foreground">All platform sales, payments, and transaction history</p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <button onClick={() => setShowPayoutModal(true)}
-                    className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2 font-medium">
-                    <DollarSign className="w-4 h-4" /> Process Payouts
+                <div className="relative">
+                  <button onClick={() => setShowExportDropdown(showExportDropdown === "transactions" ? null : "transactions")}
+                    className="px-4 py-2 border border-border rounded-lg hover:bg-accent transition-colors flex items-center gap-2">
+                    <Download className="w-4 h-4" /> Export <ChevronDown className="w-3 h-3" />
                   </button>
-                  <div className="relative">
-                    <button onClick={() => setShowExportDropdown(showExportDropdown === "transactions" ? null : "transactions")}
-                      className="px-4 py-2 border border-border rounded-lg hover:bg-accent transition-colors flex items-center gap-2">
-                      <Download className="w-4 h-4" /> Export <ChevronDown className="w-3 h-3" />
-                    </button>
-                    {showExportDropdown === "transactions" && (
-                      <div className="absolute right-0 mt-2 w-36 bg-card border border-border rounded-lg shadow-lg z-10">
-                        <button onClick={() => setShowExportDropdown(null)} className="w-full px-4 py-2 text-sm text-left hover:bg-accent transition-colors rounded-t-lg">Export JSON</button>
-                        <button onClick={() => setShowExportDropdown(null)} className="w-full px-4 py-2 text-sm text-left hover:bg-accent transition-colors rounded-b-lg">Export CSV</button>
-                      </div>
-                    )}
-                  </div>
+                  {showExportDropdown === "transactions" && (
+                    <div className="absolute right-0 mt-2 w-36 bg-card border border-border rounded-lg shadow-lg z-10">
+                      <button onClick={() => setShowExportDropdown(null)} className="w-full px-4 py-2 text-sm text-left hover:bg-accent transition-colors rounded-t-lg">Export JSON</button>
+                      <button onClick={() => setShowExportDropdown(null)} className="w-full px-4 py-2 text-sm text-left hover:bg-accent transition-colors rounded-b-lg">Export CSV</button>
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-6 mb-8">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
                 {[
-                  { label: "Total Processed", value: formatCurrency(transactions.reduce((s, t) => s + t.amount, 0)), icon: <CheckCircle className="w-5 h-5 text-green-500" />, color: "bg-green-500/10" },
-                  { label: "Platform Fees", value: formatCurrency(transactions.reduce((s, t) => s + Math.round(t.amount * 0.025), 0)), icon: <DollarSign className="w-5 h-5 text-blue-500" />, color: "bg-blue-500/10" },
+                  { label: "Total Sales", value: formatCurrency(transactions.filter(t => t.status === "successful").reduce((s, t) => s + t.amount, 0)), icon: <CheckCircle className="w-5 h-5 text-green-500" />, color: "bg-green-500/10" },
+                  { label: "Platform Fees", value: formatCurrency(transactions.filter(t => t.status === "successful").reduce((s, t) => s + Math.round(t.amount * 0.025), 0)), icon: <DollarSign className="w-5 h-5 text-blue-500" />, color: "bg-blue-500/10" },
                   { label: "Pending", value: formatCurrency(transactions.filter(t => t.status === "pending").reduce((s, t) => s + t.amount, 0)), icon: <Clock className="w-5 h-5 text-yellow-500" />, color: "bg-yellow-500/10" },
                   { label: "Failed", value: formatCurrency(transactions.filter(t => t.status === "failed").reduce((s, t) => s + t.amount, 0)), icon: <XCircle className="w-5 h-5 text-red-500" />, color: "bg-red-500/10" },
                 ].map((s, i) => (
-                  <div key={i} className="p-6 rounded-xl border border-border bg-card">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-muted-foreground">{s.label}</span>
-                      <div className={`w-10 h-10 ${s.color} rounded-lg flex items-center justify-center`}>{s.icon}</div>
+                  <div key={i} className="p-4 rounded-xl border border-border bg-card">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-muted-foreground">{s.label}</span>
+                      <div className={`w-8 h-8 ${s.color} rounded-lg flex items-center justify-center`}>{s.icon}</div>
                     </div>
-                    <div className="text-2xl font-bold">{s.value}</div>
+                    <div className="text-xl font-bold">{s.value}</div>
                   </div>
                 ))}
               </div>
 
+              {/* Search & Filters */}
+              <div className="flex flex-wrap gap-3 mb-6">
+                <div className="relative flex-1 min-w-[200px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input type="text" placeholder="Search transactions..."
+                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                </div>
+                <select className="px-4 py-2 rounded-lg border border-border bg-background text-sm">
+                  <option value="all">All Status</option>
+                  <option value="successful">Successful</option>
+                  <option value="pending">Pending</option>
+                  <option value="failed">Failed</option>
+                </select>
+                <select className="px-4 py-2 rounded-lg border border-border bg-background text-sm">
+                  <option value="all">All Types</option>
+                  <option value="sale">Sales</option>
+                  <option value="subscription">Subscriptions</option>
+                  <option value="refund">Refunds</option>
+                </select>
+              </div>
+
               {/* Transactions Table */}
-              <div className="p-6 rounded-xl border border-border bg-card">
-                <h3 className="text-lg font-semibold mb-4">Recent Transactions</h3>
+              <div className="rounded-xl border border-border bg-card overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-border">
+                      <tr className="border-b border-border bg-muted/30">
                         {["Transaction ID","Seller","Type","Amount","Fee","Status","Date"].map((h) => (
                           <th key={h} className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{h}</th>
                         ))}
@@ -1176,8 +1191,7 @@ function AdminDashboard() {
                     </thead>
                     <tbody>
                       {txnList.map((txn, i) => (
-                        <motion.tr key={txn.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.05 }}
-                          className="border-b border-border hover:bg-accent/30 transition-colors">
+                        <tr key={txn.id} className="border-b border-border hover:bg-accent/30 transition-colors">
                           <td className="py-3 px-4 text-sm font-mono">{txn.id}</td>
                           <td className="py-3 px-4 text-sm">{txn.seller}</td>
                           <td className="py-3 px-4">
@@ -1195,155 +1209,201 @@ function AdminDashboard() {
                             </span>
                           </td>
                           <td className="py-3 px-4 text-sm text-muted-foreground">{txn.date}</td>
-                        </motion.tr>
+                        </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
               </div>
+            </motion.div>
+          )}
 
-              {/* Payout Modal */}
-              {showPayoutModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                  <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                    className="w-full max-w-4xl bg-card rounded-xl border border-border p-6 max-h-[90vh] overflow-y-auto">
-                    <div className="flex items-center justify-between mb-6">
-                      <div>
-                        <h3 className="text-xl font-bold">Process Bulk Payouts</h3>
-                        <p className="text-sm text-muted-foreground">Select sellers and disburse funds via Mobile Money</p>
-                      </div>
-                      <button onClick={() => setShowPayoutModal(false)} className="p-2 hover:bg-accent rounded-lg">
-                        <X className="w-5 h-5" />
+          {/* ── Disbursements Tab ── */}
+          {activeTab === "disbursements" && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+              <div className="mb-8">
+                <h1 className="text-3xl font-bold mb-2">Bulk Payouts</h1>
+                <p className="text-muted-foreground">Process disbursements to sellers via Mobile Money</p>
+              </div>
+
+              {/* Payout Stats */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                {[
+                  { label: "Total Disbursed", value: formatCurrency(0), icon: <CheckCircle className="w-5 h-5 text-green-500" />, color: "bg-green-500/10" },
+                  { label: "Pending Payouts", value: formatCurrency(0), icon: <Clock className="w-5 h-5 text-yellow-500" />, color: "bg-yellow-500/10" },
+                  { label: "Total Sellers", value: sellers.filter(s => s.status === "active").length, icon: <Users className="w-5 h-5 text-blue-500" />, color: "bg-blue-500/10" },
+                  { label: "Platform Fees", value: formatCurrency(sellers.reduce((sum, s) => sum + Math.round(s.revenue * 0.025), 0)), icon: <DollarSign className="w-5 h-5 text-purple-500" />, color: "bg-purple-500/10" },
+                ].map((s, i) => (
+                  <div key={i} className="p-4 rounded-xl border border-border bg-card">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-muted-foreground">{s.label}</span>
+                      <div className={`w-8 h-8 ${s.color} rounded-lg flex items-center justify-center`}>{s.icon}</div>
+                    </div>
+                    <div className="text-xl font-bold">{s.value}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid lg:grid-cols-3 gap-6">
+                {/* Left Panel - Configuration */}
+                <div className="space-y-6">
+                  {/* Provider Selection */}
+                  <div className="p-6 rounded-xl border border-border bg-card">
+                    <h3 className="font-semibold mb-4">Payment Provider</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button onClick={() => setPayoutProvider("mtn_momo")}
+                        className={`p-4 rounded-xl border-2 text-center transition-all ${
+                          payoutProvider === "mtn_momo" ? "border-yellow-500 bg-yellow-500/10" : "border-border hover:border-yellow-500/50"
+                        }`}>
+                        <div className="text-2xl mb-1">🟡</div>
+                        <div className="text-sm font-medium">MTN MoMo</div>
+                      </button>
+                      <button onClick={() => setPayoutProvider("airtel_money")}
+                        className={`p-4 rounded-xl border-2 text-center transition-all ${
+                          payoutProvider === "airtel_money" ? "border-red-500 bg-red-500/10" : "border-border hover:border-red-500/50"
+                        }`}>
+                        <div className="text-2xl mb-1">🔴</div>
+                        <div className="text-sm font-medium">Airtel Money</div>
                       </button>
                     </div>
+                  </div>
 
-                    <div className="grid lg:grid-cols-3 gap-6">
-                      {/* Configuration */}
-                      <div className="space-y-4">
-                        <h4 className="font-semibold">Configuration</h4>
-                        <div>
-                          <label className="block text-sm font-medium mb-2">Payment Provider</label>
-                          <div className="grid grid-cols-2 gap-2">
-                            <button onClick={() => setPayoutProvider("mtn_momo")}
-                              className={`p-3 rounded-lg border text-sm font-medium transition-all ${
-                                payoutProvider === "mtn_momo" ? "border-yellow-500 bg-yellow-500/10" : "border-border"
-                              }`}>
-                              🟡 MTN MoMo
-                            </button>
-                            <button onClick={() => setPayoutProvider("airtel_money")}
-                              className={`p-3 rounded-lg border text-sm font-medium transition-all ${
-                                payoutProvider === "airtel_money" ? "border-red-500 bg-red-500/10" : "border-border"
-                              }`}>
-                              🔴 Airtel Money
-                            </button>
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-2">Filter by Plan</label>
-                          <select value={payoutPlan} onChange={(e) => setPayoutPlan(e.target.value as any)}
-                            className="w-full px-4 py-2.5 rounded-lg border border-border bg-background text-sm">
-                            <option value="all">All Plans</option>
-                            <option value="free">Free Plan</option>
-                            <option value="pro">Pro Plan</option>
-                            <option value="business">Business Plan</option>
-                            <option value="enterprise">Enterprise Plan</option>
-                          </select>
-                        </div>
-                        <div className="p-4 rounded-lg bg-accent/30 space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Fee Rate</span>
-                            <span className="font-medium">
-                              {payoutPlan === "free" ? "4%" : payoutPlan === "pro" ? "2.5%" : payoutPlan === "business" ? "1.5%" : payoutPlan === "enterprise" ? "1%" : "Various"}
-                            </span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Provider</span>
-                            <span className="font-medium">{payoutProvider === "mtn_momo" ? "MTN MoMo" : "Airtel Money"}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Seller List */}
-                      <div className="lg:col-span-2">
-                        <h4 className="font-semibold mb-4">Sellers for Payout</h4>
-                        <div className="border border-border rounded-lg overflow-hidden">
-                          <div className="p-3 bg-accent/30 border-b border-border flex items-center justify-between">
-                            <span className="text-sm font-medium">Select sellers to payout</span>
-                            <span className="text-sm text-muted-foreground">{sellers.filter(s => s.status === "active").length} active sellers</span>
-                          </div>
-                          <div className="max-h-64 overflow-y-auto">
-                            {sellers.filter(s => s.status === "active").map((seller, i) => (
-                              <div key={seller.id} className="flex items-center justify-between p-3 border-b border-border hover:bg-accent/20 transition-colors">
-                                <div className="flex items-center gap-3">
-                                  <input type="checkbox" defaultChecked className="w-4 h-4 rounded" />
-                                  <div>
-                                    <p className="text-sm font-medium">{seller.name}</p>
-                                    <p className="text-xs text-muted-foreground">{seller.email}</p>
-                                  </div>
-                                </div>
-                                <div className="text-right">
-                                  <p className="text-sm font-medium">{formatCurrency(seller.revenue)}</p>
-                                  <p className="text-xs text-muted-foreground">
-                                    Net: {formatCurrency(seller.revenue * (1 - (seller.plan === "free" ? 0.04 : seller.plan === "pro" ? 0.025 : seller.plan === "business" ? 0.015 : 0.01)))}
-                                  </p>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Summary */}
-                        <div className="mt-4 p-4 rounded-lg bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20">
-                          <div className="grid grid-cols-3 gap-4">
-                            <div>
-                              <p className="text-sm text-muted-foreground">Total Sellers</p>
-                              <p className="text-2xl font-bold">{sellers.filter(s => s.status === "active").length}</p>
+                  {/* Plan Filter */}
+                  <div className="p-6 rounded-xl border border-border bg-card">
+                    <h3 className="font-semibold mb-4">Filter by Plan</h3>
+                    <div className="space-y-2">
+                      {["all", "free", "pro", "business", "enterprise"].map((plan) => {
+                        const count = plan === "all" 
+                          ? sellers.filter(s => s.status === "active").length
+                          : sellers.filter(s => s.status === "active" && (s.plan ?? "free") === plan).length;
+                        const feeRate = plan === "all" ? null : plan === "free" ? "4%" : plan === "pro" ? "2.5%" : plan === "business" ? "1.5%" : "1%";
+                        return (
+                          <button key={plan} onClick={() => setPayoutPlan(plan as any)}
+                            className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${
+                              payoutPlan === plan ? "border-primary bg-primary/10" : "border-border hover:bg-accent/30"
+                            }`}>
+                            <div className="flex items-center gap-2">
+                              <span className={`w-3 h-3 rounded-full ${
+                                plan === "all" ? "bg-gray-500" : plan === "free" ? "bg-gray-400" : plan === "pro" ? "bg-blue-500" : plan === "business" ? "bg-purple-500" : "bg-orange-500"
+                              }`} />
+                              <span className="text-sm font-medium capitalize">{plan} {plan !== "all" ? "Plan" : " Plans"}</span>
                             </div>
-                            <div>
-                              <p className="text-sm text-muted-foreground">Gross Amount</p>
-                              <p className="text-2xl font-bold">{formatCurrency(sellers.filter(s => s.status === "active").reduce((sum, s) => sum + s.revenue, 0))}</p>
+                            <div className="text-right">
+                              <span className="text-sm font-bold">{count}</span>
+                              {feeRate && <span className="text-xs text-muted-foreground ml-2">({feeRate})</span>}
                             </div>
-                            <div>
-                              <p className="text-sm text-muted-foreground">Net Payout</p>
-                              <p className="text-2xl font-bold text-green-500">{formatCurrency(sellers.filter(s => s.status === "active").reduce((sum, s) => {
-                                const fee = s.plan === "free" ? 0.04 : s.plan === "pro" ? 0.025 : s.plan === "business" ? 0.015 : 0.01;
-                                return sum + s.revenue * (1 - fee);
-                              }, 0))}</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                          </button>
+                        );
+                      })}
                     </div>
-
-                    {/* Actions */}
-                    <div className="flex gap-3 mt-6 pt-6 border-t border-border">
-                      <button onClick={() => setShowPayoutModal(false)}
-                        className="flex-1 py-2.5 border border-border rounded-lg hover:bg-accent transition-colors">
-                        Cancel
-                      </button>
-                      <button onClick={async () => {
-                        const activeSellers = sellers.filter(s => s.status === "active");
-                        const payouts = activeSellers.map(s => ({
-                          userId: s.id,
-                          sellerName: s.name,
-                          sellerEmail: s.email,
-                          sellerPhone: s.phone ?? "",
-                          storeId: s.storeId,
-                          storeName: s.storeName,
-                          amount: Math.round(s.revenue * (1 - (s.plan === "free" ? 0.04 : s.plan === "pro" ? 0.025 : s.plan === "business" ? 0.015 : 0.01))),
-                          plan: s.plan ?? "free",
-                        }));
-                        
-                        alert(`Payout batch created for ${payouts.length} sellers!\n\nTotal: UGX ${payouts.reduce((sum, p) => sum + p.amount, 0).toLocaleString()}\n\nIn production, this would initiate ${payoutProvider === "mtn_momo" ? "MTN MoMo" : "Airtel Money"} disbursements.`);
-                        setShowPayoutModal(false);
-                      }}
-                        className="flex-1 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:opacity-90 transition-opacity font-medium">
-                        Process Payouts
-                      </button>
-                    </div>
-                  </motion.div>
+                  </div>
                 </div>
-              )}
+
+                {/* Right Panel - Seller Selection & Calculations */}
+                <div className="lg:col-span-2 space-y-6">
+                  {/* Selected Summary */}
+                  <div className="p-6 rounded-xl border border-border bg-gradient-to-r from-green-500/5 to-emerald-500/5">
+                    <h3 className="font-semibold mb-4">Payout Summary</h3>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Selected Sellers</p>
+                        <p className="text-3xl font-bold">{sellers.filter(s => s.status === "active" && (payoutPlan === "all" || (s.plan ?? "free") === payoutPlan)).length}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Gross Amount</p>
+                        <p className="text-3xl font-bold">{formatCurrency(sellers.filter(s => s.status === "active" && (payoutPlan === "all" || (s.plan ?? "free") === payoutPlan)).reduce((sum, s) => sum + s.revenue, 0))}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Net Payout</p>
+                        <p className="text-3xl font-bold text-green-500">{formatCurrency(sellers.filter(s => s.status === "active" && (payoutPlan === "all" || (s.plan ?? "free") === payoutPlan)).reduce((sum, s) => {
+                          const fee = s.plan === "free" ? 0.04 : s.plan === "pro" ? 0.025 : s.plan === "business" ? 0.015 : 0.01;
+                          return sum + s.revenue * (1 - fee);
+                        }, 0))}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Seller List */}
+                  <div className="rounded-xl border border-border bg-card overflow-hidden">
+                    <div className="p-4 border-b border-border flex items-center justify-between bg-muted/30">
+                      <h3 className="font-semibold">Sellers</h3>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">
+                          {sellers.filter(s => s.status === "active" && (payoutPlan === "all" || (s.plan ?? "free") === payoutPlan)).length} sellers
+                        </span>
+                        <button onClick={() => {
+                          const checkboxes = document.querySelectorAll('.seller-checkbox');
+                          checkboxes.forEach((cb: any) => cb.checked = true);
+                        }} className="text-xs text-primary hover:underline">Select All</button>
+                      </div>
+                    </div>
+                    <div className="max-h-[400px] overflow-y-auto">
+                      <table className="w-full">
+                        <thead className="sticky top-0 bg-card">
+                          <tr className="border-b border-border">
+                            <th className="text-left py-2 px-4 w-10"></th>
+                            <th className="text-left py-2 px-4 text-xs font-medium text-muted-foreground">Seller</th>
+                            <th className="text-left py-2 px-4 text-xs font-medium text-muted-foreground">Plan</th>
+                            <th className="text-right py-2 px-4 text-xs font-medium text-muted-foreground">Gross</th>
+                            <th className="text-right py-2 px-4 text-xs font-medium text-muted-foreground">Fee</th>
+                            <th className="text-right py-2 px-4 text-xs font-medium text-muted-foreground">Net Payout</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sellers.filter(s => s.status === "active" && (payoutPlan === "all" || (s.plan ?? "free") === payoutPlan)).map((seller) => {
+                            const fee = seller.plan === "free" ? 0.04 : seller.plan === "pro" ? 0.025 : seller.plan === "business" ? 0.015 : 0.01;
+                            const feeAmount = Math.round(seller.revenue * fee);
+                            const netPayout = seller.revenue - feeAmount;
+                            return (
+                              <tr key={seller.id} className="border-b border-border hover:bg-accent/30 transition-colors">
+                                <td className="py-3 px-4">
+                                  <input type="checkbox" defaultChecked className="seller-checkbox w-4 h-4 rounded" />
+                                </td>
+                                <td className="py-3 px-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-medium">
+                                      {seller.name.charAt(0)}
+                                    </div>
+                                    <div>
+                                      <p className="text-sm font-medium">{seller.name}</p>
+                                      <p className="text-xs text-muted-foreground">{seller.storeName}</p>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                    seller.plan === "enterprise" ? "bg-orange-500/10 text-orange-500" :
+                                    seller.plan === "business" ? "bg-purple-500/10 text-purple-500" :
+                                    seller.plan === "pro" ? "bg-blue-500/10 text-blue-500" :
+                                    "bg-gray-500/10 text-gray-500"
+                                  }`}>{seller.plan ?? "free"}</span>
+                                </td>
+                                <td className="py-3 px-4 text-sm text-right">{formatCurrency(seller.revenue)}</td>
+                                <td className="py-3 px-4 text-sm text-right text-red-500">-{formatCurrency(feeAmount)}</td>
+                                <td className="py-3 px-4 text-sm text-right font-medium text-green-500">{formatCurrency(netPayout)}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Process Button */}
+                  <button onClick={async () => {
+                    const selectedSellers = sellers.filter(s => s.status === "active" && (payoutPlan === "all" || (s.plan ?? "free") === payoutPlan));
+                    const totalPayout = selectedSellers.reduce((sum, s) => {
+                      const fee = s.plan === "free" ? 0.04 : s.plan === "pro" ? 0.025 : s.plan === "business" ? 0.015 : 0.01;
+                      return sum + s.revenue * (1 - fee);
+                    }, 0);
+                    
+                    alert(`Payout Batch Created!\n\nProvider: ${payoutProvider === "mtn_momo" ? "MTN MoMo" : "Airtel Money"}\nPlan Filter: ${payoutPlan}\nSellers: ${selectedSellers.length}\nTotal: UGX ${Math.round(totalPayout).toLocaleString()}\n\nIn production, this will initiate disbursements to each seller's mobile money account.`);
+                  }}
+                    className="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+                    <ArrowUpRight className="w-5 h-5" /> Process Payouts via {payoutProvider === "mtn_momo" ? "MTN MoMo" : "Airtel Money"}
+                  </button>
+                </div>
+              </div>
             </motion.div>
           )}
 

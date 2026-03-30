@@ -100,13 +100,22 @@ export const listSellers = query({
           .collect();
         revenue = orders.filter(o => o.status === "paid").reduce((sum, o) => sum + o.total, 0);
       }
+
+      // Get subscription plan
+      const subscription = await ctx.db.query("subscriptions")
+        .withIndex("by_user", q => q.eq("userId", user._id))
+        .filter(q => q.eq(q.field("status"), "active"))
+        .first();
+
       return {
         ...user,
         storeName: store?.name ?? "No Store",
         storeSlug: store?.slug ?? "",
+        storeId: store?._id,
         productCount: products.length,
         orderCount: orders.length,
         revenue,
+        plan: subscription?.plan ?? "free",
       };
     }));
   },

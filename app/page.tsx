@@ -7,6 +7,7 @@ import { DottedSurface } from "@/components/ui/dotted-surface"
 import { BackgroundPaths } from "@/components/ui/background-paths"
 import { HeroMotionBackground } from "@/components/ui/hero-motion-background"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
+import PricingSectionNew from "@/components/ui/pricing-section"
 import AIChatCard from "@/components/ui/ai-chat"
 import {
   ShoppingCart,
@@ -640,83 +641,7 @@ function SwiftShopyLanding({ className = "" }: SwiftShopyLandingProps) {
       </section>
 
       {/* Pricing Section */}
-      <section
-        id="pricing"
-        className="relative py-24 px-4 sm:px-6 lg:px-8 overflow-hidden"
-      >
-        <div className="absolute inset-0 bg-gradient-to-b from-background via-accent/10 to-background" />
-        <DottedSurface className="absolute inset-0 opacity-20" />
-        <div className="container mx-auto relative z-10">
-          <div className="text-center mb-16">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="inline-flex items-center gap-2 px-4 py-2 glass rounded-full mb-6"
-            >
-              <DollarSign className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium">Simple Pricing</span>
-            </motion.div>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
-              Transparent <span className="text-gradient">Pricing</span>
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Choose the plan that fits your business. Start free, upgrade as you grow.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            {pricingTiers.map((tier, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                whileHover={{ y: -10 }}
-                className={`p-8 rounded-2xl cursor-pointer transition-all ${
-                  tier.highlighted
-                    ? "glass gradient-border shadow-xl scale-105 lg:scale-110"
-                    : "glass hover:shadow-lg"
-                }`}
-              >
-                {tier.highlighted && (
-                  <div className="inline-block px-4 py-1.5 bg-gradient-to-r from-primary to-indigo-600 text-white text-sm font-medium rounded-full mb-6 shadow-lg">
-                    Most Popular
-                  </div>
-                )}
-                <h3 className="text-2xl font-bold mb-2">{tier.name}</h3>
-                <div className="mb-6">
-                  <span className="text-4xl font-bold">{tier.price}</span>
-                  <span className="text-muted-foreground ml-2">/ {tier.period}</span>
-                </div>
-
-                <ul className="space-y-3 mb-8">
-                  {tier.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-start gap-3">
-                      <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
-                        <Check className="w-3 h-3 text-primary" />
-                      </div>
-                      <span className="text-sm">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <Link
-                  href={tier.href || "/pricing"}
-                  className={`w-full block text-center py-3 rounded-xl font-medium transition-all hover:scale-105 ${
-                    tier.highlighted
-                      ? "bg-gradient-to-r from-primary to-indigo-600 text-primary-foreground shadow-lg"
-                      : "glass hover:bg-accent/50"
-                  }`}
-                >
-                  {tier.cta}
-                </Link>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <PricingSectionNew />
 
       {/* Testimonials Section */}
       <section id="testimonials" className="relative py-24 px-4 sm:px-6 lg:px-8 overflow-hidden">

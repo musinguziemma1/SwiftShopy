@@ -2201,151 +2201,152 @@ export default function SellerDashboardPage() {
       {/* ── Payments Modal ── */}
       <AnimatePresence>
         {showPaymentsModal && (
-          <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPaymentsModal(false)} className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
-            <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }}
-              className="fixed inset-x-4 bottom-4 top-20 sm:inset-x-auto sm:top-auto sm:bottom-auto sm:left-1/2 sm:-translate-x-1/2 sm:top-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-2xl sm:max-h-[80vh] glass rounded-2xl z-50 flex flex-col">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+            {/* Backdrop */}
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowPaymentsModal(false)} />
+            
+            {/* Modal */}
+            <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }}
+              className="relative w-full sm:max-w-2xl sm:max-h-[85vh] glass rounded-t-2xl sm:rounded-2xl flex flex-col max-h-[90vh]">
               {/* Header */}
-              <div className="flex justify-between items-center p-4 sm:p-6 border-b border-border/50 shrink-0">
-                <div>
-                  <h3 className="text-lg sm:text-xl font-bold flex items-center gap-2">
-                    <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-green-500" /> Payments
-                  </h3>
-                  <p className="text-xs sm:text-sm text-muted-foreground">View your payment history</p>
+              <div className="flex justify-between items-center p-4 border-b border-border/50 shrink-0">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="w-5 h-5 text-green-500" />
+                  <h3 className="font-bold">Payments</h3>
                 </div>
-                <button onClick={() => setShowPaymentsModal(false)} className="p-2 hover:bg-accent/50 rounded-lg"><X className="w-5 h-5" /></button>
+                <button onClick={() => setShowPaymentsModal(false)} className="p-2 hover:bg-accent/50 rounded-lg">
+                  <X className="w-5 h-5" />
+                </button>
               </div>
 
-              {/* Content */}
-              <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-                  <div className="p-3 sm:p-4 rounded-xl bg-green-500/10 border border-green-500/20">
-                    <p className="text-xs sm:text-sm text-muted-foreground">Total Received</p>
-                    <p className="text-lg sm:text-2xl font-bold text-green-500">UGX {orders.filter(o => o.status === "paid").reduce((sum, o) => sum + o.amount, 0).toLocaleString()}</p>
+              {/* Scrollable Content */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {/* Stats */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/20 text-center">
+                    <p className="text-xs text-muted-foreground">Received</p>
+                    <p className="text-sm sm:text-lg font-bold text-green-500">UGX {orders.filter(o => o.status === "paid").reduce((sum, o) => sum + o.amount, 0).toLocaleString()}</p>
                   </div>
-                  <div className="p-3 sm:p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
-                    <p className="text-xs sm:text-sm text-muted-foreground">Pending</p>
-                    <p className="text-lg sm:text-2xl font-bold text-yellow-500">UGX {orders.filter(o => o.status === "pending").reduce((sum, o) => sum + o.amount, 0).toLocaleString()}</p>
+                  <div className="p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-center">
+                    <p className="text-xs text-muted-foreground">Pending</p>
+                    <p className="text-sm sm:text-lg font-bold text-yellow-500">UGX {orders.filter(o => o.status === "pending").reduce((sum, o) => sum + o.amount, 0).toLocaleString()}</p>
                   </div>
-                  <div className="p-3 sm:p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
-                    <p className="text-xs sm:text-sm text-muted-foreground">This Month</p>
-                    <p className="text-lg sm:text-2xl font-bold text-blue-500">UGX {orders.filter(o => o.status === "paid").reduce((sum, o) => sum + o.amount, 0).toLocaleString()}</p>
+                  <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-center">
+                    <p className="text-xs text-muted-foreground">This Month</p>
+                    <p className="text-sm sm:text-lg font-bold text-blue-500">UGX {orders.filter(o => o.status === "paid").reduce((sum, o) => sum + o.amount, 0).toLocaleString()}</p>
                   </div>
                 </div>
 
-                <h4 className="font-semibold mb-3">Recent Payments</h4>
-                <div className="space-y-2">
-                  {orders.length > 0 ? orders.slice(0, 10).map((order, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 rounded-xl border border-border hover:bg-accent/30 transition-colors">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center shrink-0 ${
-                          order.status === "paid" ? "bg-green-500/10 text-green-500" :
-                          order.status === "pending" ? "bg-yellow-500/10 text-yellow-500" :
-                          "bg-red-500/10 text-red-500"
-                        }`}>
-                          <DollarSign className="w-4 h-4 sm:w-5 sm:h-5" />
+                {/* Payments List */}
+                <div>
+                  <h4 className="text-sm font-semibold mb-2">Recent Payments</h4>
+                  <div className="space-y-2">
+                    {orders.length > 0 ? orders.slice(0, 10).map((order, i) => (
+                      <div key={i} className="flex items-center justify-between p-3 rounded-xl border border-border">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                            order.status === "paid" ? "bg-green-500/10 text-green-500" :
+                            order.status === "pending" ? "bg-yellow-500/10 text-yellow-500" :
+                            "bg-red-500/10 text-red-500"
+                          }`}>
+                            <DollarSign className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">#{order.id}</p>
+                            <p className="text-xs text-muted-foreground truncate">{order.customer}</p>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <p className="font-medium text-sm truncate">Order #{order.id}</p>
-                          <p className="text-xs text-muted-foreground truncate">{order.customer}</p>
+                        <div className="text-right shrink-0 ml-2">
+                          <p className="text-sm font-medium">UGX {order.amount.toLocaleString()}</p>
+                          <span className={`text-xs ${order.status === "paid" ? "text-green-500" : order.status === "pending" ? "text-yellow-500" : "text-red-500"}`}>{order.status}</span>
                         </div>
                       </div>
-                      <div className="text-right shrink-0 ml-2">
-                        <p className="font-medium text-sm">UGX {order.amount.toLocaleString()}</p>
-                        <span className={`text-xs ${order.status === "paid" ? "text-green-500" : order.status === "pending" ? "text-yellow-500" : "text-red-500"}`}>{order.status}</span>
+                    )) : (
+                      <div className="text-center py-6 text-muted-foreground">
+                        <DollarSign className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                        <p className="text-sm">No payments yet</p>
                       </div>
-                    </div>
-                  )) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <DollarSign className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                      <p className="text-sm">No payments yet</p>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Footer */}
-              <div className="p-4 sm:p-6 border-t border-border/50 shrink-0">
-                <div className="flex gap-3">
-                  <button onClick={() => { setShowPaymentsModal(false); setActiveTab("orders"); }} className="flex-1 py-2.5 border border-border rounded-xl hover:bg-accent transition-colors text-sm font-medium">
-                    View Orders
-                  </button>
-                  <button className="flex-1 py-2.5 bg-gradient-to-r from-primary to-indigo-600 text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity">
-                    Withdraw
-                  </button>
-                </div>
+              <div className="p-4 border-t border-border/50 shrink-0 flex gap-2">
+                <button onClick={() => { setShowPaymentsModal(false); setActiveTab("orders"); }} className="flex-1 py-2.5 border border-border rounded-xl text-sm font-medium hover:bg-accent transition-colors">
+                  View Orders
+                </button>
+                <button className="flex-1 py-2.5 bg-gradient-to-r from-primary to-indigo-600 text-white rounded-xl text-sm font-medium">
+                  Withdraw
+                </button>
               </div>
             </motion.div>
-          </>
+          </motion.div>
         )}
       </AnimatePresence>
 
       {/* ── Reports Modal ── */}
       <AnimatePresence>
         {showReportsModal && (
-          <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowReportsModal(false)} className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
-            <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }}
-              className="fixed inset-x-4 bottom-4 top-auto sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:top-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-lg glass rounded-2xl z-50 flex flex-col">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+            {/* Backdrop */}
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowReportsModal(false)} />
+            
+            {/* Modal */}
+            <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }}
+              className="relative w-full sm:max-w-md glass rounded-t-2xl sm:rounded-2xl">
               {/* Header */}
-              <div className="flex justify-between items-center p-4 sm:p-6 border-b border-border/50 shrink-0">
-                <div>
-                  <h3 className="text-lg sm:text-xl font-bold flex items-center gap-2">
-                    <Download className="w-5 h-5 sm:w-6 sm:h-6 text-primary" /> Reports
-                  </h3>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Download business reports</p>
+              <div className="flex justify-between items-center p-4 border-b border-border/50">
+                <div className="flex items-center gap-2">
+                  <Download className="w-5 h-5 text-primary" />
+                  <h3 className="font-bold">Reports</h3>
                 </div>
-                <button onClick={() => setShowReportsModal(false)} className="p-2 hover:bg-accent/50 rounded-lg"><X className="w-5 h-5" /></button>
+                <button onClick={() => setShowReportsModal(false)} className="p-2 hover:bg-accent/50 rounded-lg">
+                  <X className="w-5 h-5" />
+                </button>
               </div>
 
               {/* Content */}
-              <div className="p-4 sm:p-6">
-                <div className="space-y-3">
-                  {[
-                    { label: "Sales Report", desc: "All sales data", icon: <DollarSign className="w-5 h-5" />, color: "green" },
-                    { label: "Orders Report", desc: "Order history", icon: <ShoppingCart className="w-5 h-5" />, color: "blue" },
-                    { label: "Products Report", desc: "Product inventory", icon: <Package className="w-5 h-5" />, color: "purple" },
-                    { label: "Customer Report", desc: "Customer list", icon: <Users className="w-5 h-5" />, color: "orange" },
-                  ].map((report, i) => (
-                    <button key={i} onClick={() => {
-                      const headers = ["Date", "Order #", "Customer", "Total", "Status"];
-                      const csv = [headers.join(","), ...orders.map(o => [o.date, o.id, `"${o.customer}"`, o.amount, o.status].join(","))].join("\n");
-                      const blob = new Blob([csv], { type: "text/csv" });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement("a");
-                      a.href = url;
-                      a.download = `${report.label.toLowerCase().replace(" ", "-")}-${new Date().toISOString().split("T")[0]}.csv`;
-                      a.click();
-                      URL.revokeObjectURL(url);
-                    }} className="w-full flex items-center justify-between p-3 sm:p-4 rounded-xl border border-border hover:bg-accent/30 transition-colors text-left">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center ${
-                          report.color === "green" ? "bg-green-500/10 text-green-500" :
-                          report.color === "blue" ? "bg-blue-500/10 text-blue-500" :
-                          report.color === "purple" ? "bg-purple-500/10 text-purple-500" :
-                          "bg-orange-500/10 text-orange-500"
-                        }`}>
-                          {report.icon}
-                        </div>
-                        <div>
-                          <p className="font-medium text-sm">{report.label}</p>
-                          <p className="text-xs text-muted-foreground">{report.desc}</p>
-                        </div>
-                      </div>
-                      <Download className="w-4 h-4 text-muted-foreground" />
-                    </button>
-                  ))}
-                </div>
+              <div className="p-4 space-y-2">
+                {[
+                  { label: "Sales Report", icon: <DollarSign className="w-5 h-5" />, color: "green" },
+                  { label: "Orders Report", icon: <ShoppingCart className="w-5 h-5" />, color: "blue" },
+                  { label: "Products Report", icon: <Package className="w-5 h-5" />, color: "purple" },
+                  { label: "Customers Report", icon: <Users className="w-5 h-5" />, color: "orange" },
+                ].map((report, i) => (
+                  <button key={i} onClick={() => {
+                    const csv = ["Date,Order #,Customer,Total,Status", ...orders.map(o => [o.date, o.id, `"${o.customer}"`, o.amount, o.status].join(","))].join("\n");
+                    const blob = new Blob([csv], { type: "text/csv" });
+                    const a = document.createElement("a");
+                    a.href = URL.createObjectURL(blob);
+                    a.download = `${report.label.toLowerCase().replace(" ", "-")}-${new Date().toISOString().split("T")[0]}.csv`;
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                  }} className="w-full flex items-center justify-between p-3 rounded-xl border border-border hover:bg-accent/30 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                        report.color === "green" ? "bg-green-500/10 text-green-500" :
+                        report.color === "blue" ? "bg-blue-500/10 text-blue-500" :
+                        report.color === "purple" ? "bg-purple-500/10 text-purple-500" :
+                        "bg-orange-500/10 text-orange-500"
+                      }`}>{report.icon}</div>
+                      <span className="text-sm font-medium">{report.label}</span>
+                    </div>
+                    <Download className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                ))}
               </div>
 
               {/* Footer */}
-              <div className="p-4 sm:p-6 border-t border-border/50 shrink-0">
-                <button onClick={() => setShowReportsModal(false)} className="w-full py-2.5 border border-border rounded-xl hover:bg-accent transition-colors text-sm font-medium">
+              <div className="p-4 border-t border-border/50">
+                <button onClick={() => setShowReportsModal(false)} className="w-full py-2.5 border border-border rounded-xl text-sm font-medium hover:bg-accent transition-colors">
                   Close
                 </button>
               </div>
             </motion.div>
-          </>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

@@ -40,6 +40,8 @@ export default function SellerDashboardPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showStorePreview, setShowStorePreview] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showPaymentsModal, setShowPaymentsModal] = useState(false);
+  const [showReportsModal, setShowReportsModal] = useState(false);
   const [whatsappSubTab, setWhatsappSubTab] = useState("conversations");
   const [selectedChat, setSelectedChat] = useState<string | null>("1");
   const [chatMessage, setChatMessage] = useState("");
@@ -314,11 +316,11 @@ export default function SellerDashboardPage() {
             className="mb-6 p-4 glass rounded-xl">
             <div className="flex flex-wrap gap-3 items-center justify-center">
               {[
-                { label: "Add Product", icon: <Plus className="w-4 h-4" />, primary: true },
+                { label: "Add Product", icon: <Plus className="w-4 h-4" />, primary: true, onClick: () => setShowAddProduct(true) },
                 { label: "Share Store", icon: <Share2 className="w-4 h-4" />, onClick: () => setShowShareModal(true) },
                 { label: "Preview Store", icon: <Eye className="w-4 h-4" />, onClick: () => setShowStorePreview(true) },
-                { label: "Payments", icon: <DollarSign className="w-4 h-4" /> },
-                { label: "Reports", icon: <Download className="w-4 h-4" /> },
+                { label: "Payments", icon: <DollarSign className="w-4 h-4" />, onClick: () => setShowPaymentsModal(true) },
+                { label: "Reports", icon: <Download className="w-4 h-4" />, onClick: () => setShowReportsModal(true) },
               ].map((btn, i) => (
                 <button key={i} onClick={btn.onClick} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:scale-105 ${
                   btn.primary
@@ -2195,6 +2197,160 @@ export default function SellerDashboardPage() {
           </motion.div>
         </motion.div>
       )}
+
+      {/* ── Payments Modal ── */}
+      <AnimatePresence>
+        {showPaymentsModal && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPaymentsModal(false)} className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-1rem)] sm:w-full sm:max-w-2xl glass rounded-2xl z-50 p-4 sm:p-6 overflow-y-auto max-h-[calc(100vh-1rem)]">
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h3 className="text-xl font-bold flex items-center gap-2">
+                    <DollarSign className="w-6 h-6 text-green-500" /> Payments
+                  </h3>
+                  <p className="text-sm text-muted-foreground">View your payment history and earnings</p>
+                </div>
+                <button onClick={() => setShowPaymentsModal(false)} className="p-2 hover:bg-accent/50 rounded-lg"><X className="w-5 h-5" /></button>
+              </div>
+
+              {/* Payment Stats */}
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20">
+                  <p className="text-sm text-muted-foreground">Total Received</p>
+                  <p className="text-2xl font-bold text-green-500">UGX {orders.filter(o => o.status === "paid").reduce((sum, o) => sum + o.amount, 0).toLocaleString()}</p>
+                </div>
+                <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
+                  <p className="text-sm text-muted-foreground">Pending</p>
+                  <p className="text-2xl font-bold text-yellow-500">UGX {orders.filter(o => o.status === "pending").reduce((sum, o) => sum + o.amount, 0).toLocaleString()}</p>
+                </div>
+                <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                  <p className="text-sm text-muted-foreground">This Month</p>
+                  <p className="text-2xl font-bold text-blue-500">UGX {orders.filter(o => o.status === "paid").reduce((sum, o) => sum + o.amount, 0).toLocaleString()}</p>
+                </div>
+              </div>
+
+              {/* Recent Payments */}
+              <h4 className="font-semibold mb-4">Recent Payments</h4>
+              <div className="space-y-3 max-h-64 overflow-y-auto">
+                {orders.length > 0 ? orders.slice(0, 10).map((order, i) => (
+                  <div key={i} className="flex items-center justify-between p-4 rounded-xl border border-border hover:bg-accent/30 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        order.status === "paid" ? "bg-green-500/10 text-green-500" :
+                        order.status === "pending" ? "bg-yellow-500/10 text-yellow-500" :
+                        "bg-red-500/10 text-red-500"
+                      }`}>
+                        <DollarSign className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="font-medium">Order #{order.id}</p>
+                        <p className="text-sm text-muted-foreground">{order.customer} • {order.date}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium">UGX {order.amount.toLocaleString()}</p>
+                      <span className={`text-xs ${
+                        order.status === "paid" ? "text-green-500" :
+                        order.status === "pending" ? "text-yellow-500" :
+                        "text-red-500"
+                      }`}>{order.status}</span>
+                    </div>
+                  </div>
+                )) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <DollarSign className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                    <p>No payments yet</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-6 flex gap-3">
+                <button onClick={() => { setShowPaymentsModal(false); setActiveTab("orders"); }} className="flex-1 py-2.5 border border-border rounded-xl hover:bg-accent transition-colors text-sm font-medium">
+                  View All Orders
+                </button>
+                <button className="flex-1 py-2.5 bg-gradient-to-r from-primary to-indigo-600 text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity">
+                  Withdraw Funds
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ── Reports Modal ── */}
+      <AnimatePresence>
+        {showReportsModal && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowReportsModal(false)} className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-1rem)] sm:w-full sm:max-w-lg glass rounded-2xl z-50 p-4 sm:p-6">
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h3 className="text-xl font-bold flex items-center gap-2">
+                    <Download className="w-6 h-6 text-primary" /> Reports
+                  </h3>
+                  <p className="text-sm text-muted-foreground">Download your business reports</p>
+                </div>
+                <button onClick={() => setShowReportsModal(false)} className="p-2 hover:bg-accent/50 rounded-lg"><X className="w-5 h-5" /></button>
+              </div>
+
+              <div className="space-y-3">
+                {[
+                  { label: "Sales Report", desc: "Download all sales data", icon: <DollarSign className="w-5 h-5" />, color: "green" },
+                  { label: "Orders Report", desc: "Download order history", icon: <ShoppingCart className="w-5 h-5" />, color: "blue" },
+                  { label: "Products Report", desc: "Download product inventory", icon: <Package className="w-5 h-5" />, color: "purple" },
+                  { label: "Customer Report", desc: "Download customer list", icon: <Users className="w-5 h-5" />, color: "orange" },
+                ].map((report, i) => (
+                  <button key={i} onClick={() => {
+                    // Generate and download CSV
+                    const headers = ["Date", "Order #", "Customer", "Total", "Status"];
+                    const csvContent = [
+                      headers.join(","),
+                      ...orders.map(o => [
+                        o.date,
+                        o.id,
+                        `"${o.customer}"`,
+                        o.amount,
+                        o.status
+                      ].join(","))
+                    ].join("\n");
+                    const dataBlob = new Blob([csvContent], { type: "text/csv" });
+                    const url = URL.createObjectURL(dataBlob);
+                    const link = document.createElement("a");
+                    link.href = url;
+                    link.download = `${report.label.toLowerCase().replace(" ", "-")}-${new Date().toISOString().split("T")[0]}.csv`;
+                    link.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                    className="w-full flex items-center justify-between p-4 rounded-xl border border-border hover:bg-accent/30 transition-colors text-left">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        report.color === "green" ? "bg-green-500/10 text-green-500" :
+                        report.color === "blue" ? "bg-blue-500/10 text-blue-500" :
+                        report.color === "purple" ? "bg-purple-500/10 text-purple-500" :
+                        "bg-orange-500/10 text-orange-500"
+                      }`}>
+                        {report.icon}
+                      </div>
+                      <div>
+                        <p className="font-medium">{report.label}</p>
+                        <p className="text-sm text-muted-foreground">{report.desc}</p>
+                      </div>
+                    </div>
+                    <Download className="w-5 h-5 text-muted-foreground" />
+                  </button>
+                ))}
+              </div>
+
+              <button onClick={() => setShowReportsModal(false)} className="w-full mt-6 py-2.5 border border-border rounded-xl hover:bg-accent transition-colors text-sm font-medium">
+                Close
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

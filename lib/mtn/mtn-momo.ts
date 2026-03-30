@@ -6,12 +6,42 @@
  * Sandbox base URL: https://sandbox.momodeveloper.mtn.com
  */
 
-const MTN_BASE_URL = process.env.MTN_BASE_URL ?? "https://sandbox.momodeveloper.mtn.com";
-const MTN_COLLECTIONS_PRIMARY_KEY = process.env.MTN_COLLECTIONS_PRIMARY_KEY ?? "";
-const MTN_API_USER_ID = process.env.MTN_API_USER_ID ?? "";
-const MTN_API_KEY = process.env.MTN_API_KEY ?? "";
+// Determine environment and load correct credentials
+const ENVIRONMENT = process.env.MTN_ENVIRONMENT ?? "sandbox";
+const IS_SANDBOX = ENVIRONMENT === "sandbox";
+
+// Load credentials based on environment
+const MTN_BASE_URL = IS_SANDBOX
+  ? (process.env.MTN_SANDBOX_BASE_URL ?? "https://sandbox.momodeveloper.mtn.com")
+  : (process.env.MTN_PRODUCTION_BASE_URL ?? "https://api.momodeveloper.mtn.com");
+
+const MTN_COLLECTIONS_PRIMARY_KEY = IS_SANDBOX
+  ? (process.env.MTN_SANDBOX_COLLECTIONS_KEY ?? "")
+  : (process.env.MTN_PRODUCTION_COLLECTIONS_KEY ?? "");
+
+const MTN_DISBURSEMENTS_PRIMARY_KEY = IS_SANDBOX
+  ? (process.env.MTN_SANDBOX_DISBURSEMENTS_KEY ?? "")
+  : (process.env.MTN_PRODUCTION_DISBURSEMENTS_KEY ?? "");
+
+const MTN_API_USER_ID = IS_SANDBOX
+  ? (process.env.MTN_SANDBOX_API_USER_ID ?? "")
+  : (process.env.MTN_PRODUCTION_API_USER_ID ?? "");
+
+const MTN_API_KEY = IS_SANDBOX
+  ? (process.env.MTN_SANDBOX_API_KEY ?? "")
+  : (process.env.MTN_PRODUCTION_API_KEY ?? "");
+
 const MTN_CALLBACK_URL = process.env.MTN_CALLBACK_URL ?? "https://swiftshopy.com/api/webhooks/mtn";
-const MTN_ENVIRONMENT = process.env.MTN_ENVIRONMENT ?? "sandbox"; // "sandbox" | "mtncameroon" | "mtnuganda"
+const MTN_TARGET_ENV = IS_SANDBOX ? "sandbox" : "mtnuganda";
+
+// Debug logging (remove in production)
+console.log("[MTN Config]", {
+  environment: ENVIRONMENT,
+  baseUrl: MTN_BASE_URL,
+  hasCollectionsKey: !!MTN_COLLECTIONS_PRIMARY_KEY,
+  hasApiUserId: !!MTN_API_USER_ID,
+  hasApiKey: !!MTN_API_KEY,
+});
 
 // ────────────────────────────────────────────
 // Types
@@ -56,6 +86,10 @@ function generateUUID(): string {
 }
 
 async function getAccessToken(): Promise<string> {
+  if (!MTN_API_USER_ID || !MTN_API_KEY) {
+    throw new Error("MTN API credentials not configured. Please add MTN_SANDBOX_API_USER_ID and MTN_SANDBOX_API_KEY to .env.local");
+  }
+
   const credentials = Buffer.from(`${MTN_API_USER_ID}:${MTN_API_KEY}`).toString("base64");
 
   const res = await fetch(`${MTN_BASE_URL}/collection/token/`, {
@@ -104,7 +138,7 @@ export async function requestToPay(payload: MoMoRequestToPayPayload): Promise<st
     headers: {
       Authorization: `Bearer ${token}`,
       "X-Reference-Id": referenceId,
-      "X-Target-Environment": MTN_ENVIRONMENT,
+      "X-Target-Environment": MTN_TARGET_ENV,
       "X-Callback-Url": MTN_CALLBACK_URL,
       "Ocp-Apim-Subscription-Key": MTN_COLLECTIONS_PRIMARY_KEY,
       "Content-Type": "application/json",
@@ -133,7 +167,7 @@ export async function getTransactionStatus(referenceId: string): Promise<MoMoTra
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
-        "X-Target-Environment": MTN_ENVIRONMENT,
+        "X-Target-Environment": MTN_TARGET_ENV,
         "Ocp-Apim-Subscription-Key": MTN_COLLECTIONS_PRIMARY_KEY,
       },
     }
@@ -156,7 +190,7 @@ export async function getAccountBalance(): Promise<{ availableBalance: string; c
   const res = await fetch(`${MTN_BASE_URL}/collection/v1_0/account/balance`, {
     headers: {
       Authorization: `Bearer ${token}`,
-      "X-Target-Environment": MTN_ENVIRONMENT,
+      "X-Target-Environment": MTN_TARGET_ENV,
       "Ocp-Apim-Subscription-Key": MTN_COLLECTIONS_PRIMARY_KEY,
     },
   });
@@ -190,4 +224,19 @@ export function isMtnUgandaNumber(phone: string): boolean {
   const msisdn = normalizeUgandaPhone(phone);
   const mtnPrefixes = ["25676", "25677", "25678", "25639"];
   return mtnPrefixes.some((prefix) => msisdn.startsWith(prefix));
+}
+
+/**
+ * Get current configuration status
+ */
+export function getConfigStatus() {
+  return {
+    environment: ENVIRONMENT,
+    baseUrl: MTN_BASE_URL,
+    isConfigured: !!(MTN_API_USER_ID && MTN_API_KEY && MTN_COLLECTIONS_PRIMARY_KEY),
+    hasCollectionsKey: !!MTN_COLLECTIONS_PRIMARY_KEY,
+    hasDisbursementsKey: !!MTN_DISBURSEMENTS_PRIMARY_KEY,
+    hasApiUserId: !!MTN_API_USER_ID,
+    hasApiKey: !!MTN_API_KEY,
+  };
 }

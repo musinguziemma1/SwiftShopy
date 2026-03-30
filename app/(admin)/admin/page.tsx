@@ -99,10 +99,10 @@ function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview")
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [selectedSellers, setSelectedSellers] = useState<string[]>([])
+  const [searchQuery, setSearchQuery] = useState("")
   const [showSellerModal, setShowSellerModal] = useState(false)
   const [selectedSeller, setSelectedSeller] = useState<any>(null)
   const [sellerModalMode, setSellerModalMode] = useState<"view" | "edit">("view")
-  const [searchQuery, setSearchQuery] = useState("")
   const [showExportDropdown, setShowExportDropdown] = useState<string | null>(null)
   const [showBulkConfirmModal, setShowBulkConfirmModal] = useState(false)
   const [bulkAction, setBulkAction] = useState("")
@@ -595,7 +595,7 @@ function AdminDashboard() {
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="relative">
-                    <input type="text" placeholder="Search sellers..." 
+                    <input type="text" placeholder="Search sellers..." value={searchQuery}
                       className="pl-10 pr-4 py-2 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-sm w-64"
                       onChange={(e) => setSearchQuery(e.target.value)} />
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -606,9 +606,54 @@ function AdminDashboard() {
                       <Download className="w-4 h-4" /> Export <ChevronDown className="w-3 h-3" />
                     </button>
                     {showExportDropdown === "sellers" && (
-                      <div className="absolute right-0 mt-2 w-36 bg-card border border-border rounded-lg shadow-lg z-10">
-                        <button onClick={() => setShowExportDropdown(null)} className="w-full px-4 py-2 text-sm text-left hover:bg-accent transition-colors rounded-t-lg">Export JSON</button>
-                        <button onClick={() => setShowExportDropdown(null)} className="w-full px-4 py-2 text-sm text-left hover:bg-accent transition-colors rounded-b-lg">Export CSV</button>
+                      <div className="absolute right-0 mt-2 w-40 bg-card border border-border rounded-lg shadow-lg z-10">
+                        <button onClick={() => {
+                          const filteredSellers = sellers.filter(s => {
+                            if (!searchQuery) return true;
+                            const q = searchQuery.toLowerCase();
+                            return s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q) || (s.storeName && s.storeName.toLowerCase().includes(q));
+                          });
+                          const dataStr = JSON.stringify(filteredSellers, null, 2);
+                          const dataBlob = new Blob([dataStr], { type: "application/json" });
+                          const url = URL.createObjectURL(dataBlob);
+                          const link = document.createElement("a");
+                          link.href = url;
+                          link.download = `sellers-${new Date().toISOString().split("T")[0]}.json`;
+                          link.click();
+                          URL.revokeObjectURL(url);
+                          setShowExportDropdown(null);
+                        }} className="w-full px-4 py-2 text-sm text-left hover:bg-accent transition-colors rounded-t-lg flex items-center gap-2">
+                          <FileText className="w-4 h-4" /> Export JSON
+                        </button>
+                        <button onClick={() => {
+                          const filteredSellers = sellers.filter(s => {
+                            if (!searchQuery) return true;
+                            const q = searchQuery.toLowerCase();
+                            return s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q) || (s.storeName && s.storeName.toLowerCase().includes(q));
+                          });
+                          const headers = ["Name", "Email", "Store", "Revenue", "Orders", "Status"];
+                          const csvContent = [
+                            headers.join(","),
+                            ...filteredSellers.map(s => [
+                              `"${s.name}"`,
+                              `"${s.email}"`,
+                              `"${s.storeName || "No Store"}"`,
+                              s.revenue,
+                              s.orders,
+                              s.status
+                            ].join(","))
+                          ].join("\n");
+                          const dataBlob = new Blob([csvContent], { type: "text/csv" });
+                          const url = URL.createObjectURL(dataBlob);
+                          const link = document.createElement("a");
+                          link.href = url;
+                          link.download = `sellers-${new Date().toISOString().split("T")[0]}.csv`;
+                          link.click();
+                          URL.revokeObjectURL(url);
+                          setShowExportDropdown(null);
+                        }} className="w-full px-4 py-2 text-sm text-left hover:bg-accent transition-colors rounded-b-lg flex items-center gap-2">
+                          <FileText className="w-4 h-4" /> Export CSV
+                        </button>
                       </div>
                     )}
                   </div>
@@ -673,10 +718,23 @@ function AdminDashboard() {
                       <tr className="border-b border-border bg-muted/50">
                         <th className="py-3 px-4 text-left">
                           <input type="checkbox" 
-                            checked={selectedSellers.length === sellers.length && sellers.length > 0}
+                            checked={selectedSellers.length === sellers.filter(s => {
+                              if (!searchQuery) return true;
+                              const q = searchQuery.toLowerCase();
+                              return s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q) || (s.storeName && s.storeName.toLowerCase().includes(q));
+                            }).length && sellers.filter(s => {
+                              if (!searchQuery) return true;
+                              const q = searchQuery.toLowerCase();
+                              return s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q) || (s.storeName && s.storeName.toLowerCase().includes(q));
+                            }).length > 0}
                             onChange={(e) => {
+                              const filtered = sellers.filter(s => {
+                                if (!searchQuery) return true;
+                                const q = searchQuery.toLowerCase();
+                                return s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q) || (s.storeName && s.storeName.toLowerCase().includes(q));
+                              });
                               if (e.target.checked) {
-                                setSelectedSellers(sellers.map(s => s.id));
+                                setSelectedSellers(filtered.map(s => s.id));
                               } else {
                                 setSelectedSellers([]);
                               }
@@ -689,7 +747,13 @@ function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {sellers.map((seller, i) => (
+                      {sellers.filter(seller => {
+                        if (!searchQuery) return true;
+                        const q = searchQuery.toLowerCase();
+                        return seller.name.toLowerCase().includes(q) || 
+                          seller.email.toLowerCase().includes(q) || 
+                          (seller.storeName && seller.storeName.toLowerCase().includes(q));
+                      }).map((seller, i) => (
                         <motion.tr key={seller.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2, delay: i * 0.03 }}
                           className="border-b border-border hover:bg-accent/30 transition-colors">
                           <td className="py-3 px-4">
@@ -772,11 +836,17 @@ function AdminDashboard() {
                           </td>
                         </motion.tr>
                       ))}
-                      {sellers.length === 0 && (
+                      {sellers.filter(seller => {
+                        if (!searchQuery) return true;
+                        const q = searchQuery.toLowerCase();
+                        return seller.name.toLowerCase().includes(q) || 
+                          seller.email.toLowerCase().includes(q) || 
+                          (seller.storeName && seller.storeName.toLowerCase().includes(q));
+                      }).length === 0 && (
                         <tr>
                           <td colSpan={7} className="py-12 text-center text-muted-foreground">
                             <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                            <p>No sellers found</p>
+                            <p>{searchQuery ? "No sellers match your search" : "No sellers found"}</p>
                           </td>
                         </tr>
                       )}

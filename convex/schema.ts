@@ -603,4 +603,73 @@ export default defineSchema({
     .index("by_status", ["status"])
     .index("by_type", ["type"])
     .index("by_to", ["to"]),
+
+  // ─── Disbursements (Bulk Payouts) ────────────────────────
+  disbursements: defineTable({
+    batchId: v.string(),
+    userId: v.id("users"),
+    sellerName: v.string(),
+    sellerEmail: v.string(),
+    sellerPhone: v.string(),
+    storeId: v.optional(v.id("stores")),
+    storeName: v.optional(v.string()),
+    amount: v.number(),
+    currency: v.string(),
+    plan: v.union(v.literal("free"), v.literal("pro"), v.literal("business"), v.literal("enterprise")),
+    provider: v.union(v.literal("mtn_momo"), v.literal("airtel_money")),
+    providerRef: v.optional(v.string()),
+    externalRef: v.string(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("processing"),
+      v.literal("success"),
+      v.literal("failed"),
+      v.literal("cancelled")
+    ),
+    failureReason: v.optional(v.string()),
+    transactionId: v.optional(v.id("transactions")),
+    initiatedBy: v.string(),
+    initiatedByName: v.string(),
+    approvedBy: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+    processedAt: v.optional(v.number()),
+  })
+    .index("by_batch", ["batchId"])
+    .index("by_user", ["userId"])
+    .index("by_status", ["status"])
+    .index("by_provider", ["provider"])
+    .index("by_plan", ["plan"])
+    .index("by_date", ["createdAt"]),
+
+  // ─── Disbursement Batches ────────────────────────────────
+  disbursement_batches: defineTable({
+    batchId: v.string(),
+    name: v.string(),
+    description: v.optional(v.string()),
+    plan: v.union(v.literal("all"), v.literal("free"), v.literal("pro"), v.literal("business"), v.literal("enterprise")),
+    provider: v.union(v.literal("mtn_momo"), v.literal("airtel_money")),
+    totalAmount: v.number(),
+    totalSellers: v.number(),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("pending_approval"),
+      v.literal("approved"),
+      v.literal("processing"),
+      v.literal("completed"),
+      v.literal("failed"),
+      v.literal("cancelled")
+    ),
+    successCount: v.number(),
+    failedCount: v.number(),
+    initiatedBy: v.string(),
+    initiatedByName: v.string(),
+    approvedBy: v.optional(v.string()),
+    approvedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_batch", ["batchId"])
+    .index("by_status", ["status"])
+    .index("by_date", ["createdAt"]),
 });

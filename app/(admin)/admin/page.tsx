@@ -71,6 +71,9 @@ interface Seller {
   commission: number
   joinDate: string
   avatar: string
+  plan?: "free" | "pro" | "business" | "enterprise"
+  phone?: string
+  storeId?: string
 }
 
 interface Transaction {
@@ -111,6 +114,9 @@ function AdminDashboard() {
   const [showEditRoleModal, setShowEditRoleModal] = useState(false)
   const [selectedAdmin, setSelectedAdmin] = useState<any>(null)
   const [auditFilter, setAuditFilter] = useState("all")
+  const [showPayoutModal, setShowPayoutModal] = useState(false)
+  const [payoutProvider, setPayoutProvider] = useState<"mtn_momo" | "airtel_money">("mtn_momo")
+  const [payoutPlan, setPayoutPlan] = useState<"all" | "free" | "pro" | "business" | "enterprise">("all")
   const [showCreateReportModal, setShowCreateReportModal] = useState(false)
   const [billingSubTab, setBillingSubTab] = useState<"overview" | "plans" | "subscribers">("overview")
   const [editingPlan, setEditingPlan] = useState<any>(null)
@@ -1115,75 +1121,229 @@ function AdminDashboard() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
               <div className="flex items-center justify-between mb-8">
                 <div>
-                  <h1 className="text-3xl font-bold mb-2">Transactions</h1>
-                  <p className="text-muted-foreground">All platform transactions and payments</p>
+                  <h1 className="text-3xl font-bold mb-2">Transactions & Payouts</h1>
+                  <p className="text-muted-foreground">Manage transactions and process bulk payouts to sellers</p>
                 </div>
-                <div className="relative">
-                  <button onClick={() => setShowExportDropdown(showExportDropdown === "transactions" ? null : "transactions")}
-                    className="px-4 py-2 border border-border rounded-lg hover:bg-accent transition-colors flex items-center gap-2">
-                    <Download className="w-4 h-4" /> Export Report <ChevronDown className="w-3 h-3" />
+                <div className="flex items-center gap-3">
+                  <button onClick={() => setShowPayoutModal(true)}
+                    className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2 font-medium">
+                    <DollarSign className="w-4 h-4" /> Process Payouts
                   </button>
-                  {showExportDropdown === "transactions" && (
-                    <div className="absolute right-0 mt-2 w-36 bg-card border border-border rounded-lg shadow-lg z-10">
-                      <button onClick={() => setShowExportDropdown(null)} className="w-full px-4 py-2 text-sm text-left hover:bg-accent transition-colors rounded-t-lg">Export JSON</button>
-                      <button onClick={() => setShowExportDropdown(null)} className="w-full px-4 py-2 text-sm text-left hover:bg-accent transition-colors rounded-b-lg">Export CSV</button>
-                    </div>
-                  )}
+                  <div className="relative">
+                    <button onClick={() => setShowExportDropdown(showExportDropdown === "transactions" ? null : "transactions")}
+                      className="px-4 py-2 border border-border rounded-lg hover:bg-accent transition-colors flex items-center gap-2">
+                      <Download className="w-4 h-4" /> Export <ChevronDown className="w-3 h-3" />
+                    </button>
+                    {showExportDropdown === "transactions" && (
+                      <div className="absolute right-0 mt-2 w-36 bg-card border border-border rounded-lg shadow-lg z-10">
+                        <button onClick={() => setShowExportDropdown(null)} className="w-full px-4 py-2 text-sm text-left hover:bg-accent transition-colors rounded-t-lg">Export JSON</button>
+                        <button onClick={() => setShowExportDropdown(null)} className="w-full px-4 py-2 text-sm text-left hover:bg-accent transition-colors rounded-b-lg">Export CSV</button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+              {/* Stats */}
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-6 mb-8">
                 {[
-                  { label: "Total Processed", value: formatCurrency(425_000_000), icon: <CheckCircle className="w-5 h-5 text-green-500" /> },
-                  { label: "Pending", value: formatCurrency(15_000_000), icon: <Clock className="w-5 h-5 text-yellow-500" /> },
-                  { label: "Failed", value: formatCurrency(2_500_000), icon: <XCircle className="w-5 h-5 text-red-500" /> },
+                  { label: "Total Processed", value: formatCurrency(transactions.reduce((s, t) => s + t.amount, 0)), icon: <CheckCircle className="w-5 h-5 text-green-500" />, color: "bg-green-500/10" },
+                  { label: "Platform Fees", value: formatCurrency(transactions.reduce((s, t) => s + Math.round(t.amount * 0.025), 0)), icon: <DollarSign className="w-5 h-5 text-blue-500" />, color: "bg-blue-500/10" },
+                  { label: "Pending", value: formatCurrency(transactions.filter(t => t.status === "pending").reduce((s, t) => s + t.amount, 0)), icon: <Clock className="w-5 h-5 text-yellow-500" />, color: "bg-yellow-500/10" },
+                  { label: "Failed", value: formatCurrency(transactions.filter(t => t.status === "failed").reduce((s, t) => s + t.amount, 0)), icon: <XCircle className="w-5 h-5 text-red-500" />, color: "bg-red-500/10" },
                 ].map((s, i) => (
                   <div key={i} className="p-6 rounded-xl border border-border bg-card">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm text-muted-foreground">{s.label}</span>
-                      {s.icon}
+                      <div className={`w-10 h-10 ${s.color} rounded-lg flex items-center justify-center`}>{s.icon}</div>
                     </div>
                     <div className="text-2xl font-bold">{s.value}</div>
                   </div>
                 ))}
               </div>
 
+              {/* Transactions Table */}
               <div className="p-6 rounded-xl border border-border bg-card">
+                <h3 className="text-lg font-semibold mb-4">Recent Transactions</h3>
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-border">
-                        {["Transaction ID","Seller","Type","Amount","Commission","Status","Date","Actions"].map((h) => (
+                        {["Transaction ID","Seller","Type","Amount","Fee","Status","Date"].map((h) => (
                           <th key={h} className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {txnList.map((txn, i) => (
-                        <motion.tr key={txn.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: i * 0.1 }}
-                          className="border-b border-border hover:bg-accent/50 transition-colors">
-                          <td className="py-3 px-4 text-sm font-medium">{txn.id}</td>
+                        <motion.tr key={txn.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.05 }}
+                          className="border-b border-border hover:bg-accent/30 transition-colors">
+                          <td className="py-3 px-4 text-sm font-mono">{txn.id}</td>
                           <td className="py-3 px-4 text-sm">{txn.seller}</td>
                           <td className="py-3 px-4">
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-500">{txn.type}</span>
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                              txn.type === "refund" ? "bg-red-500/10 text-red-500" :
+                              txn.type === "subscription" ? "bg-purple-500/10 text-purple-500" :
+                              "bg-blue-500/10 text-blue-500"
+                            }`}>{txn.type}</span>
                           </td>
                           <td className="py-3 px-4 text-sm font-medium">{formatCurrency(txn.amount)}</td>
-                          <td className="py-3 px-4 text-sm text-green-500 font-medium">{formatCurrency(txn.commission)}</td>
+                          <td className="py-3 px-4 text-sm text-green-500">{formatCurrency(txn.commission)}</td>
                           <td className="py-3 px-4">
                             <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(txn.status)}`}>
                               {getStatusIcon(txn.status)} {txn.status}
                             </span>
                           </td>
                           <td className="py-3 px-4 text-sm text-muted-foreground">{txn.date}</td>
-                          <td className="py-3 px-4">
-                            <button className="p-1 hover:bg-accent rounded transition-colors"><Eye className="w-4 h-4" /></button>
-                          </td>
                         </motion.tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
               </div>
+
+              {/* Payout Modal */}
+              {showPayoutModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                  <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+                    className="w-full max-w-4xl bg-card rounded-xl border border-border p-6 max-h-[90vh] overflow-y-auto">
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <h3 className="text-xl font-bold">Process Bulk Payouts</h3>
+                        <p className="text-sm text-muted-foreground">Select sellers and disburse funds via Mobile Money</p>
+                      </div>
+                      <button onClick={() => setShowPayoutModal(false)} className="p-2 hover:bg-accent rounded-lg">
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    <div className="grid lg:grid-cols-3 gap-6">
+                      {/* Configuration */}
+                      <div className="space-y-4">
+                        <h4 className="font-semibold">Configuration</h4>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Payment Provider</label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button onClick={() => setPayoutProvider("mtn_momo")}
+                              className={`p-3 rounded-lg border text-sm font-medium transition-all ${
+                                payoutProvider === "mtn_momo" ? "border-yellow-500 bg-yellow-500/10" : "border-border"
+                              }`}>
+                              🟡 MTN MoMo
+                            </button>
+                            <button onClick={() => setPayoutProvider("airtel_money")}
+                              className={`p-3 rounded-lg border text-sm font-medium transition-all ${
+                                payoutProvider === "airtel_money" ? "border-red-500 bg-red-500/10" : "border-border"
+                              }`}>
+                              🔴 Airtel Money
+                            </button>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Filter by Plan</label>
+                          <select value={payoutPlan} onChange={(e) => setPayoutPlan(e.target.value as any)}
+                            className="w-full px-4 py-2.5 rounded-lg border border-border bg-background text-sm">
+                            <option value="all">All Plans</option>
+                            <option value="free">Free Plan</option>
+                            <option value="pro">Pro Plan</option>
+                            <option value="business">Business Plan</option>
+                            <option value="enterprise">Enterprise Plan</option>
+                          </select>
+                        </div>
+                        <div className="p-4 rounded-lg bg-accent/30 space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Fee Rate</span>
+                            <span className="font-medium">
+                              {payoutPlan === "free" ? "4%" : payoutPlan === "pro" ? "2.5%" : payoutPlan === "business" ? "1.5%" : payoutPlan === "enterprise" ? "1%" : "Various"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Provider</span>
+                            <span className="font-medium">{payoutProvider === "mtn_momo" ? "MTN MoMo" : "Airtel Money"}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Seller List */}
+                      <div className="lg:col-span-2">
+                        <h4 className="font-semibold mb-4">Sellers for Payout</h4>
+                        <div className="border border-border rounded-lg overflow-hidden">
+                          <div className="p-3 bg-accent/30 border-b border-border flex items-center justify-between">
+                            <span className="text-sm font-medium">Select sellers to payout</span>
+                            <span className="text-sm text-muted-foreground">{sellers.filter(s => s.status === "active").length} active sellers</span>
+                          </div>
+                          <div className="max-h-64 overflow-y-auto">
+                            {sellers.filter(s => s.status === "active").map((seller, i) => (
+                              <div key={seller.id} className="flex items-center justify-between p-3 border-b border-border hover:bg-accent/20 transition-colors">
+                                <div className="flex items-center gap-3">
+                                  <input type="checkbox" defaultChecked className="w-4 h-4 rounded" />
+                                  <div>
+                                    <p className="text-sm font-medium">{seller.name}</p>
+                                    <p className="text-xs text-muted-foreground">{seller.email}</p>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-sm font-medium">{formatCurrency(seller.revenue)}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Net: {formatCurrency(seller.revenue * (1 - (seller.plan === "free" ? 0.04 : seller.plan === "pro" ? 0.025 : seller.plan === "business" ? 0.015 : 0.01)))}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Summary */}
+                        <div className="mt-4 p-4 rounded-lg bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20">
+                          <div className="grid grid-cols-3 gap-4">
+                            <div>
+                              <p className="text-sm text-muted-foreground">Total Sellers</p>
+                              <p className="text-2xl font-bold">{sellers.filter(s => s.status === "active").length}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Gross Amount</p>
+                              <p className="text-2xl font-bold">{formatCurrency(sellers.filter(s => s.status === "active").reduce((sum, s) => sum + s.revenue, 0))}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Net Payout</p>
+                              <p className="text-2xl font-bold text-green-500">{formatCurrency(sellers.filter(s => s.status === "active").reduce((sum, s) => {
+                                const fee = s.plan === "free" ? 0.04 : s.plan === "pro" ? 0.025 : s.plan === "business" ? 0.015 : 0.01;
+                                return sum + s.revenue * (1 - fee);
+                              }, 0))}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-3 mt-6 pt-6 border-t border-border">
+                      <button onClick={() => setShowPayoutModal(false)}
+                        className="flex-1 py-2.5 border border-border rounded-lg hover:bg-accent transition-colors">
+                        Cancel
+                      </button>
+                      <button onClick={async () => {
+                        const activeSellers = sellers.filter(s => s.status === "active");
+                        const payouts = activeSellers.map(s => ({
+                          userId: s.id,
+                          sellerName: s.name,
+                          sellerEmail: s.email,
+                          sellerPhone: s.phone ?? "",
+                          storeId: s.storeId,
+                          storeName: s.storeName,
+                          amount: Math.round(s.revenue * (1 - (s.plan === "free" ? 0.04 : s.plan === "pro" ? 0.025 : s.plan === "business" ? 0.015 : 0.01))),
+                          plan: s.plan ?? "free",
+                        }));
+                        
+                        alert(`Payout batch created for ${payouts.length} sellers!\n\nTotal: UGX ${payouts.reduce((sum, p) => sum + p.amount, 0).toLocaleString()}\n\nIn production, this would initiate ${payoutProvider === "mtn_momo" ? "MTN MoMo" : "Airtel Money"} disbursements.`);
+                        setShowPayoutModal(false);
+                      }}
+                        className="flex-1 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:opacity-90 transition-opacity font-medium">
+                        Process Payouts
+                      </button>
+                    </div>
+                  </motion.div>
+                </div>
+              )}
             </motion.div>
           )}
 

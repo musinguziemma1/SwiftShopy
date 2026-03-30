@@ -153,21 +153,109 @@ function AdminDashboard() {
     notificationEmail: "admin@swiftshopy.com",
   })
   const [apiSettings, setApiSettings] = useState({
-    webhookUrl: "https://api.swiftshopy.com/webhooks",
-    apiKey: "sk_live_xxxxxxxxxxxxxxxxxxxx",
-    apiRateLimit: 1000,
-    apiSecret: "",
+    environment: "sandbox" as "sandbox" | "production",
+    // MTN MoMo Sandbox
+    mtnSandboxCollectionsKey: "",
+    mtnSandboxDisbursementsKey: "",
+    mtnSandboxApiUserId: "",
+    mtnSandboxApiKey: "",
+    // MTN MoMo Production
+    mtnProductionCollectionsKey: "",
+    mtnProductionDisbursementsKey: "",
+    mtnProductionApiUserId: "",
+    mtnProductionApiKey: "",
+    // Airtel
+    airtelClientId: "",
+    airtelClientSecret: "",
+    // WhatsApp
+    whatsappPhoneNumberId: "",
+    whatsappAccessToken: "",
+    whatsappApiVersion: "v18.0",
+    // Email
+    emailProvider: "resend",
+    resendApiKey: "",
+    sendgridApiKey: "",
+    emailFrom: "SwiftShopy <noreply@swiftshopy.com>",
+    // Callbacks
+    callbackUrl: "",
+    webhookSecret: "",
   })
   const [settingsSaving, setSettingsSaving] = useState(false)
   const [settingsSaved, setSettingsSaved] = useState(false)
 
+  // Convex mutations
+  const bulkUpdateSettings = useMutation(api.platformSettings.bulkUpdate)
+  const initializeDefaults = useMutation(api.platformSettings.initializeDefaults)
+
   const saveSettings = async () => {
     setSettingsSaving(true)
     setSettingsSaved(false)
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    setSettingsSaving(false)
-    setSettingsSaved(true)
-    setTimeout(() => setSettingsSaved(false), 3000)
+    try {
+      // Save to database
+      await bulkUpdateSettings({
+        settings: [
+          { category: "api", key: "environment", value: apiSettings.environment },
+          { category: "api", key: "mtn_sandbox_collections_key", value: apiSettings.mtnSandboxCollectionsKey },
+          { category: "api", key: "mtn_sandbox_disbursements_key", value: apiSettings.mtnSandboxDisbursementsKey },
+          { category: "api", key: "mtn_sandbox_api_user_id", value: apiSettings.mtnSandboxApiUserId },
+          { category: "api", key: "mtn_sandbox_api_key", value: apiSettings.mtnSandboxApiKey },
+          { category: "api", key: "mtn_production_collections_key", value: apiSettings.mtnProductionCollectionsKey },
+          { category: "api", key: "mtn_production_disbursements_key", value: apiSettings.mtnProductionDisbursementsKey },
+          { category: "api", key: "mtn_production_api_user_id", value: apiSettings.mtnProductionApiUserId },
+          { category: "api", key: "mtn_production_api_key", value: apiSettings.mtnProductionApiKey },
+          { category: "api", key: "airtel_client_id", value: apiSettings.airtelClientId },
+          { category: "api", key: "airtel_client_secret", value: apiSettings.airtelClientSecret },
+          { category: "api", key: "whatsapp_phone_number_id", value: apiSettings.whatsappPhoneNumberId },
+          { category: "api", key: "whatsapp_access_token", value: apiSettings.whatsappAccessToken },
+          { category: "api", key: "whatsapp_api_version", value: apiSettings.whatsappApiVersion },
+          { category: "api", key: "email_provider", value: apiSettings.emailProvider },
+          { category: "api", key: "resend_api_key", value: apiSettings.resendApiKey },
+          { category: "api", key: "sendgrid_api_key", value: apiSettings.sendgridApiKey },
+          { category: "api", key: "email_from", value: apiSettings.emailFrom },
+          { category: "payment", key: "callback_url", value: apiSettings.callbackUrl },
+          { category: "payment", key: "webhook_secret", value: apiSettings.webhookSecret },
+          { category: "payment", key: "environment", value: apiSettings.environment },
+        ],
+        updatedBy: "admin",
+      })
+
+      // Update .env.local file
+      await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          settings: {
+            mtn_sandbox_collections_key: apiSettings.mtnSandboxCollectionsKey,
+            mtn_sandbox_disbursements_key: apiSettings.mtnSandboxDisbursementsKey,
+            mtn_sandbox_api_user_id: apiSettings.mtnSandboxApiUserId,
+            mtn_sandbox_api_key: apiSettings.mtnSandboxApiKey,
+            mtn_production_collections_key: apiSettings.mtnProductionCollectionsKey,
+            mtn_production_disbursements_key: apiSettings.mtnProductionDisbursementsKey,
+            mtn_production_api_user_id: apiSettings.mtnProductionApiUserId,
+            mtn_production_api_key: apiSettings.mtnProductionApiKey,
+            airtel_client_id: apiSettings.airtelClientId,
+            airtel_client_secret: apiSettings.airtelClientSecret,
+            whatsapp_phone_number_id: apiSettings.whatsappPhoneNumberId,
+            whatsapp_access_token: apiSettings.whatsappAccessToken,
+            whatsapp_api_version: apiSettings.whatsappApiVersion,
+            email_provider: apiSettings.emailProvider,
+            resend_api_key: apiSettings.resendApiKey,
+            sendgrid_api_key: apiSettings.sendgridApiKey,
+            email_from: apiSettings.emailFrom,
+            callback_url: apiSettings.callbackUrl,
+            webhook_secret: apiSettings.webhookSecret,
+            environment: apiSettings.environment,
+          },
+        }),
+      })
+
+      setSettingsSaved(true)
+      setTimeout(() => setSettingsSaved(false), 3000)
+    } catch (error) {
+      console.error("Failed to save settings:", error)
+    } finally {
+      setSettingsSaving(false)
+    }
   }
 
   // Get real data from Convex
@@ -2569,46 +2657,230 @@ function AdminDashboard() {
 
                   {/* API Configuration */}
                   {settingsSubTab === "api" && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                      {/* Payment Environment Toggle */}
                       <div className="p-6 rounded-xl border border-border bg-card">
-                        <h3 className="text-lg font-semibold mb-6">API Configuration</h3>
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <h3 className="text-lg font-semibold">Payment Environment</h3>
+                            <p className="text-sm text-muted-foreground">Switch between sandbox and production</p>
+                          </div>
+                          <button onClick={() => setApiSettings({ ...apiSettings, environment: apiSettings.environment === "sandbox" ? "production" : "sandbox" })}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium ${apiSettings.environment === "sandbox" ? "bg-yellow-500/10 text-yellow-600 border border-yellow-500/20" : "bg-green-500/10 text-green-600 border border-green-500/20"}`}>
+                            {apiSettings.environment === "sandbox" ? "🧪 Sandbox" : "🚀 Production"}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* MTN MoMo Sandbox */}
+                      <div className="p-6 rounded-xl border border-border bg-card">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 rounded-xl bg-yellow-500/10 flex items-center justify-center text-2xl">🟡</div>
+                          <div>
+                            <h3 className="text-lg font-semibold">MTN MoMo - Sandbox</h3>
+                            <p className="text-sm text-muted-foreground">Test payment credentials</p>
+                          </div>
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Collections Primary Key</label>
+                            <input type="password" value={apiSettings.mtnSandboxCollectionsKey || ""}
+                              onChange={(e) => setApiSettings({ ...apiSettings, mtnSandboxCollectionsKey: e.target.value })}
+                              placeholder="Enter Collections Key"
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-sm" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Disbursements Primary Key</label>
+                            <input type="password" value={apiSettings.mtnSandboxDisbursementsKey || ""}
+                              onChange={(e) => setApiSettings({ ...apiSettings, mtnSandboxDisbursementsKey: e.target.value })}
+                              placeholder="Enter Disbursements Key"
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-sm" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">API User ID</label>
+                            <input type="text" value={apiSettings.mtnSandboxApiUserId || ""}
+                              onChange={(e) => setApiSettings({ ...apiSettings, mtnSandboxApiUserId: e.target.value })}
+                              placeholder="UUID format"
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-sm" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">API Key</label>
+                            <input type="password" value={apiSettings.mtnSandboxApiKey || ""}
+                              onChange={(e) => setApiSettings({ ...apiSettings, mtnSandboxApiKey: e.target.value })}
+                              placeholder="Enter API Key"
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-sm" />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* MTN MoMo Production */}
+                      <div className="p-6 rounded-xl border border-border bg-card">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center text-2xl">🟡</div>
+                          <div>
+                            <h3 className="text-lg font-semibold">MTN MoMo - Production</h3>
+                            <p className="text-sm text-muted-foreground">Live payment credentials</p>
+                          </div>
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Collections Primary Key</label>
+                            <input type="password" value={apiSettings.mtnProductionCollectionsKey || ""}
+                              onChange={(e) => setApiSettings({ ...apiSettings, mtnProductionCollectionsKey: e.target.value })}
+                              placeholder="Enter Collections Key"
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-sm" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Disbursements Primary Key</label>
+                            <input type="password" value={apiSettings.mtnProductionDisbursementsKey || ""}
+                              onChange={(e) => setApiSettings({ ...apiSettings, mtnProductionDisbursementsKey: e.target.value })}
+                              placeholder="Enter Disbursements Key"
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-sm" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">API User ID</label>
+                            <input type="text" value={apiSettings.mtnProductionApiUserId || ""}
+                              onChange={(e) => setApiSettings({ ...apiSettings, mtnProductionApiUserId: e.target.value })}
+                              placeholder="UUID format"
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-sm" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">API Key</label>
+                            <input type="password" value={apiSettings.mtnProductionApiKey || ""}
+                              onChange={(e) => setApiSettings({ ...apiSettings, mtnProductionApiKey: e.target.value })}
+                              placeholder="Enter API Key"
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-sm" />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Airtel Money */}
+                      <div className="p-6 rounded-xl border border-border bg-card">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center text-2xl">🔴</div>
+                          <div>
+                            <h3 className="text-lg font-semibold">Airtel Money</h3>
+                            <p className="text-sm text-muted-foreground">Airtel payment credentials</p>
+                          </div>
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Client ID</label>
+                            <input type="text" value={apiSettings.airtelClientId || ""}
+                              onChange={(e) => setApiSettings({ ...apiSettings, airtelClientId: e.target.value })}
+                              placeholder="Enter Client ID"
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-sm" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Client Secret</label>
+                            <input type="password" value={apiSettings.airtelClientSecret || ""}
+                              onChange={(e) => setApiSettings({ ...apiSettings, airtelClientSecret: e.target.value })}
+                              placeholder="Enter Client Secret"
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-sm" />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* WhatsApp Business */}
+                      <div className="p-6 rounded-xl border border-border bg-card">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center text-2xl">💬</div>
+                          <div>
+                            <h3 className="text-lg font-semibold">WhatsApp Business API</h3>
+                            <p className="text-sm text-muted-foreground">WhatsApp notification credentials</p>
+                          </div>
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Phone Number ID</label>
+                            <input type="text" value={apiSettings.whatsappPhoneNumberId || ""}
+                              onChange={(e) => setApiSettings({ ...apiSettings, whatsappPhoneNumberId: e.target.value })}
+                              placeholder="Enter Phone Number ID"
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-sm" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Access Token</label>
+                            <input type="password" value={apiSettings.whatsappAccessToken || ""}
+                              onChange={(e) => setApiSettings({ ...apiSettings, whatsappAccessToken: e.target.value })}
+                              placeholder="Enter Access Token"
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-sm" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">API Version</label>
+                            <input type="text" value={apiSettings.whatsappApiVersion || "v18.0"}
+                              onChange={(e) => setApiSettings({ ...apiSettings, whatsappApiVersion: e.target.value })}
+                              placeholder="v18.0"
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-sm" />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Email Configuration */}
+                      <div className="p-6 rounded-xl border border-border bg-card">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-2xl">📧</div>
+                          <div>
+                            <h3 className="text-lg font-semibold">Email Configuration</h3>
+                            <p className="text-sm text-muted-foreground">Email service provider settings</p>
+                          </div>
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Email Provider</label>
+                            <select value={apiSettings.emailProvider || "resend"}
+                              onChange={(e) => setApiSettings({ ...apiSettings, emailProvider: e.target.value })}
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-sm">
+                              <option value="resend">Resend</option>
+                              <option value="sendgrid">SendGrid</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">From Address</label>
+                            <input type="text" value={apiSettings.emailFrom || "SwiftShopy <noreply@swiftshopy.com>"}
+                              onChange={(e) => setApiSettings({ ...apiSettings, emailFrom: e.target.value })}
+                              placeholder="SwiftShopy <noreply@swiftshopy.com>"
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-sm" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Resend API Key</label>
+                            <input type="password" value={apiSettings.resendApiKey || ""}
+                              onChange={(e) => setApiSettings({ ...apiSettings, resendApiKey: e.target.value })}
+                              placeholder="re_xxxxxxxxxxxxxx"
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-sm" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">SendGrid API Key</label>
+                            <input type="password" value={apiSettings.sendgridApiKey || ""}
+                              onChange={(e) => setApiSettings({ ...apiSettings, sendgridApiKey: e.target.value })}
+                              placeholder="SG.xxxxxxxxxxxxxxxx"
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-sm" />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Callback URLs */}
+                      <div className="p-6 rounded-xl border border-border bg-card">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center"><Activity className="w-5 h-5 text-purple-500" /></div>
+                          <div>
+                            <h3 className="text-lg font-semibold">Webhooks & Callbacks</h3>
+                            <p className="text-sm text-muted-foreground">Payment callback URLs</p>
+                          </div>
+                        </div>
                         <div className="space-y-4">
                           <div>
-                            <label className="block text-sm font-medium mb-2">Webhook URL</label>
-                            <input type="url" value={apiSettings.webhookUrl}
-                              onChange={(e) => setApiSettings({ ...apiSettings, webhookUrl: e.target.value })}
-                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-purple-600" />
+                            <label className="block text-sm font-medium mb-2">MTN Callback URL</label>
+                            <input type="url" value={apiSettings.callbackUrl || ""}
+                              onChange={(e) => setApiSettings({ ...apiSettings, callbackUrl: e.target.value })}
+                              placeholder="https://yourdomain.com/api/webhooks/mtn"
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-sm" />
                           </div>
                           <div>
-                            <label className="block text-sm font-medium mb-2">Rate Limit (requests/minute)</label>
-                            <input type="number" value={apiSettings.apiRateLimit}
-                              onChange={(e) => setApiSettings({ ...apiSettings, apiRateLimit: parseInt(e.target.value) })}
-                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-purple-600" />
-                          </div>
-                          <div className="p-4 rounded-lg bg-accent/50">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="text-sm font-medium">API Key</div>
-                              <button className="text-xs text-purple-500 font-medium">Regenerate</button>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <code className="flex-1 px-3 py-2 bg-background rounded text-sm font-mono">{apiSettings.apiKey}</code>
-                              <button onClick={() => navigator.clipboard.writeText(apiSettings.apiKey)}
-                                className="px-3 py-2 bg-background rounded hover:bg-accent transition-colors">
-                                <Copy className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-                          <div className="p-4 rounded-lg bg-accent/50">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="text-sm font-medium">API Secret</div>
-                              <button className="text-xs text-purple-500 font-medium">Regenerate</button>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <input type="password" value={apiSettings.apiSecret}
-                                onChange={(e) => setApiSettings({ ...apiSettings, apiSecret: e.target.value })}
-                                placeholder="Enter or generate API Secret"
-                                className="flex-1 px-3 py-2 bg-background rounded text-sm" />
-                            </div>
+                            <label className="block text-sm font-medium mb-2">Webhook Secret</label>
+                            <input type="password" value={apiSettings.webhookSecret || ""}
+                              onChange={(e) => setApiSettings({ ...apiSettings, webhookSecret: e.target.value })}
+                              placeholder="Enter webhook secret"
+                              className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary text-sm" />
                           </div>
                         </div>
                       </div>
@@ -2621,7 +2893,28 @@ function AdminDashboard() {
                       setPaymentSettings({ mtnEnabled: true, mtnApiKey: "", mtnSubscriptionKey: "", mtnCollectionId: "", airtelEnabled: true, airtelApiKey: "", codEnabled: true, platformCommission: 10 })
                       setSecuritySettings({ require2FA: true, apiRateLimit: 1000, sellerVerification: true, sessionTimeout: 3600, passwordMinLength: 8 })
                       setNotificationSettings({ newSellerAlert: true, highValueThreshold: 1000000, failedPaymentAlert: true, systemErrorAlert: true, dailyReport: false, weeklySummary: true, notificationEmail: "admin@swiftshopy.com" })
-                      setApiSettings({ webhookUrl: "https://api.swiftshopy.com/webhooks", apiKey: "sk_live_xxxxxxxxxxxxxxxxxxxx", apiRateLimit: 1000, apiSecret: "" })
+                      setApiSettings({
+                        environment: "sandbox",
+                        mtnSandboxCollectionsKey: "",
+                        mtnSandboxDisbursementsKey: "",
+                        mtnSandboxApiUserId: "",
+                        mtnSandboxApiKey: "",
+                        mtnProductionCollectionsKey: "",
+                        mtnProductionDisbursementsKey: "",
+                        mtnProductionApiUserId: "",
+                        mtnProductionApiKey: "",
+                        airtelClientId: "",
+                        airtelClientSecret: "",
+                        whatsappPhoneNumberId: "",
+                        whatsappAccessToken: "",
+                        whatsappApiVersion: "v18.0",
+                        emailProvider: "resend",
+                        resendApiKey: "",
+                        sendgridApiKey: "",
+                        emailFrom: "SwiftShopy <noreply@swiftshopy.com>",
+                        callbackUrl: "",
+                        webhookSecret: "",
+                      })
                     }}
                       className="px-6 py-3 border border-border rounded-lg hover:bg-accent transition-colors">Reset to Defaults</button>
                     <button onClick={saveSettings} disabled={settingsSaving}

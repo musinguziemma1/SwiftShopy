@@ -435,27 +435,54 @@ export default defineSchema({
     .index("by_status", ["status"])
     .index("by_endDate", ["endDate"]),
 
-  // ─── Subscription Payments ─────────────────────────────────
-  subscription_payments: defineTable({
-    userId: v.id("users"),
-    subscriptionId: v.optional(v.id("subscriptions")),
-    amount: v.number(),
-    currency: v.string(),
-    phone: v.string(),
-    plan: v.union(v.literal("free"), v.literal("pro"), v.literal("business"), v.literal("enterprise")),
-    status: v.union(v.literal("pending"), v.literal("success"), v.literal("failed"), v.literal("cancelled")),
-    provider: v.union(v.literal("mtn_momo"), v.literal("airtel_money")),
-    providerRef: v.optional(v.string()),
-    externalRef: v.string(),
-    failureReason: v.optional(v.string()),
-    createdAt: v.number(),
-    processedAt: v.optional(v.number()),
-  })
-    .index("by_user", ["userId"])
-    .index("by_subscription", ["subscriptionId"])
-    .index("by_status", ["status"])
-    .index("by_externalRef", ["externalRef"])
-    .index("by_date", ["createdAt"]),
+   // ─── Subscription Payments ─────────────────────────────────
+   subscription_payments: defineTable({
+     userId: v.id("users"),
+     subscriptionId: v.optional(v.id("subscriptions")),
+     amount: v.number(),
+     currency: v.string(),
+     phone: v.string(),
+     plan: v.union(v.literal("free"), v.literal("pro"), v.literal("business"), v.literal("enterprise")),
+     status: v.union(v.literal("pending"), v.literal("success"), v.literal("failed"), v.literal("cancelled")),
+     provider: v.union(v.literal("mtn_momo"), v.literal("airtel_money")),
+     providerRef: v.optional(v.string()),
+     externalRef: v.string(),
+     failureReason: v.optional(v.string()),
+     createdAt: v.number(),
+     processedAt: v.optional(v.number()),
+   })
+     .index("by_user", ["userId"])
+     .index("by_subscription", ["subscriptionId"])
+     .index("by_status", ["status"])
+     .index("by_externalRef", ["externalRef"])
+     .index("by_date", ["createdAt"]),
+
+   // ─── Tokenization Tables ───────────────────────────────────
+   payment_tokens: defineTable({
+     token: v.string(),
+     hashedData: v.string(),
+     createdAt: v.number(),
+     expiresAt: v.optional(v.number()),
+     userId: v.optional(v.id("users")),
+     storeId: v.optional(v.id("stores")),
+   })
+     .index("by_token", ["token"])
+     .index("by_user", ["userId"])
+     .index("by_expiresAt", ["expiresAt"]),
+
+   token_audit_log: defineTable({
+     tokenId: v.id("payment_tokens"),
+     action: v.union(v.literal("create"), v.literal("validate"), v.literal("expire")),
+     userId: v.optional(v.id("users")),
+     ipAddress: v.optional(v.string()),
+     userAgent: v.optional(v.string()),
+     metadata: v.any(),
+     createdAt: v.number(),
+   })
+     .index("by_tokenId", ["tokenId"])
+     .index("by_action", ["action"])
+     .index("by_user", ["userId"])
+     .index("by_date", ["createdAt"]),
 
   // ─── Usage Tracking ─────────────────────────────────────────
   usage_tracking: defineTable({

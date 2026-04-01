@@ -231,3 +231,94 @@ export const incrementSales = mutation({
     }
   },
 });
+
+export const getAllActive = query({
+  args: {
+    limit: v.optional(v.number()),
+    sortBy: v.optional(v.union(
+      v.literal("newest"),
+      v.literal("oldest"),
+      v.literal("price_asc"),
+      v.literal("price_desc"),
+      v.literal("price_low"),
+      v.literal("price_high"),
+      v.literal("best_selling"),
+      v.literal("popular"),
+      v.literal("featured")
+    )),
+    category: v.optional(v.string()),
+    search: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    let products = await ctx.db.query("products")
+      .filter(q => q.eq(q.field("isActive"), true))
+      .collect();
+
+    // Attach store info
+    const productsWithStores = await Promise.all(products.map(async (p) => {
+      const store = await ctx.db.get(p.storeId);
+      return { ...p, store: store ? { name: store.name, slug: store.slug, phone: store.phone } : null };
+    }));
+    products = productsWithStores;
+
+    // Filter by category
+    if (args.category) {
+      products = products.filter(p => (p.category ?? "General") === args.category);
+    }
+
+    // Filter by search
+    if (args.search) {
+      const q = args.search.toLowerCase();
+      products = products.filter(p =>
+        p.name.toLowerCase().includes(q) ||
+        p.description?.toLowerCase().includes(q) ||
+        p.category?.toLowerCase().includes(q)
+      );
+    }
+
+    // Sort
+    switch (args.sortBy) {
+      case "newest":
+        products.sort((a, b) => b._creationTime - a._creationTime);
+        break;
+      case "oldest":
+        products.sort((a, b) => a._creationTime - b._creationTime);
+        break;
+      case "price_asc":
+      case "price_low":
+        products.sort((a, b) => a.price - b.price);
+        break;
+      case "price_desc":
+      case "price_high":
+        products.sort((a, b) => b.price - a.price);
+        break;
+      case "best_selling":
+      case "popular":
+        products.sort((a, b) => (b.sales ?? 0) - (a.sales ?? 0));
+        break;
+      case "featured":
+        products.sort((a, b) => (b.sales ?? 0) - (a.sales ?? 0));
+        break;
+      default:
+        products.sort((a, b) => b._creationTime - a._creationTime);
+    }
+
+    // Limit
+    if (args.limit) {
+      products = products.slice(0, args.limit);
+    }
+
+    return products;
+  },
+});
+
+export const getCategories = query({
+  args: {},
+  handler: async (ctx) => {
+    const products = await ctx.db.query("products")
+      .filter(q => q.eq(q.field("isActive"), true))
+      .collect();
+    const categories = new Set(products.map(p => p.category ?? "General").filter(Boolean));
+    return Array.from(categories);
+  },
+});

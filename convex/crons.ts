@@ -31,4 +31,11 @@ crons.interval(
   {}
 );
 
+crons.interval(
+  "cleanup-expired-tokens",
+  { hours: 1 },
+  api.tokenization.cleanupExpiredTokens,
+  {}
+);
+
 export default crons;

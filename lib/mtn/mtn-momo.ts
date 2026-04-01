@@ -85,30 +85,6 @@ function generateUUID(): string {
   });
 }
 
-async function getAccessToken(): Promise<string> {
-  if (!MTN_API_USER_ID || !MTN_API_KEY) {
-    throw new Error("MTN API credentials not configured. Please add MTN_SANDBOX_API_USER_ID and MTN_SANDBOX_API_KEY to .env.local");
-  }
-
-  const credentials = Buffer.from(`${MTN_API_USER_ID}:${MTN_API_KEY}`).toString("base64");
-
-  const res = await fetch(`${MTN_BASE_URL}/collection/token/`, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${credentials}`,
-      "Ocp-Apim-Subscription-Key": MTN_COLLECTIONS_PRIMARY_KEY,
-    },
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`MTN Token Error (${res.status}): ${text}`);
-  }
-
-  const data: MoMoTokenResponse = await res.json();
-  return data.access_token;
-}
-
 // ────────────────────────────────────────────
 // Core API Functions
 // ────────────────────────────────────────────

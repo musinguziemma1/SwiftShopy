@@ -17,25 +17,4 @@ crons.interval(
   { hoursThreshold: 48 }
 );
 
-crons.interval(
-  "check-subscription-expiry",
-  { hours: 1 },
-  api.subscriptions.checkAndExpireSubscriptions,
-  {}
-);
-
-crons.interval(
-  "grant-referral-bonuses",
-  { hours: 24 },
-  api.referrals.processAllReferralBonuses,
-  {}
-);
-
-crons.interval(
-  "cleanup-expired-tokens",
-  { hours: 1 },
-  api.tokenization.cleanupExpiredTokens,
-  {}
-);
-
 export default crons;

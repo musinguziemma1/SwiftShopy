@@ -12,35 +12,35 @@ interface HeroMotionBackgroundProps {
 function GradientOrbs({ isDark }: { isDark: boolean }) {
   const orbs = [
     {
-      color: isDark ? "rgba(99, 102, 241, 0.15)" : "rgba(59, 130, 246, 0.12)",
+      color: isDark ? "rgba(73, 6, 132, 0.25)" : "rgba(73, 6, 132, 0.15)",
       size: 600,
       x: "10%",
       y: "20%",
       duration: 25,
     },
     {
-      color: isDark ? "rgba(139, 92, 246, 0.12)" : "rgba(139, 92, 246, 0.1)",
+      color: isDark ? "rgba(139, 92, 246, 0.18)" : "rgba(139, 92, 246, 0.12)",
       size: 500,
       x: "70%",
       y: "10%",
       duration: 30,
     },
     {
-      color: isDark ? "rgba(59, 130, 246, 0.1)" : "rgba(99, 102, 241, 0.08)",
+      color: isDark ? "rgba(73, 6, 132, 0.15)" : "rgba(73, 6, 132, 0.1)",
       size: 450,
       x: "50%",
       y: "60%",
       duration: 35,
     },
     {
-      color: isDark ? "rgba(236, 72, 153, 0.08)" : "rgba(236, 72, 153, 0.06)",
+      color: isDark ? "rgba(99, 102, 241, 0.12)" : "rgba(99, 102, 241, 0.08)",
       size: 350,
       x: "85%",
       y: "70%",
       duration: 28,
     },
     {
-      color: isDark ? "rgba(34, 197, 94, 0.08)" : "rgba(34, 197, 94, 0.06)",
+      color: isDark ? "rgba(73, 6, 132, 0.1)" : "rgba(73, 6, 132, 0.06)",
       size: 300,
       x: "20%",
       y: "80%",
@@ -84,14 +84,14 @@ function MeshGradient({ isDark }: { isDark: boolean }) {
       <svg className="w-full h-full" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice">
         <defs>
           <linearGradient id="meshGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor={isDark ? "#4f46e5" : "#3b82f6"} stopOpacity="0.08">
-              <animate attributeName="stopOpacity" values="0.08;0.15;0.08" dur="8s" repeatCount="indefinite" />
+            <stop offset="0%" stopColor="#490684" stopOpacity="0.12">
+              <animate attributeName="stopOpacity" values="0.12;0.2;0.12" dur="8s" repeatCount="indefinite" />
             </stop>
-            <stop offset="50%" stopColor={isDark ? "#7c3aed" : "#6366f1"} stopOpacity="0.05">
-              <animate attributeName="stopOpacity" values="0.05;0.12;0.05" dur="10s" repeatCount="indefinite" />
+            <stop offset="50%" stopColor={isDark ? "#7c3aed" : "#6366f1"} stopOpacity="0.08">
+              <animate attributeName="stopOpacity" values="0.08;0.15;0.08" dur="10s" repeatCount="indefinite" />
             </stop>
-            <stop offset="100%" stopColor={isDark ? "#2563eb" : "#8b5cf6"} stopOpacity="0.08">
-              <animate attributeName="stopOpacity" values="0.08;0.15;0.08" dur="12s" repeatCount="indefinite" />
+            <stop offset="100%" stopColor="#490684" stopOpacity="0.12">
+              <animate attributeName="stopOpacity" values="0.12;0.2;0.12" dur="12s" repeatCount="indefinite" />
             </stop>
           </linearGradient>
           
@@ -174,8 +174,8 @@ function FloatingParticles({ isDark }: { isDark: boolean }) {
             width: particle.size,
             height: particle.size,
             backgroundColor: isDark 
-              ? `rgba(148, 163, 184, ${Math.random() * 0.3 + 0.1})` 
-              : `rgba(99, 102, 241, ${Math.random() * 0.2 + 0.1})`,
+              ? `rgba(73, 6, 132, ${Math.random() * 0.4 + 0.15})` 
+              : `rgba(73, 6, 132, ${Math.random() * 0.25 + 0.1})`,
           }}
           animate={{
             y: [0, -100, -200],
@@ -204,7 +204,7 @@ function GridLines({ isDark }: { isDark: boolean }) {
             <path
               d="M 60 0 L 0 0 0 60"
               fill="none"
-              stroke={isDark ? "rgba(99, 102, 241, 0.08)" : "rgba(59, 130, 246, 0.06)"}
+              stroke={isDark ? "rgba(73, 6, 132, 0.1)" : "rgba(73, 6, 132, 0.07)"}
               strokeWidth="1"
             />
           </pattern>
@@ -239,9 +239,9 @@ function WaveLines({ isDark }: { isDark: boolean }) {
       <svg className="w-full h-full" viewBox="0 0 1000 600" preserveAspectRatio="none">
         <defs>
           <linearGradient id="waveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor={isDark ? "#6366f1" : "#3b82f6"} stopOpacity="0" />
-            <stop offset="50%" stopColor={isDark ? "#8b5cf6" : "#6366f1"} stopOpacity="0.15" />
-            <stop offset="100%" stopColor={isDark ? "#6366f1" : "#3b82f6"} stopOpacity="0" />
+            <stop offset="0%" stopColor="#490684" stopOpacity="0" />
+            <stop offset="50%" stopColor={isDark ? "#7c3aed" : "#6366f1"} stopOpacity="0.2" />
+            <stop offset="100%" stopColor="#490684" stopOpacity="0" />
           </linearGradient>
         </defs>
         
@@ -304,11 +304,9 @@ function MouseGlow({ isDark }: { isDark: boolean }) {
       }}
     >
       <div
-        className="w-96 h-96 rounded-full blur-3xl opacity-20"
+        className="w-96 h-96 rounded-full blur-3xl opacity-25"
         style={{
-          background: isDark
-            ? "radial-gradient(circle, rgba(99, 102, 241, 0.4) 0%, transparent 70%)"
-            : "radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, transparent 70%)",
+          background: "radial-gradient(circle, rgba(73, 6, 132, 0.5) 0%, transparent 70%)",
         }}
       />
     </motion.div>
@@ -381,6 +379,14 @@ export function HeroMotionBackground({ className = "" }: HeroMotionBackgroundPro
           background: isDark
             ? "radial-gradient(ellipse at center, transparent 0%, rgba(15, 23, 42, 0.4) 100%)"
             : "radial-gradient(ellipse at center, transparent 0%, rgba(248, 250, 252, 0.4) 100%)",
+        }}
+      />
+
+      {/* Purple glow overlay */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: "radial-gradient(ellipse at 30% 20%, rgba(73, 6, 132, 0.15) 0%, transparent 50%)",
         }}
       />
     </div>

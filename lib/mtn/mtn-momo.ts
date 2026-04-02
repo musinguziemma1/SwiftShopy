@@ -77,6 +77,29 @@ export interface MoMoTokenResponse {
 // Helpers
 // ────────────────────────────────────────────
 
+async function getAccessToken(): Promise<string> {
+  const credentials = btoa(`${MTN_API_USER_ID}:${MTN_API_KEY}`);
+  const res = await fetch(`${MTN_BASE_URL}/collection/token/`, {
+    method: "POST",
+    headers: {
+      "Ocp-Apim-Subscription-Key": MTN_COLLECTIONS_PRIMARY_KEY,
+      "Content-Type": "application/json",
+      "Authorization": `Basic ${credentials}`,
+    },
+    body: JSON.stringify({
+      "provider_callback_host": MTN_CALLBACK_URL,
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`MTN Auth Error (${res.status}): ${text}`);
+  }
+
+  const data: MoMoTokenResponse = await res.json();
+  return data.access_token;
+}
+
 function generateUUID(): string {
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;

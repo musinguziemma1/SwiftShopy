@@ -12,6 +12,11 @@ export const useAdminDashboardData = () => {
       totalOrders: 0,
       totalRevenue: 0,
       successfulTransactions: 0,
+      // Tokenization metrics
+      totalTokensCreated: 0,
+      activeTokens: 0,
+      expiredTokens: 0,
+      tokenValidations: 0,
     },
     isLoading: false,
   };

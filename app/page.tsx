@@ -273,33 +273,36 @@ function SwiftShopyLanding({ className = "" }: SwiftShopyLandingProps) {
             </div>
 
             <div className="hidden md:flex items-center gap-6">
-              <a href="#features" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
-                Features
-              </a>
-              <Link href="/pricing" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
-                Pricing
-              </Link>
-              <a href="#testimonials" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
-                Testimonials
-              </a>
-              <a href="#faq" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
-                FAQ
-              </a>
-              <div className="w-px h-6 bg-border mx-2" />
-              <ThemeToggle />
-              <Link
-                href="/dashboard"
-                className="px-4 py-2 text-sm font-medium border border-border rounded-lg hover:bg-accent hover:scale-105 transition-all"
-              >
-                Dashboard
-              </Link>
-              <Link
-                href="/signup"
-                className="px-5 py-2.5 text-sm font-medium bg-gradient-to-r from-primary to-indigo-600 text-primary-foreground rounded-xl hover:scale-105 hover:shadow-xl transition-all shadow-lg"
-              >
-                Get Started
-              </Link>
-            </div>
+               <a href="#features" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
+                 Features
+               </a>
+               <Link href="/pricing" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
+                 Pricing
+               </Link>
+               <Link href="/shop" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
+                 Shop
+               </Link>
+               <a href="#testimonials" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
+                 Testimonials
+               </a>
+               <a href="#faq" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
+                 FAQ
+               </a>
+               <div className="w-px h-6 bg-border mx-2" />
+               <ThemeToggle />
+               <Link
+                 href="/dashboard"
+                 className="px-4 py-2 text-sm font-medium border border-border rounded-lg hover:bg-accent hover:scale-105 transition-all"
+               >
+                 Dashboard
+               </Link>
+               <Link
+                 href="/signup"
+                 className="px-5 py-2.5 text-sm font-medium bg-gradient-to-r from-primary to-indigo-600 text-primary-foreground rounded-xl hover:scale-105 hover:shadow-xl transition-all shadow-lg"
+               >
+                 Get Started
+               </Link>
+             </div>
 
             <div className="flex items-center gap-3 md:hidden">
               <ThemeToggle />
@@ -318,32 +321,35 @@ function SwiftShopyLanding({ className = "" }: SwiftShopyLandingProps) {
               exit={{ opacity: 0, height: 0 }}
               className="md:hidden border-t border-border glass"
             >
-              <div className="container mx-auto px-4 py-4 space-y-4">
-                <a href="#features" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
-                  Features
-                </a>
-                <Link href="/pricing" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
-                  Pricing
-                </Link>
-                <a href="#testimonials" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
-                  Testimonials
-                </a>
-                <a href="#faq" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
-                  FAQ
-                </a>
-                <Link
-                  href="/dashboard"
-                  className="w-full block px-4 py-2 text-sm font-medium text-center border border-border rounded-lg hover:bg-accent transition-colors"
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  href="/signup"
-                  className="w-full block px-4 py-2 text-sm font-medium text-center bg-gradient-to-r from-primary to-indigo-600 text-primary-foreground rounded-xl transition-colors"
-                >
-                  Get Started
-                </Link>
-              </div>
+             <div className="container mx-auto px-4 py-4 space-y-4">
+                 <a href="#features" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
+                   Features
+                 </a>
+                 <Link href="/pricing" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
+                   Pricing
+                 </Link>
+                 <Link href="/shop" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
+                   Shop
+                 </Link>
+                 <a href="#testimonials" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
+                   Testimonials
+                 </a>
+                 <a href="#faq" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
+                   FAQ
+                 </a>
+                 <Link
+                   href="/dashboard"
+                   className="w-full block px-4 py-2 text-sm font-medium text-center border border-border rounded-lg hover:bg-accent transition-colors"
+                 >
+                   Dashboard
+                 </Link>
+                 <Link
+                   href="/signup"
+                   className="w-full block px-4 py-2 text-sm font-medium text-center bg-gradient-to-r from-primary to-indigo-600 text-primary-foreground rounded-xl transition-colors"
+                 >
+                   Get Started
+                 </Link>
+               </div>
             </motion.div>
           )}
         </AnimatePresence>

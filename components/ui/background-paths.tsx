@@ -38,12 +38,12 @@ export function BackgroundPaths({ className = "", variant = "hero" }: Background
   const isDark = mounted && resolvedTheme === "dark";
 
   const strokeColor = isDark
-    ? "rgba(99, 102, 241, 0.12)"
-    : "rgba(59, 130, 246, 0.08)";
+    ? "rgba(73, 6, 132, 0.15)"
+    : "rgba(73, 6, 132, 0.1)";
 
   const gradientColors = isDark
-    ? ["rgba(99, 102, 241, 0.04)", "rgba(139, 92, 246, 0.03)", "rgba(59, 130, 246, 0.02)"]
-    : ["rgba(59, 130, 246, 0.03)", "rgba(99, 102, 241, 0.02)", "rgba(139, 92, 246, 0.015)"];
+    ? ["rgba(73, 6, 132, 0.08)", "rgba(139, 92, 246, 0.05)", "rgba(99, 102, 241, 0.04)"]
+    : ["rgba(73, 6, 132, 0.06)", "rgba(139, 92, 246, 0.04)", "rgba(99, 102, 241, 0.03)"];
 
   const blobCount = variant === "minimal" ? 2 : variant === "section" ? 3 : 5;
 
@@ -86,9 +86,9 @@ export function BackgroundPaths({ className = "", variant = "hero" }: Background
         {/* Define gradients */}
         <defs>
           <linearGradient id="pathGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor={isDark ? "#6366f1" : "#3b82f6"} stopOpacity="0.3" />
-            <stop offset="50%" stopColor={isDark ? "#8b5cf6" : "#6366f1"} stopOpacity="0.2" />
-            <stop offset="100%" stopColor={isDark ? "#3b82f6" : "#8b5cf6"} stopOpacity="0.1" />
+            <stop offset="0%" stopColor={isDark ? "#490684" : "#490684"} stopOpacity="0.4" />
+            <stop offset="50%" stopColor={isDark ? "#7c3aed" : "#6366f1"} stopOpacity="0.25" />
+            <stop offset="100%" stopColor={isDark ? "#490684" : "#490684"} stopOpacity="0.15" />
           </linearGradient>
           <filter id="glow">
             <feGaussianBlur stdDeviation="2" result="coloredBlur" />
@@ -152,7 +152,7 @@ export function BackgroundPaths({ className = "", variant = "hero" }: Background
           <path
             d="M 60 0 L 0 0 0 60"
             fill="none"
-            stroke={isDark ? "rgba(99, 102, 241, 0.03)" : "rgba(59, 130, 246, 0.03)"}
+            stroke={isDark ? "rgba(73, 6, 132, 0.05)" : "rgba(73, 6, 132, 0.04)"}
             strokeWidth="1"
           />
         </pattern>

@@ -22,19 +22,43 @@ export const getStoreSummary = query({
 export const getAdminSummary = query({
   args: {},
   handler: async (ctx) => {
-    const [users, stores, orders, transactions] = await Promise.all([
+    const [users, stores, orders, transactions, paymentTokens, tokenAuditLogs] = await Promise.all([
       ctx.db.query("users").collect(),
       ctx.db.query("stores").collect(),
       ctx.db.query("orders").collect(),
       ctx.db.query("transactions").collect(),
+      ctx.db.query("payment_tokens").collect(),
+      ctx.db.query("token_audit_log").collect(),
     ]);
     const paid = orders.filter(o => o.status === "paid");
+    const now = Date.now();
+    
+    // Count active (non-expired) tokens
+    const activeTokens = paymentTokens.filter(token => 
+      !token.expiresAt || token.expiresAt > now
+    ).length;
+    
+    // Count expired tokens
+    const expiredTokens = paymentTokens.filter(token => 
+      token.expiresAt && token.expiresAt <= now
+    ).length;
+    
+    // Count token validations from audit log
+    const tokenValidations = tokenAuditLogs.filter(log => 
+      log.action === "validate"
+    ).length;
+    
     return {
       totalSellers: users.filter(u => u.role === "seller").length,
       totalStores: stores.length,
       totalOrders: orders.length,
       totalRevenue: paid.reduce((s, o) => s + o.total, 0),
       successfulTransactions: transactions.filter(t => t.status === "successful").length,
+      // Tokenization metrics
+      totalTokensCreated: paymentTokens.length,
+      activeTokens: activeTokens,
+      expiredTokens: expiredTokens,
+      tokenValidations: tokenValidations,
     };
   },
 });

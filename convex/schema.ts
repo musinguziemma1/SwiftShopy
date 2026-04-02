@@ -457,32 +457,32 @@ export default defineSchema({
      .index("by_externalRef", ["externalRef"])
      .index("by_date", ["createdAt"]),
 
-   // ─── Tokenization Tables ───────────────────────────────────
-   payment_tokens: defineTable({
-     token: v.string(),
-     hashedData: v.string(),
-     createdAt: v.number(),
-     expiresAt: v.optional(v.number()),
-     userId: v.optional(v.id("users")),
-     storeId: v.optional(v.id("stores")),
-   })
-     .index("by_token", ["token"])
-     .index("by_user", ["userId"])
-     .index("by_expiresAt", ["expiresAt"]),
+    // ─── Tokenization Tables ───────────────────────────────────
+    payment_tokens: defineTable({
+      token: v.string(),
+      hashedData: v.string(),
+      createdAt: v.number(),
+      expiresAt: v.optional(v.number()),
+      userId: v.optional(v.id("users")),
+      storeId: v.optional(v.id("stores")),
+    })
+    .index("by_token", ["token"])
+    .index("by_user", ["userId"])
+    .index("by_expiresAt", ["expiresAt"]),
 
-   token_audit_log: defineTable({
-     tokenId: v.id("payment_tokens"),
-     action: v.union(v.literal("create"), v.literal("validate"), v.literal("expire")),
-     userId: v.optional(v.id("users")),
-     ipAddress: v.optional(v.string()),
-     userAgent: v.optional(v.string()),
-     metadata: v.any(),
-     createdAt: v.number(),
-   })
-     .index("by_tokenId", ["tokenId"])
-     .index("by_action", ["action"])
-     .index("by_user", ["userId"])
-     .index("by_date", ["createdAt"]),
+    token_audit_log: defineTable({
+      tokenId: v.id("payment_tokens"),
+      action: v.union(v.literal("create"), v.literal("validate"), v.literal("expire")),
+      userId: v.optional(v.id("users")),
+      ipAddress: v.optional(v.string()),
+      userAgent: v.optional(v.string()),
+      metadata: v.any(),
+      createdAt: v.number(),
+    })
+    .index("by_tokenId", ["tokenId"])
+    .index("by_action", ["action"])
+    .index("by_user", ["userId"])
+    .index("by_date", ["createdAt"]),
 
   // ─── Usage Tracking ─────────────────────────────────────────
   usage_tracking: defineTable({

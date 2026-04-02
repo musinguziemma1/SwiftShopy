@@ -107,25 +107,28 @@ export const getPaymentTokenInfo = query({
   args: {
     token: v.string(),
   },
-  returns: v.optional(v.object({
-    token: v.string(),
-    createdAt: v.number(),
-    expiresAt: v.optional(v.number()),
-    isExpired: v.boolean(),
-  })),
+  returns: v.union(
+    v.null(),
+    v.object({
+      token: v.string(),
+      createdAt: v.number(),
+      expiresAt: v.optional(v.number()),
+      isExpired: v.boolean(),
+    })
+  ),
   handler: async (ctx, { token }) => {
     const tokenRecord = await ctx.db
       .query("payment_tokens")
       .filter((q) => q.eq(q.field("token"), token))
       .first();
-    
+  
     if (!tokenRecord) {
       return null;
     }
-    
+  
     const now = Date.now();
-    const isExpired = tokenRecord.expiresAt && now > tokenRecord.expiresAt;
-    
+    const isExpired = tokenRecord.expiresAt ? now > tokenRecord.expiresAt : false;
+  
     return {
       token: tokenRecord.token,
       createdAt: tokenRecord.createdAt,
@@ -145,16 +148,16 @@ export const cleanupExpiredTokens = mutation({
   handler: async (ctx) => {
     const now = Date.now();
     
-    // Find expired tokens
-    const expiredTokens = await ctx.db
-      .query("payment_tokens")
-      .filter((q) => 
-        q.and([
-          q.lt(q.field("expiresAt"), now),
-          q.not(q.isNull(q.field("expiresAt")))
-        ])
-      )
-      .collect();
+     // Find expired tokens
+     const expiredTokens = await ctx.db
+       .query("payment_tokens")
+       .filter(q => 
+         q.and([
+           q.lt(q.field("expiresAt"), now),
+           q.not(q.isNull(q.field("expiresAt")))
+         ])
+       )
+       .collect();
     
     // Delete expired tokens
     for (const token of expiredTokens) {

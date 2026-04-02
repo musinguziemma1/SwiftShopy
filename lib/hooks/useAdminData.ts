@@ -12,6 +12,7 @@ export const useAdminData = () => {
   const revenueByPlan = useQuery(api.analytics.getRevenueByPlan);
   const referralStats = useQuery(api.referrals.getGlobalReferralStats);
   const expiringSubscriptions = useQuery(api.subscriptions.getExpiringSubscriptions, { daysAhead: 7 });
+  const adminSummary = useQuery(api.analytics.getAdminSummary);
 
   return {
     sellers: sellers ?? [],
@@ -24,6 +25,7 @@ export const useAdminData = () => {
     revenueByPlan: revenueByPlan ?? [],
     referralStats: referralStats ?? null,
     expiringSubscriptions: expiringSubscriptions ?? [],
+    adminSummary: adminSummary ?? null,
     isLoading: sellers === undefined || stores === undefined || orders === undefined,
   };
 };

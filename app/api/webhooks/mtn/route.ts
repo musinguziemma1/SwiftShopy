@@ -51,25 +51,43 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ received: true, message: "Order not found" }, { status: 200 });
     }
 
-    switch (status) {
-      case "SUCCESSFUL": {
-        console.log(`[MTN Webhook] Payment SUCCESSFUL — Order: ${externalId}, Tx: ${financialTransactionId}`);
-        await convex.mutation(api.orders.updateStatus, { id: order._id, status: "paid" });
-        // Log transaction
-        await convex.mutation(api.transactions.create, {
-          orderId: order._id,
-          storeId: order.storeId,
-          amount: Number(amount) || order.total,
-          currency: currency || "UGX",
-          provider: "mtn_momo",
-          providerRef: financialTransactionId || "",
-          externalRef: externalId,
-          status: "successful",
-          customerPhone: payer?.partyId || order.customerPhone,
-          metadata: { webhook: true, timestamp: Date.now() },
-        });
-        break;
-      }
+     switch (status) {
+       case "SUCCESSFUL": {
+         console.log(`[MTN Webhook] Payment SUCCESSFUL — Order: ${externalId}, Tx: ${financialTransactionId}`);
+         await convex.mutation(api.orders.updateStatus, { id: order._id, status: "paid" });
+         // Log transaction
+         const transaction = await convex.mutation(api.transactions.create, {
+           orderId: order._id,
+           storeId: order.storeId,
+           amount: Number(amount) || order.total,
+           currency: currency || "UGX",
+           provider: "mtn_momo",
+           providerRef: financialTransactionId || "",
+           externalRef: externalId,
+           status: "successful",
+           customerPhone: payer?.partyId || order.customerPhone,
+           metadata: { webhook: true, timestamp: Date.now() },
+         });
+         // Create payment token for future reference
+         try {
+           await convex.mutation(api.tokenization.createPaymentToken, {
+             transactionId: transaction._id,
+             userId: order.userId,
+             amount: Number(amount) || order.total,
+             currency: currency || "UGX",
+             metadata: {
+               provider: "mtn_momo",
+               providerRef: financialTransactionId || "",
+               externalRef: externalId,
+               customerPhone: payer?.partyId || order.customerPhone,
+             },
+           });
+         } catch (tokenError) {
+           console.error("[MTN Webhook] Failed to create payment token:", tokenError);
+           // Don't fail the webhook if tokenization fails
+         }
+         break;
+       }
       case "FAILED": {
         console.log(`[MTN Webhook] Payment FAILED — Order: ${externalId}, Reason: ${payload.reason}`);
         await convex.mutation(api.orders.updateStatus, { id: order._id, status: "failed" });

@@ -347,33 +347,36 @@ export default function PricingPage() {
             </div>
 
             <div className="hidden md:flex items-center gap-6">
-              <Link href="/" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
-                Home
-              </Link>
-              <Link href="/pricing" className="text-sm font-medium text-primary">
-                Pricing
-              </Link>
-              <a href="/#features" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
-                Features
-              </a>
-              <a href="/#testimonials" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
-                Testimonials
-              </a>
-              <div className="w-px h-6 bg-border mx-2" />
-              <ThemeToggle />
-              <Link
-                href="/dashboard"
-                className="px-4 py-2 text-sm font-medium border border-border rounded-lg hover:bg-accent hover:scale-105 transition-all"
-              >
-                Dashboard
-              </Link>
-              <Link
-                href="/signup"
-                className="px-5 py-2.5 text-sm font-medium bg-gradient-to-r from-primary to-indigo-600 text-primary-foreground rounded-xl hover:scale-105 hover:shadow-xl transition-all shadow-lg"
-              >
-                Get Started
-              </Link>
-            </div>
+               <Link href="/" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
+                 Home
+               </Link>
+               <Link href="/pricing" className="text-sm font-medium text-primary">
+                 Pricing
+               </Link>
+               <Link href="/shop" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
+                 Shop
+               </Link>
+               <a href="/#features" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
+                 Features
+               </a>
+               <a href="/#testimonials" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
+                 Testimonials
+               </a>
+               <div className="w-px h-6 bg-border mx-2" />
+               <ThemeToggle />
+               <Link
+                 href="/dashboard"
+                 className="px-4 py-2 text-sm font-medium border border-border rounded-lg hover:bg-accent hover:scale-105 transition-all"
+               >
+                 Dashboard
+               </Link>
+               <Link
+                 href="/signup"
+                 className="px-5 py-2.5 text-sm font-medium bg-gradient-to-r from-primary to-indigo-600 text-primary-foreground rounded-xl hover:scale-105 hover:shadow-xl transition-all shadow-lg"
+               >
+                 Get Started
+               </Link>
+             </div>
 
             <div className="flex items-center gap-3 md:hidden">
               <ThemeToggle />
@@ -384,37 +387,40 @@ export default function PricingPage() {
           </div>
         </div>
 
-        <AnimatePresence>
-          {mobileMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="md:hidden border-t border-border glass"
-            >
-              <div className="container mx-auto px-4 py-4 space-y-4">
-                <Link href="/" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
-                  Home
-                </Link>
-                <Link href="/pricing" className="block py-2 text-sm font-medium text-primary">
-                  Pricing
-                </Link>
-                <Link
-                  href="/dashboard"
-                  className="w-full block px-4 py-2 text-sm font-medium text-center border border-border rounded-lg hover:bg-accent transition-colors"
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  href="/signup"
-                  className="w-full block px-4 py-2 text-sm font-medium text-center bg-gradient-to-r from-primary to-indigo-600 text-primary-foreground rounded-xl transition-colors"
-                >
-                  Get Started
-                </Link>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+             <AnimatePresence>
+           {mobileMenuOpen && (
+             <motion.div
+               initial={{ opacity: 0, height: 0 }}
+               animate={{ opacity: 1, height: "auto" }}
+               exit={{ opacity: 0, height: 0 }}
+               className="md:hidden border-t border-border glass"
+             >
+               <div className="container mx-auto px-4 py-4 space-y-4">
+                 <Link href="/" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
+                   Home
+                 </Link>
+                 <Link href="/pricing" className="block py-2 text-sm font-medium text-primary">
+                   Pricing
+                 </Link>
+                 <Link href="/shop" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
+                   Shop
+                 </Link>
+                 <Link
+                   href="/dashboard"
+                   className="w-full block px-4 py-2 text-sm font-medium text-center border border-border rounded-lg hover:bg-accent transition-colors"
+                 >
+                   Dashboard
+                 </Link>
+                 <Link
+                   href="/signup"
+                   className="w-full block px-4 py-2 text-sm font-medium text-center bg-gradient-to-r from-primary to-indigo-600 text-primary-foreground rounded-xl transition-colors"
+                 >
+                   Get Started
+                 </Link>
+               </div>
+             </motion.div>
+           )}
+         </AnimatePresence>
       </nav>
 
       {/* Hero Section with Motion Background */}

@@ -10,7 +10,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (status === "unauthenticated") router.replace("/login");
-    if (status === "authenticated" && role === "admin") router.replace("/admin");
+    if (status === "authenticated" && ["admin", "super_admin", "support", "analyst"].includes(role)) router.replace("/admin");
   }, [status, role, router]);
 
   if (status === "loading") {

@@ -31,6 +31,15 @@ const DEMO_USERS = [
     role: "admin" as const,
     storeSlug: null as null,
   },
+  {
+    id: "user_admin_2",
+    name: "Musinguzi Emmanuel",
+    email: "musinguzie612@gmail.com",
+    passwordHash: "$2a$10$8K1p/a0dR9lXyVQX4P0e0eQq6Q1Z1X1X1X1X1X1X1X1X1X1X1X1X1b",
+    password: "superadmin123",
+    role: "super_admin" as const,
+    storeSlug: null as null,
+  },
 ];
 
 export const authOptions: NextAuthOptions = {

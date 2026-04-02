@@ -34,7 +34,7 @@ export default function LoginPage() {
         const res = await fetch("/api/auth/session");
         const session = await res.json();
         const role = session?.user?.role;
-        router.push(role === "admin" ? "/admin" : "/dashboard");
+        router.push(["admin", "super_admin", "support", "analyst"].includes(role) ? "/admin" : "/dashboard");
       }
     } catch {
       setError("Something went wrong. Please try again.");

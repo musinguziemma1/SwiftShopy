@@ -8,6 +8,7 @@ const nextConfig = {
   },
   experimental: {
     serverComponentsExternalPackages: ["next-auth"],
+    optimizePackageImports: ["lucide-react", "framer-motion"],
   },
 };
 

@@ -63,6 +63,8 @@ export default defineSchema({
       v.literal("failed"),
       v.literal("cancelled")
     ),
+    deliveryStatus: v.optional(v.union(v.literal("pending"), v.literal("dispatched"), v.literal("delivered"), v.literal("buyer_confirmed"))),
+    escrowStatus: v.optional(v.union(v.literal("awaiting_payment"), v.literal("held"), v.literal("released"), v.literal("refunded"))),
     notes: v.optional(v.string()),
     createdAt: v.optional(v.number()),
   })

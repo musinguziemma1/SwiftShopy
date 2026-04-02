@@ -114,12 +114,17 @@ export const updateStatus = mutation({
   args: {
     id: v.id("orders"),
     status: v.union(v.literal("pending"), v.literal("paid"), v.literal("failed"), v.literal("cancelled")),
+    escrowStatus: v.optional(v.union(v.literal("awaiting_payment"), v.literal("held"), v.literal("released"), v.literal("refunded"))),
+    deliveryStatus: v.optional(v.union(v.literal("pending"), v.literal("dispatched"), v.literal("delivered"), v.literal("buyer_confirmed"))),
   },
-  handler: async (ctx, { id, status }) => {
+  handler: async (ctx, { id, status, escrowStatus, deliveryStatus }) => {
     const order = await ctx.db.get(id);
     if (!order) throw new Error("Order not found");
     
-    await ctx.db.patch(id, { status });
+    const patchData: any = { status };
+    if (escrowStatus) patchData.escrowStatus = escrowStatus;
+    if (deliveryStatus) patchData.deliveryStatus = deliveryStatus;
+    await ctx.db.patch(id, patchData);
     
     const now = Date.now();
     const store = await ctx.db.get(order.storeId);

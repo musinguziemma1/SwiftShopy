@@ -213,11 +213,11 @@ export default function StorefrontPage() {
       {/* Checkout Modal */}
       <AnimatePresence>
         {checkoutOpen && (
-          <>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setCheckoutOpen(false)}
-              className="fixed inset-0 bg-black/50 z-50" />
+              className="absolute inset-0 bg-black/50 pointer-events-auto" />
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl z-50 p-6 shadow-xl">
+              className="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl pointer-events-auto">
               <h2 className="text-xl font-bold mb-4">Checkout</h2>
               <div className="space-y-4 mb-6">
                 <div>
@@ -240,7 +240,7 @@ export default function StorefrontPage() {
                 Place Order & Pay
               </button>
             </motion.div>
-          </>
+          </div>
         )}
       </AnimatePresence>
 

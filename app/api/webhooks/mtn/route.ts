@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
+import crypto from "crypto";
 
 const WEBHOOK_SECRET = process.env.MTN_WEBHOOK_SECRET ?? "";
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL ?? "");
@@ -27,15 +28,21 @@ interface MoMoWebhookPayload {
 
 export async function POST(req: NextRequest) {
   try {
+    const rawBody = await req.text();
+    
+    // Advanced Security: HMAC Webhook Signature Verification
     if (WEBHOOK_SECRET) {
       const signature = req.headers.get("x-callback-signature") ?? "";
-      if (signature !== WEBHOOK_SECRET) {
-        console.warn("[MTN Webhook] Invalid signature");
+      const expectedSignature = crypto.createHmac("sha256", WEBHOOK_SECRET).update(rawBody).digest("hex");
+      
+      // We check if the signature matches either the raw secret (legacy mode) or the HMAC
+      if (signature !== WEBHOOK_SECRET && signature !== expectedSignature) {
+        console.warn("[MTN Webhook] Invalid signature logic - request rejected");
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
     }
 
-    const payload: MoMoWebhookPayload = await req.json();
+    const payload: MoMoWebhookPayload = JSON.parse(rawBody);
     console.log("[MTN Webhook] Received:", JSON.stringify(payload, null, 2));
 
     const { externalId, status, financialTransactionId, amount, currency, payer } = payload;
@@ -51,11 +58,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ received: true, message: "Order not found" }, { status: 200 });
     }
 
-     switch (status) {
-       case "SUCCESSFUL": {
-         console.log(`[MTN Webhook] Payment SUCCESSFUL — Order: ${externalId}, Tx: ${financialTransactionId}`);
-         await convex.mutation(api.orders.updateStatus, { id: order._id, status: "paid" });
-         // Log transaction
+      switch (status) {
+        case "SUCCESSFUL": {
+          console.log(`[MTN Webhook] Payment SUCCESSFUL — Order: ${externalId}, Tx: ${financialTransactionId}`);
+          await convex.mutation(api.orders.updateStatus, { 
+             id: order._id, 
+             status: "paid",
+             escrowStatus: "held",
+             deliveryStatus: "pending" 
+          });
+          // Log transaction
          const transaction = await convex.mutation(api.transactions.create, {
            orderId: order._id,
            storeId: order.storeId,
@@ -68,19 +80,18 @@ export async function POST(req: NextRequest) {
            customerPhone: payer?.partyId || order.customerPhone,
            metadata: { webhook: true, timestamp: Date.now() },
          });
-         // Create payment token for future reference
+         // Create payment token for future reference (Advanced Security Data)
          try {
            await convex.mutation(api.tokenization.createPaymentToken, {
-             transactionId: transaction._id,
-             userId: order.userId,
-             amount: Number(amount) || order.total,
-             currency: currency || "UGX",
-             metadata: {
+             paymentData: {
+               transactionId: transaction,
+               amount: Number(amount) || order.total,
+               currency: currency || "UGX",
                provider: "mtn_momo",
                providerRef: financialTransactionId || "",
                externalRef: externalId,
                customerPhone: payer?.partyId || order.customerPhone,
-             },
+             }
            });
          } catch (tokenError) {
            console.error("[MTN Webhook] Failed to create payment token:", tokenError);

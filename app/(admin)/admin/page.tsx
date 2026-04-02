@@ -98,6 +98,31 @@ interface AdminStats {
 }
 
 function AdminDashboard() {
+
+  // Pagination State
+  const ITEMS_PER_PAGE = 30;
+  const [sellerPage, setSellerPage] = useState(1);
+  const [txnPage, setTxnPage] = useState(1);
+  const [adminPage, setAdminPage] = useState(1);
+  const [payoutPage, setPayoutPage] = useState(1);
+
+  const renderPagination = (currentPage: number, totalItems: number, setPage: (p: number) => void) => {
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+    if (totalPages <= 1) return null;
+    return (
+      <div className="flex items-center justify-between px-4 py-3 border-t border-border mt-4">
+        <div className="text-sm text-muted-foreground">
+          Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, totalItems)} of {totalItems} entries
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1} className="px-3 py-1 glass rounded-lg text-sm font-medium hover:bg-accent disabled:opacity-50 transition-all">Previous</button>
+          <div className="px-3 py-1 bg-primary/10 text-primary rounded-lg text-sm font-bold">{currentPage}</div>
+          <button onClick={() => setPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages} className="px-3 py-1 glass rounded-lg text-sm font-medium hover:bg-accent disabled:opacity-50 transition-all">Next</button>
+        </div>
+      </div>
+    );
+  };
+
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [activeTab, setActiveTab] = useState("overview")
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -668,7 +693,7 @@ function AdminDashboard() {
                     <thead>
                       <tr className="border-b border-border">
                         {["Transaction ID","Seller","Amount","Commission","Status","Date"].map((h) => (
-                          <th key={h} className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{h}</th>
+                          <th key={h} className="text-left py-3 px-4 text-sm font-medium text-muted-foreground whitespace-nowrap">{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -853,7 +878,7 @@ function AdminDashboard() {
                             className="w-4 h-4 rounded border-border" />
                         </th>
                         {["Seller", "Store", "Revenue", "Orders", "Status", "Actions"].map((h) => (
-                          <th key={h} className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{h}</th>
+                          <th key={h} className="text-left py-3 px-4 text-sm font-medium text-muted-foreground whitespace-nowrap">{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -1190,7 +1215,7 @@ function AdminDashboard() {
                     <thead>
                       <tr className="border-b border-border bg-muted/30">
                         {["Transaction ID","Seller","Type","Amount","Fee","Status","Date"].map((h) => (
-                          <th key={h} className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{h}</th>
+                          <th key={h} className="text-left py-3 px-4 text-sm font-medium text-muted-foreground whitespace-nowrap">{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -1347,11 +1372,11 @@ function AdminDashboard() {
                         <thead className="sticky top-0 bg-card">
                           <tr className="border-b border-border">
                             <th className="text-left py-2 px-4 w-10"></th>
-                            <th className="text-left py-2 px-4 text-xs font-medium text-muted-foreground">Seller</th>
-                            <th className="text-left py-2 px-4 text-xs font-medium text-muted-foreground">Plan</th>
-                            <th className="text-right py-2 px-4 text-xs font-medium text-muted-foreground">Gross</th>
-                            <th className="text-right py-2 px-4 text-xs font-medium text-muted-foreground">Fee</th>
-                            <th className="text-right py-2 px-4 text-xs font-medium text-muted-foreground">Net Payout</th>
+                            <th className="text-left py-2 px-4 text-xs font-medium text-muted-foreground whitespace-nowrap">Seller</th>
+                            <th className="text-left py-2 px-4 text-xs font-medium text-muted-foreground whitespace-nowrap">Plan</th>
+                            <th className="text-right py-2 px-4 text-xs font-medium text-muted-foreground whitespace-nowrap">Gross</th>
+                            <th className="text-right py-2 px-4 text-xs font-medium text-muted-foreground whitespace-nowrap">Fee</th>
+                            <th className="text-right py-2 px-4 text-xs font-medium text-muted-foreground whitespace-nowrap">Net Payout</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1694,7 +1719,7 @@ function AdminDashboard() {
                     <thead>
                       <tr className="border-b border-border">
                         {["Seller", "Email", "Plan", "Status", "Start Date", "End Date", "Auto Renew", "Actions"].map((h) => (
-                          <th key={h} className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{h}</th>
+                          <th key={h} className="text-left py-3 px-4 text-sm font-medium text-muted-foreground whitespace-nowrap">{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -1897,7 +1922,7 @@ function AdminDashboard() {
                     <thead>
                       <tr className="border-b border-border">
                         {["Name", "Email", "Role", "Status", "Last Login", "Actions"].map((h) => (
-                          <th key={h} className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{h}</th>
+                          <th key={h} className="text-left py-3 px-4 text-sm font-medium text-muted-foreground whitespace-nowrap">{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -2449,7 +2474,7 @@ function AdminDashboard() {
                     <thead>
                       <tr className="border-b border-border">
                         {["Admin", "Action", "Target", "Date"].map((h) => (
-                          <th key={h} className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{h}</th>
+                          <th key={h} className="text-left py-3 px-4 text-sm font-medium text-muted-foreground whitespace-nowrap">{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -2503,7 +2528,7 @@ function AdminDashboard() {
                     <thead>
                       <tr className="border-b border-border">
                         {["Name", "Type", "Format", "Schedule", "Recipients", "Status"].map((h) => (
-                          <th key={h} className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{h}</th>
+                          <th key={h} className="text-left py-3 px-4 text-sm font-medium text-muted-foreground whitespace-nowrap">{h}</th>
                         ))}
                       </tr>
                     </thead>

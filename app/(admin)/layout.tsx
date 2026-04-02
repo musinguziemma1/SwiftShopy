@@ -10,7 +10,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     if (status === "unauthenticated") router.replace("/login");
-    if (status === "authenticated" && role !== "admin") router.replace("/dashboard");
+    if (status === "authenticated" && !["admin", "super_admin", "support", "analyst"].includes(role)) router.replace("/dashboard");
   }, [status, role, router]);
 
   if (status === "loading") {
@@ -24,6 +24,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  if (!session || role !== "admin") return null;
+  if (!session || !["admin", "super_admin", "support", "analyst"].includes(role)) return null;
   return <>{children}</>;
 }

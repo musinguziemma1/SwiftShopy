@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3014",
-    "build": "npx convex codegen && next build",
+    "build": "npx convex deploy --cmd 'next build'",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest",

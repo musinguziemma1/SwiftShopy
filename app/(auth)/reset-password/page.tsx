@@ -14,8 +14,8 @@ export default function ResetPasswordPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
-  const email = searchParams.get("email") || "";
-  const code = searchParams.get("code") || "";
+  const email = searchParams?.get("email") || "";
+  const code = searchParams?.get("code") || "";
   
   const [form, setForm] = useState({ password: "", confirmPassword: "" });
   const [showPassword, setShowPassword] = useState(false);

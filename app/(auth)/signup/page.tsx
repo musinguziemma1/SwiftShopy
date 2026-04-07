@@ -15,7 +15,7 @@ import bcrypt from "bcryptjs";
 export default function SignupPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const referralCode = searchParams.get("ref") || "";
+  const referralCode = searchParams?.get("ref") || "";
   
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", confirmPassword: "" });
   const [showPassword, setShowPassword] = useState(false);

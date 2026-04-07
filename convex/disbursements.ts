@@ -32,7 +32,7 @@ export const calculateSellerPayouts = query({
       .filter(q => q.eq(q.field("isActive"), true))
       .collect();
 
-    const payouts = [];
+    const payouts: any[] = [];
 
     for (const user of users) {
       // Get subscription

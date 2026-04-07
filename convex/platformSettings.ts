@@ -113,7 +113,7 @@ export const bulkUpdate = mutation({
   },
   handler: async (ctx, args) => {
     const now = Date.now();
-    const results = [];
+    const results: any[] = [];
 
     for (const setting of args.settings) {
       const existing = await ctx.db.query("platform_settings")

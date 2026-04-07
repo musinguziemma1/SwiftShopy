@@ -128,7 +128,7 @@ describe("Tokenization Service", () => {
 
       mockDb.insert.mockResolvedValueOnce(mockTokenRecord);
 
-      const result = await createPaymentToken(
+      const result = await (createPaymentToken as any)(
         { db: mockDb },
         { paymentData, expiresInMinutes: 30 }
       );
@@ -160,7 +160,7 @@ describe("Tokenization Service", () => {
 
       mockDb.insert.mockResolvedValueOnce(mockTokenRecord);
 
-      await createPaymentToken(
+      await (createPaymentToken as any)(
         { db: mockDb },
         { paymentData }
       );
@@ -191,7 +191,7 @@ describe("Tokenization Service", () => {
       };
       mockDb.query.mockReturnValue(mockQueryResult);
 
-      const result = await validatePaymentToken(
+      const result = await (validatePaymentToken as any)(
         { db: mockDb },
         { token, paymentData }
       );
@@ -206,7 +206,7 @@ describe("Tokenization Service", () => {
       };
       mockDb.query.mockReturnValue(mockQueryResult);
 
-      const result = await validatePaymentToken(
+      const result = await (validatePaymentToken as any)(
         { db: mockDb },
         { token: "invalid-token", paymentData: {} }
       );
@@ -232,7 +232,7 @@ describe("Tokenization Service", () => {
       };
       mockDb.query.mockReturnValue(mockQueryResult);
 
-      const result = await validatePaymentToken(
+      const result = await (validatePaymentToken as any)(
         { db: mockDb },
         { token, paymentData }
       );
@@ -259,7 +259,7 @@ describe("Tokenization Service", () => {
       };
       mockDb.query.mockReturnValue(mockQueryResult);
 
-      const result = await validatePaymentToken(
+      const result = await (validatePaymentToken as any)(
         { db: mockDb },
         { token, paymentData: wrongData }
       );
@@ -286,7 +286,7 @@ describe("Tokenization Service", () => {
       };
       mockDb.query.mockReturnValue(mockQueryResult);
 
-      const result = await getPaymentTokenInfo(
+      const result = await (getPaymentTokenInfo as any)(
         { db: mockDb },
         { token }
       );
@@ -306,7 +306,7 @@ describe("Tokenization Service", () => {
       };
       mockDb.query.mockReturnValue(mockQueryResult);
 
-      const result = await getPaymentTokenInfo(
+      const result = await (getPaymentTokenInfo as any)(
         { db: mockDb },
         { token: "invalid-token" }
       );
@@ -331,7 +331,7 @@ describe("Tokenization Service", () => {
       };
       mockDb.query.mockReturnValue(mockQueryResult);
 
-      const result = await getPaymentTokenInfo(
+      const result = await (getPaymentTokenInfo as any)(
         { db: mockDb },
         { token }
       );
@@ -362,7 +362,7 @@ describe("Tokenization Service", () => {
       };
       mockDb.query.mockReturnValue(mockQueryResult);
 
-      const result = await cleanupExpiredTokens({ db: mockDb });
+      const result = await (cleanupExpiredTokens as any)({ db: mockDb });
 
       expect(result).toBe(2);
       expect(mockDb.delete).toHaveBeenCalledTimes(2);
@@ -382,7 +382,7 @@ describe("Tokenization Service", () => {
       };
       mockDb.query.mockReturnValue(mockQueryResult);
 
-      const result = await cleanupExpiredTokens({ db: mockDb });
+      const result = await (cleanupExpiredTokens as any)({ db: mockDb });
 
       expect(result).toBe(0);
       expect(mockDb.delete).not.toHaveBeenCalled();
@@ -404,7 +404,7 @@ describe("Tokenization Service", () => {
 
       mockDb.insert.mockResolvedValueOnce(mockLogRecord);
 
-      const result = await logTokenUsage(
+      const result = await (logTokenUsage as any)(
         { db: mockDb },
         {
           tokenId: "token123",
@@ -457,17 +457,17 @@ describe("Tokenization Service", () => {
       const mockQueryResult = {
         filter: vi.fn().mockReturnThis(),
         order: vi.fn().mockReturnThis(),
-        limit: vi.fn().mockResolvedValueOnce(mockLogs),
+        take: vi.fn().mockResolvedValueOnce(mockLogs),
       };
       mockDb.query.mockReturnValue(mockQueryResult);
 
-      const result = await getTokenAuditLogs(
+      const result = await (getTokenAuditLogs as any)(
         { db: mockDb },
         { tokenId: "token123", limit: 10 }
       );
 
       expect(result).toEqual(mockLogs);
-      expect(mockDb.query().filter().order().limit()).toHaveBeenCalledWith(
+      expect(mockDb.query().filter().order().take()).toHaveBeenCalledWith(
         "token_audit_log"
       );
     });
@@ -488,17 +488,17 @@ describe("Tokenization Service", () => {
 
       const mockQueryResult = {
         order: vi.fn().mockReturnThis(),
-        limit: vi.fn().mockResolvedValueOnce(mockLogs),
+        take: vi.fn().mockResolvedValueOnce(mockLogs),
       };
       mockDb.query.mockReturnValue(mockQueryResult);
 
-      const result = await getTokenAuditLogs(
+      const result = await (getTokenAuditLogs as any)(
         { db: mockDb },
         { limit: 5 }
       );
 
       expect(result).toEqual(mockLogs);
-      expect(mockDb.query().order().limit()).toHaveBeenCalledWith(
+      expect(mockDb.query().order().take()).toHaveBeenCalledWith(
         "token_audit_log"
       );
     });

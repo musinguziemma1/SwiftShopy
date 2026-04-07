@@ -272,7 +272,7 @@ export const checkUserPromotionEligibility = query({
       .collect();
 
     const now = Date.now();
-    const eligiblePromotions = [];
+    const eligiblePromotions: any[] = [];
 
     for (const promo of activePromotions) {
       if (promo.endDate && promo.endDate < now) continue;

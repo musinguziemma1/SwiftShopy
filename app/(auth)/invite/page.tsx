@@ -13,7 +13,7 @@ import { api } from "@/convex/_generated/api";
 export default function InvitePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const token = searchParams.get("token") || "";
+  const token = searchParams?.get("token") || "";
   const { data: session } = useSession();
   
   const [loading, setLoading] = useState(false);

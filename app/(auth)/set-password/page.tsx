@@ -16,8 +16,8 @@ export default function SetPasswordPage() {
   const searchParams = useSearchParams();
   const { data: session } = useSession();
   
-  const email = searchParams.get("email") || (session?.user as any)?.email || "";
-  const token = searchParams.get("token") || "";
+  const email = searchParams?.get("email") || (session?.user as any)?.email || "";
+  const token = searchParams?.get("token") || "";
   
   const [form, setForm] = useState({ 
     name: session?.user?.name || "",

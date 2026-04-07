@@ -152,10 +152,7 @@ export const cleanupExpiredTokens = mutation({
      const expiredTokens = await ctx.db
        .query("payment_tokens")
        .filter(q => 
-         q.and([
-           q.lt(q.field("expiresAt"), now),
-           q.not(q.isNull(q.field("expiresAt")))
-         ])
+         q.lt(q.field("expiresAt"), now)
        )
        .collect();
     
@@ -226,10 +223,10 @@ export const getTokenAuditLogs = query({
       query = query.filter((q) => q.eq(q.field("tokenId"), tokenId));
     }
     
-    query = query
+    const logs = await query
       .order("desc")
-      .limit(limit ?? 50);
+      .take(limit ?? 50);
     
-    return await query.collect();
+    return logs;
   },
 });

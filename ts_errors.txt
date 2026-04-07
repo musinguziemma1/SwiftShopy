@@ -1,0 +1,41 @@
+﻿__tests__/convex/tokenization.test.ts(131,28): error TS2349: This expression is not callable.
+  Type 'RegisteredMutation<"public", { expiresInMinutes?: number | undefined; paymentData: any; }, Promise<{ token: any; expiresAt: string; createdAt: number; }>>' has no call signatures.
+__tests__/convex/tokenization.test.ts(163,13): error TS2349: This expression is not callable.
+  Type 'RegisteredMutation<"public", { expiresInMinutes?: number | undefined; paymentData: any; }, Promise<{ token: any; expiresAt: string; createdAt: number; }>>' has no call signatures.
+__tests__/convex/tokenization.test.ts(194,28): error TS2349: This expression is not callable.
+  Type 'RegisteredQuery<"public", { token: string; paymentData: string | {}; }, Promise<boolean>>' has no call signatures.
+__tests__/convex/tokenization.test.ts(209,28): error TS2349: This expression is not callable.
+  Type 'RegisteredQuery<"public", { token: string; paymentData: string | {}; }, Promise<boolean>>' has no call signatures.
+__tests__/convex/tokenization.test.ts(235,28): error TS2349: This expression is not callable.
+  Type 'RegisteredQuery<"public", { token: string; paymentData: string | {}; }, Promise<boolean>>' has no call signatures.
+__tests__/convex/tokenization.test.ts(262,28): error TS2349: This expression is not callable.
+  Type 'RegisteredQuery<"public", { token: string; paymentData: string | {}; }, Promise<boolean>>' has no call signatures.
+__tests__/convex/tokenization.test.ts(289,28): error TS2349: This expression is not callable.
+  Type 'RegisteredQuery<"public", { token: string; }, Promise<{ token: string; createdAt: number; expiresAt: number | undefined; isExpired: boolean; } | null>>' has no call signatures.
+__tests__/convex/tokenization.test.ts(309,28): error TS2349: This expression is not callable.
+  Type 'RegisteredQuery<"public", { token: string; }, Promise<{ token: string; createdAt: number; expiresAt: number | undefined; isExpired: boolean; } | null>>' has no call signatures.
+__tests__/convex/tokenization.test.ts(334,28): error TS2349: This expression is not callable.
+  Type 'RegisteredQuery<"public", { token: string; }, Promise<{ token: string; createdAt: number; expiresAt: number | undefined; isExpired: boolean; } | null>>' has no call signatures.
+__tests__/convex/tokenization.test.ts(365,28): error TS2349: This expression is not callable.
+  Type 'RegisteredMutation<"public", {}, Promise<number>>' has no call signatures.
+__tests__/convex/tokenization.test.ts(385,28): error TS2349: This expression is not callable.
+  Type 'RegisteredMutation<"public", {}, Promise<number>>' has no call signatures.
+__tests__/convex/tokenization.test.ts(407,28): error TS2349: This expression is not callable.
+  Type 'RegisteredMutation<"public", { userId?: Id<"users"> | undefined; metadata?: any; ipAddress?: string | undefined; userAgent?: string | undefined; action: "create" | "validate" | "expire"; tokenId: Id<...>; }, Promise<...>>' has no call signatures.
+__tests__/convex/tokenization.test.ts(464,28): error TS2349: This expression is not callable.
+  Type 'RegisteredQuery<"public", { tokenId?: Id<"payment_tokens"> | undefined; limit?: number | undefined; }, Promise<{ _id: Id<"token_audit_log">; _creationTime: number; userId?: Id<"users"> | undefined; ... 5 more ...; tokenId: Id<...>; }[]>>' has no call signatures.
+__tests__/convex/tokenization.test.ts(495,28): error TS2349: This expression is not callable.
+  Type 'RegisteredQuery<"public", { tokenId?: Id<"payment_tokens"> | undefined; limit?: number | undefined; }, Promise<{ _id: Id<"token_audit_log">; _creationTime: number; userId?: Id<"users"> | undefined; ... 5 more ...; tokenId: Id<...>; }[]>>' has no call signatures.
+app/(auth)/invite/page.tsx(16,17): error TS18047: 'searchParams' is possibly 'null'.
+app/(auth)/reset-password/page.tsx(17,17): error TS18047: 'searchParams' is possibly 'null'.
+app/(auth)/reset-password/page.tsx(18,16): error TS18047: 'searchParams' is possibly 'null'.
+app/(auth)/set-password/page.tsx(19,17): error TS18047: 'searchParams' is possibly 'null'.
+app/(auth)/set-password/page.tsx(20,17): error TS18047: 'searchParams' is possibly 'null'.
+app/(auth)/signup/page.tsx(18,24): error TS18047: 'searchParams' is possibly 'null'.
+convex/disbursements.ts(78,22): error TS2345: Argument of type '{ userId: Id<"users">; sellerName: string; sellerEmail: string; sellerPhone: string; storeId: Id<"stores"> | undefined; storeName: string; plan: "free" | "pro" | "business" | "enterprise"; ... 6 more ...; dateTo: number; }' is not assignable to parameter of type 'never'.
+convex/platformSettings.ts(130,22): error TS2345: Argument of type '{ key: string; action: string; }' is not assignable to parameter of type 'never'.
+convex/platformSettings.ts(141,22): error TS2345: Argument of type '{ key: string; action: string; }' is not assignable to parameter of type 'never'.
+convex/promotions.ts(312,31): error TS2345: Argument of type '{ eligible: boolean; currentValue: number; threshold: number; _id: Id<"promotions">; _creationTime: number; createdBy?: string | undefined; endDate?: number | undefined; maxRedemptions?: number | undefined; ... 10 more ...; currentRedemptions: number; }' is not assignable to parameter of type 'never'.
+convex/tokenization.ts(155,16): error TS2345: Argument of type 'Expression<boolean>[]' is not assignable to parameter of type 'ExpressionOrValue<boolean>'.
+convex/tokenization.ts(157,20): error TS2339: Property 'isNull' does not exist on type 'FilterBuilder<{ document: { _id: Id<"payment_tokens">; _creationTime: number; userId?: Id<"users"> | undefined; storeId?: Id<"stores"> | undefined; expiresAt?: number | undefined; createdAt: number; token: string; hashedData: string; }; fieldPaths: ExtractFieldPaths<...> | "_id"; indexes: { ...; }; searchIndexes: {}...'.
+convex/tokenization.ts(231,8): error TS2339: Property 'limit' does not exist on type 'OrderedQuery<{ document: { _id: Id<"token_audit_log">; _creationTime: number; userId?: Id<"users"> | undefined; ipAddress?: string | undefined; userAgent?: string | undefined; createdAt: number; metadata: any; action: "create" | ... 1 more ... | "expire"; tokenId: Id<...>; }; fieldPaths: ExtractFieldPaths<...> | "_i...'.

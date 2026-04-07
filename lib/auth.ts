@@ -11,36 +11,66 @@ const loginSchema = z.object({
   password: z.string().min(6),
 });
 
-// Demo users with hashed passwords (password123 = $2a$10$...)
-const DEMO_USERS = [
-  {
-    id: "user_seller_1",
-    name: "Sarah Nakato",
-    email: "seller@swiftshopy.com",
-    passwordHash: "$2a$10$8K1p/a0dR9lXyVQX4P0e0eQq6Q1Z1X1X1X1X1X1X1X1X1X1X1X1Xa",
-    password: "seller123",
-    role: "seller" as const,
-    storeSlug: "nakato-styles",
-  },
-  {
-    id: "user_admin_1",
-    name: "Admin User",
-    email: "admin@swiftshopy.com",
-    passwordHash: "$2a$10$8K1p/a0dR9lXyVQX4P0e0eQq6Q1Z1X1X1X1X1X1X1X1X1X1X1X1X1b",
-    password: "admin123",
-    role: "admin" as const,
-    storeSlug: null as null,
-  },
-  {
-    id: "user_admin_2",
-    name: "Musinguzi Emmanuel",
-    email: "musinguzie612@gmail.com",
-    passwordHash: "$2a$10$8K1p/a0dR9lXyVQX4P0e0eQq6Q1Z1X1X1X1X1X1X1X1X1X1X1X1X1b",
-    password: "superadmin123",
-    role: "super_admin" as const,
-    storeSlug: null as null,
-  },
-];
+// Environment validation
+function validateEnvironment() {
+  const required = ["NEXTAUTH_SECRET"];
+  const missing = required.filter((key) => !process.env[key]);
+
+  if (missing.length > 0) {
+    console.error(`Missing required environment variables: ${missing.join(", ")}`);
+  }
+
+  // Log configured providers
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    console.log("✓ Google OAuth provider is configured");
+  }
+
+  if (process.env.NEXT_PUBLIC_CONVEX_URL) {
+    console.log("✓ Convex database is configured");
+  }
+
+  return missing.length === 0;
+}
+
+// Demo users - only available in development
+const isDevelopment = process.env.NODE_ENV === "development";
+
+const DEMO_USERS = isDevelopment
+  ? [
+      {
+        id: "user_seller_1",
+        name: "Sarah Nakato",
+        email: "seller@swiftshopy.com",
+        passwordHash: "$2a$10$8K1p/a0dR9lXyVQX4P0e0eQq6Q1Z1X1X1X1X1X1X1X1X1X1X1X1X1a",
+        password: "seller123",
+        role: "seller" as const,
+        storeSlug: "nakato-styles",
+      },
+      {
+        id: "user_admin_1",
+        name: "Admin User",
+        email: "admin@swiftshopy.com",
+        passwordHash: "$2a$10$8K1p/a0dR9lXyVQX4P0e0eQq6Q1Z1X1X1X1X1X1X1X1X1X1X1X1X1b",
+        password: "admin123",
+        role: "admin" as const,
+        storeSlug: null as null,
+      },
+      {
+        id: "user_admin_2",
+        name: "Musinguzi Emmanuel",
+        email: "musinguzie612@gmail.com",
+        passwordHash: "$2a$10$8K1p/a0dR9lXyVQX4P0e0eQq6Q1Z1X1X1X1X1X1X1X1X1X1X1X1X1b",
+        password: "superadmin123",
+        role: "super_admin" as const,
+        storeSlug: null as null,
+      },
+    ]
+  : [];
+
+// Initialize validation
+if (typeof window === "undefined") {
+  validateEnvironment();
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -56,6 +86,19 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         console.log("Auth attempt for:", credentials?.email);
+
+        // Validate required environment variables at runtime
+        if (!process.env.NEXTAUTH_SECRET) {
+          console.error("NEXTAUTH_SECRET is not configured");
+          return null;
+        }
+
+        // Check if Convex is available in production
+        if (!isDevelopment && !process.env.NEXT_PUBLIC_CONVEX_URL) {
+          console.error("NEXT_PUBLIC_CONVEX_URL is not configured for production");
+          return null;
+        }
+
         try {
           const { email, password } = loginSchema.parse(credentials);
 

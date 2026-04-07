@@ -43,7 +43,7 @@ export default function LoginPage() {
 
       // Get the fresh session
       const session = await getSession();
-      const role = session?.user?.role;
+      const role = (session?.user as { role?: string })?.role;
       
       console.log("Logged in with role:", role);
 

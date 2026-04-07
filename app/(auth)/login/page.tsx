@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { signIn, getSession } from "next-auth/react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ShoppingCart, Mail, Lock, Eye, EyeOff, Zap, ArrowRight, AlertCircle, Shield, Sparkles } from "lucide-react";
@@ -16,6 +16,8 @@ const DEMO_ACCOUNTS = [
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams?.get("callbackUrl");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -27,16 +29,32 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
     try {
-      const result = await signIn("credentials", { email, password, redirect: false });
+      const result = await signIn("credentials", { 
+        email: email.toLowerCase().trim(), 
+        password, 
+        redirect: false 
+      });
+
       if (result?.error) {
         setError("Invalid email or password. Please try again.");
-      } else {
-        const res = await fetch("/api/auth/session");
-        const session = await res.json();
-        const role = session?.user?.role;
-        router.push(["admin", "super_admin", "support", "analyst"].includes(role) ? "/admin" : "/dashboard");
+        setLoading(false);
+        return;
       }
-    } catch {
+
+      // Get the fresh session
+      const session = await getSession();
+      const role = session?.user?.role;
+      
+      console.log("Logged in with role:", role);
+
+      if (callbackUrl && callbackUrl !== "/login") {
+        router.push(callbackUrl);
+      } else {
+        const isAdmin = ["admin", "super_admin", "support", "analyst"].includes(role as string);
+        router.push(isAdmin ? "/admin" : "/dashboard");
+      }
+    } catch (err) {
+      console.error("Login error:", err);
       setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);

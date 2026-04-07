@@ -7,7 +7,7 @@ import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
 
 const loginSchema = z.object({
-  email: z.string().email(),
+  email: z.string().email().transform(e => e.toLowerCase().trim()),
   password: z.string().min(6),
 });
 
@@ -55,19 +55,25 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
+        console.log("Auth attempt for:", credentials?.email);
         try {
           const { email, password } = loginSchema.parse(credentials);
 
           // Check demo users first (for development)
           const demoUser = DEMO_USERS.find(u => u.email === email);
-          if (demoUser && demoUser.password === password) {
-            return {
-              id: demoUser.id,
-              name: demoUser.name,
-              email: demoUser.email,
-              role: demoUser.role,
-              storeSlug: demoUser.storeSlug ?? null,
-            };
+          if (demoUser) {
+            if (demoUser.password === password) {
+              console.log("Demo user login successful:", email);
+              return {
+                id: demoUser.id,
+                name: demoUser.name,
+                email: demoUser.email,
+                role: demoUser.role,
+                storeSlug: demoUser.storeSlug ?? null,
+              };
+            } else {
+              console.warn("Demo user password mismatch for:", email);
+            }
           }
 
           // Check Convex database
@@ -76,9 +82,15 @@ export const authOptions: NextAuthOptions = {
             if (convexUrl) {
               const convex = new ConvexHttpClient(convexUrl);
               const user = await convex.query(api.users.getByEmail, { email });
-              if (user && user.isActive) {
+              
+              if (!user) {
+                console.warn("No user found in Convex for:", email);
+              } else if (!user.isActive) {
+                console.warn("User account is inactive:", email);
+              } else {
                 const isValid = await bcrypt.compare(password, user.passwordHash);
                 if (isValid) {
+                  console.log("Convex user login successful:", email);
                   return {
                     id: user._id,
                     name: user.name,
@@ -86,15 +98,20 @@ export const authOptions: NextAuthOptions = {
                     role: user.role,
                     storeSlug: null,
                   };
+                } else {
+                  console.warn("Invalid password for Convex user:", email);
                 }
               }
+            } else {
+              console.error("NEXT_PUBLIC_CONVEX_URL is not set!");
             }
           } catch (convexError) {
-            console.error("Convex auth error:", convexError);
+            console.error("Convex auth client error:", convexError);
           }
 
           return null;
-        } catch {
+        } catch (err: any) {
+          console.error("Authorize function exception:", err.message);
           return null;
         }
       },

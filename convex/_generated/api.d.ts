@@ -30,6 +30,7 @@ import type * as seed from "../seed.js";
 import type * as setPassword from "../setPassword.js";
 import type * as stores from "../stores.js";
 import type * as subscriptions from "../subscriptions.js";
+import type * as support from "../support.js";
 import type * as tokenization from "../tokenization.js";
 import type * as transactions from "../transactions.js";
 import type * as users from "../users.js";
@@ -64,6 +65,7 @@ declare const fullApi: ApiFromModules<{
   setPassword: typeof setPassword;
   stores: typeof stores;
   subscriptions: typeof subscriptions;
+  support: typeof support;
   tokenization: typeof tokenization;
   transactions: typeof transactions;
   users: typeof users;

@@ -126,7 +126,7 @@ export default defineSchema({
     adminId: v.string(),
     adminName: v.string(),
     action: v.string(),
-    targetType: v.union(v.literal("user"), v.literal("seller"), v.literal("order"), v.literal("product"), v.literal("transaction"), v.literal("settings"), v.literal("system")),
+    targetType: v.union(v.literal("user"), v.literal("seller"), v.literal("order"), v.literal("product"), v.literal("transaction"), v.literal("settings"), v.literal("system"), v.literal("ticket")),
     targetId: v.string(),
     targetName: v.optional(v.string()),
     details: v.any(),
@@ -381,7 +381,10 @@ export default defineSchema({
       v.literal("payment_failed"),
       v.literal("product_limit_reached"),
       v.literal("referral_bonus"),
-      v.literal("usage_discount_applied")
+      v.literal("usage_discount_applied"),
+      v.literal("support_ticket"),
+      v.literal("ticket_update"),
+      v.literal("ticket_reply")
     ),
     title: v.string(),
     message: v.string(),

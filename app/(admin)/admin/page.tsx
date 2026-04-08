@@ -44,6 +44,7 @@ import {
   FileText,
   FileBarChart,
   ChevronDown,
+  ChevronRight,
   AlertTriangle,
   Plus,
   Copy,
@@ -53,7 +54,7 @@ import {
   UserPlus,
   UserMinus,
 } from "lucide-react"
-import { useAdminData, useAdminMutations } from "@/lib/hooks/useAdminData"
+import { useAdminData, useAdminMutations, useSupportTickets } from "@/lib/hooks/useAdminData"
 import { useMutation, useQuery } from "convex/react"
 import { api } from "@/convex/_generated/api"
 import { useAdminDashboardData } from "@/lib/hooks/useAdminDashboardData"
@@ -219,6 +220,19 @@ function AdminDashboard() {
   const [settingsSaving, setSettingsSaving] = useState(false)
   const [settingsSaved, setSettingsSaved] = useState(false)
   const [settingsError, setSettingsError] = useState("")
+  
+  // Support ticket states
+  const [ticketFilter, setTicketFilter] = useState<"all" | "open" | "in_progress" | "resolved" | "closed">("all")
+  const [ticketPriorityFilter, setTicketPriorityFilter] = useState<"all" | "critical" | "high" | "medium" | "low">("all")
+  const [selectedTicket, setSelectedTicket] = useState<any>(null)
+  const [showTicketModal, setShowTicketModal] = useState(false)
+  const [ticketMessage, setTicketMessage] = useState("")
+  const [sendingReply, setSendingReply] = useState(false)
+
+  // Get support ticket data
+  const { tickets, stats: ticketStats } = useSupportTickets(ticketFilter === "all" ? undefined : ticketFilter, ticketPriorityFilter === "all" ? undefined : ticketPriorityFilter)
+  const { updateTicketStatus, addTicketMessage, logAction } = useAdminMutations()
+  const { auditLogs: dbAuditLogs } = useAdminData()
 
   // Convex mutations
   const bulkUpdateSettings = useMutation(api.platformSettings.bulkUpdate)
@@ -374,7 +388,8 @@ function AdminDashboard() {
     date: new Date(t._creationTime).toLocaleDateString(),
   })) ?? []
 
-  const auditLogs = [
+  // Legacy static audit logs (can be removed when real data populates)
+  const staticAuditLogs = [
     { id: "AL-001", admin: "Super Admin", action: "seller_approve", target: "Nakato Styles", date: "2024-01-15 14:32" },
     { id: "AL-002", admin: "Support Agent", action: "ticket_resolve", target: "TKT-001", date: "2024-01-15 13:10" },
     { id: "AL-003", admin: "Super Admin", action: "seller_suspend", target: "JM Electronics", date: "2024-01-14 11:45" },
@@ -2364,10 +2379,10 @@ function AdminDashboard() {
 
               <div className="grid sm:grid-cols-4 gap-6 mb-8">
                 {[
-                  { label: "Critical", count: 2, sla: "1 hour", color: "text-red-500", border: "border-red-500/20", bg: "bg-red-500/5" },
-                  { label: "High", count: 5, sla: "4 hours", color: "text-orange-500", border: "border-orange-500/20", bg: "bg-orange-500/5" },
-                  { label: "Medium", count: 10, sla: "24 hours", color: "text-yellow-500", border: "border-yellow-500/20", bg: "bg-yellow-500/5" },
-                  { label: "Low", count: 7, sla: "48 hours", color: "text-blue-500", border: "border-blue-500/20", bg: "bg-blue-500/5" },
+                  { label: "Critical", count: ticketStats?.critical ?? 0, sla: "1 hour", color: "text-red-500", border: "border-red-500/20", bg: "bg-red-500/5" },
+                  { label: "High", count: ticketStats?.high ?? 0, sla: "4 hours", color: "text-orange-500", border: "border-orange-500/20", bg: "bg-orange-500/5" },
+                  { label: "Medium", count: ticketStats?.medium ?? 0, sla: "24 hours", color: "text-yellow-500", border: "border-yellow-500/20", bg: "bg-yellow-500/5" },
+                  { label: "Low", count: ticketStats?.low ?? 0, sla: "48 hours", color: "text-blue-500", border: "border-blue-500/20", bg: "bg-blue-500/5" },
                 ].map((s, i) => (
                   <div key={i} className={`p-6 rounded-xl border-2 ${s.border} ${s.bg}`}>
                     <div className="flex items-center gap-2 mb-3">
@@ -2401,24 +2416,28 @@ function AdminDashboard() {
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-lg font-semibold">Active Tickets</h3>
                   <div className="flex items-center gap-2">
-                    {["All", "Assigned to Me"].map((btn, i) => (
-                      <button key={i} className="px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-accent transition-colors">{btn}</button>
-                    ))}
+                    <select 
+                      value={ticketFilter} 
+                      onChange={(e) => setTicketFilter(e.target.value as any)}
+                      className="px-3 py-1.5 text-sm border border-border rounded-lg"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="open">Open</option>
+                      <option value="in_progress">In Progress</option>
+                      <option value="resolved">Resolved</option>
+                      <option value="closed">Closed</option>
+                    </select>
                   </div>
                 </div>
                 <div className="space-y-3">
-                  {[
-                    { id: "TKT-001", seller: "Sarah Nakato", subject: "Payment not received", priority: "critical", status: "open", time: "5 min ago" },
-                    { id: "TKT-002", seller: "David Okello", subject: "How to add products?", priority: "low", status: "open", time: "15 min ago" },
-                    { id: "TKT-003", seller: "Grace Nambi", subject: "WhatsApp integration issue", priority: "high", status: "in_progress", time: "1 hour ago" },
-                    { id: "TKT-004", seller: "John Mwesigwa", subject: "Account verification", priority: "medium", status: "open", time: "2 hours ago" },
-                  ].map((ticket, i) => (
-                    <motion.div key={ticket.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: i * 0.1 }}
+                  {tickets && tickets.length > 0 ? tickets.map((ticket: any, i: number) => (
+                    <motion.div key={ticket._id || ticket.ticketNumber} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: i * 0.1 }}
+                      onClick={() => { setSelectedTicket(ticket); setShowTicketModal(true); }}
                       className="p-4 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
-                            <span className="text-sm font-mono font-medium">{ticket.id}</span>
+                            <span className="text-sm font-mono font-medium">{ticket.ticketNumber}</span>
                             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                               ticket.priority === "critical" ? "bg-red-500/10 text-red-500" :
                               ticket.priority === "high" ? "bg-orange-500/10 text-orange-500" :
@@ -2427,21 +2446,27 @@ function AdminDashboard() {
                               {ticket.priority}
                             </span>
                             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                              ticket.status === "open" ? "bg-green-500/10 text-green-500" : "bg-blue-500/10 text-blue-500"}`}>
+                              ticket.status === "open" ? "bg-green-500/10 text-green-500" :
+                              ticket.status === "in_progress" ? "bg-yellow-500/10 text-yellow-500" :
+                              "bg-blue-500/10 text-blue-500"}`}>
                               {ticket.status.replace("_", " ")}
                             </span>
                           </div>
                           <h4 className="font-semibold mb-1">{ticket.subject}</h4>
-                          <p className="text-sm text-muted-foreground">From: {ticket.seller}</p>
-                          <span className="text-xs text-muted-foreground">{ticket.time}</span>
+                          <p className="text-sm text-muted-foreground">From: {ticket.userName}</p>
+                          <span className="text-xs text-muted-foreground">{new Date(ticket.createdAt).toLocaleString()}</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <button className="p-2 hover:bg-accent rounded-lg transition-colors"><Eye className="w-4 h-4" /></button>
-                          <button className="p-2 hover:bg-accent rounded-lg transition-colors"><MessageSquare className="w-4 h-4" /></button>
-                        </div>
+                        <button className="p-2 hover:bg-accent rounded-lg">
+                          <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                        </button>
                       </div>
                     </motion.div>
-                  ))}
+                  )) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                      <p>No support tickets found</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -2479,28 +2504,37 @@ function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {auditLogs
-                        .filter((log) => auditFilter === "all" || log.action === auditFilter)
-                        .map((log, i) => (
-                          <motion.tr key={log.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: i * 0.05 }}
-                            className="border-b border-border hover:bg-accent/50 transition-colors">
-                            <td className="py-3 px-4">
-                              <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-full bg-purple-500/10 flex items-center justify-center">
-                                  <Shield className="w-4 h-4 text-purple-500" />
+                      {dbAuditLogs && dbAuditLogs.length > 0 ? (
+                        dbAuditLogs
+                          .filter((log: any) => auditFilter === "all" || log.action === auditFilter)
+                          .map((log: any, i: number) => (
+                            <motion.tr key={log._id || i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: i * 0.05 }}
+                              className="border-b border-border hover:bg-accent/50 transition-colors">
+                              <td className="py-3 px-4">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-8 h-8 rounded-full bg-purple-500/10 flex items-center justify-center">
+                                    <Shield className="w-4 h-4 text-purple-500" />
+                                  </div>
+                                  <span className="text-sm font-medium">{log.adminName || "System"}</span>
                                 </div>
-                                <span className="text-sm font-medium">{log.admin}</span>
-                              </div>
-                            </td>
-                            <td className="py-3 px-4">
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-500">
-                                {log.action.replace(/_/g, " ")}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4 text-sm">{log.target}</td>
-                            <td className="py-3 px-4 text-sm text-muted-foreground">{log.date}</td>
-                          </motion.tr>
-                        ))}
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-500">
+                                  {log.action?.replace(/_/g, " ") || "Unknown"}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-sm">{log.targetName || log.targetType || "-"}</td>
+                              <td className="py-3 px-4 text-sm text-muted-foreground">{log.createdAt ? new Date(log.createdAt).toLocaleString() : "-"}</td>
+                            </motion.tr>
+                          ))
+                      ) : (
+                        <tr>
+                          <td colSpan={4} className="py-8 text-center text-muted-foreground">
+                            <FileBarChart className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                            <p>No audit logs found</p>
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>

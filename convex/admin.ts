@@ -95,8 +95,8 @@ export const logAction = mutation({
 export const listAuditLogs = query({
   args: { limit: v.optional(v.number()) },
   handler: async (ctx, args) => {
-    const logs = await ctx.db.query("audit_logs").order("desc").take(args.limit || 100);
-    return logs;
+    const logs = await ctx.db.query("audit_logs").collect();
+    return logs.sort((a, b) => b.createdAt - a.createdAt).slice(0, args.limit || 100);
   },
 });
 

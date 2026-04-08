@@ -2,17 +2,20 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 
 export const useAdminData = () => {
-  const sellers = useQuery(api.users.listSellers);
-  const stores = useQuery(api.stores.getAll);
-  const orders = useQuery(api.orders.list);
-  const transactions = useQuery(api.transactions.list);
-  const subscriptions = useQuery(api.subscriptions.getAllSubscriptions);
-  const payments = useQuery(api.payments.getAllPayments);
-  const billingAnalytics = useQuery(api.analytics.getBillingAnalytics);
-  const revenueByPlan = useQuery(api.analytics.getRevenueByPlan);
-  const referralStats = useQuery(api.referrals.getGlobalReferralStats);
-  const expiringSubscriptions = useQuery(api.subscriptions.getExpiringSubscriptions, { daysAhead: 7 });
-  const adminSummary = useQuery(api.analytics.getAdminSummary);
+  const sellers = useQuery(api.users.listSellers as any);
+  const stores = useQuery(api.stores.getAll as any);
+  const orders = useQuery(api.orders.list as any);
+  const transactions = useQuery(api.transactions.list as any);
+  const subscriptions = useQuery(api.subscriptions.getAllSubscriptions as any);
+  const payments = useQuery(api.payments.getAllPayments as any);
+  const billingAnalytics = useQuery(api.analytics.getBillingAnalytics as any);
+  const revenueByPlan = useQuery(api.analytics.getRevenueByPlan as any);
+  const referralStats = useQuery(api.referrals.getGlobalReferralStats as any);
+  const expiringSubscriptions = useQuery(api.subscriptions.getExpiringSubscriptions as any, { daysAhead: 7 } as any);
+  const adminSummary = useQuery(api.analytics.getAdminSummary as any);
+  const ticketStats = useQuery(api.support.getTicketStats as any);
+  const auditLogsRaw = useQuery(api.admin.listAuditLogs as any, { limit: 50 } as any);
+  const auditLogs = (auditLogsRaw ?? []) as any;
 
   return {
     sellers: sellers ?? [],
@@ -26,6 +29,8 @@ export const useAdminData = () => {
     referralStats: referralStats ?? null,
     expiringSubscriptions: expiringSubscriptions ?? [],
     adminSummary: adminSummary ?? null,
+    ticketStats: ticketStats ?? null,
+    auditLogs: auditLogs ?? [],
     isLoading: sellers === undefined || stores === undefined || orders === undefined,
   };
 };
@@ -40,6 +45,11 @@ export const useAdminMutations = () => {
   const cancelSubscription = useMutation(api.subscriptions.cancelSubscription);
   const expireSubscription = useMutation(api.subscriptions.expireSubscription);
   const updatePaymentStatus = useMutation(api.payments.updatePaymentStatus);
+  
+  // Support ticket mutations
+  const updateTicketStatus = useMutation(api.support.updateTicketStatus);
+  const addTicketMessage = useMutation(api.support.addTicketMessage);
+  const logAction = useMutation(api.support.logAction);
 
   return {
     toggleUserActive,
@@ -51,5 +61,33 @@ export const useAdminMutations = () => {
     cancelSubscription,
     expireSubscription,
     updatePaymentStatus,
+    updateTicketStatus,
+    addTicketMessage,
+    logAction,
+  };
+};
+
+export const useSupportTickets = (status?: string, priority?: string) => {
+  const tickets = useQuery(api.support.getAllTickets as any, { 
+    status: status || undefined, 
+    priority: priority || undefined 
+  });
+  const stats = useQuery(api.support.getTicketStats as any);
+  
+  return {
+    tickets: tickets ?? [],
+    stats: stats ?? null,
+  };
+};
+
+export const useSupportMutations = () => {
+  const createTicket = useMutation(api.support.createTicket as any);
+  const updateTicketStatus = useMutation(api.support.updateTicketStatus as any);
+  const addTicketMessage = useMutation(api.support.addTicketMessage as any);
+  
+  return {
+    createTicket,
+    updateTicketStatus,
+    addTicketMessage,
   };
 };

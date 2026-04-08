@@ -157,6 +157,36 @@ export default function SellerDashboardPage() {
     setSaving(false);
   };
 
+  // Handle image upload to external storage
+  const handleImageUpload = async (file: File, field: "logo" | "banner") => {
+    if (!store?._id || !file) return;
+    
+    try {
+      // Convert file to base64 for storage (in production, use proper cloud storage like Cloudinary/S3)
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64 = reader.result as string;
+        await updateStore({ id: store._id, [field]: base64 });
+      };
+      reader.readAsDataURL(file);
+    } catch (e) {
+      console.error(`Failed to upload ${field}:`, e);
+    }
+  };
+
+  // Handle store deactivate
+  const handleDeactivateStore = async () => {
+    if (!store?._id) return;
+    if (!confirm("Are you sure you want to deactivate your store? This will hide it from customers.")) return;
+    
+    try {
+      await updateStore({ id: store._id, isActive: false } as any);
+      alert("Store has been deactivated");
+    } catch (e) {
+      console.error("Failed to deactivate store:", e);
+    }
+  };
+
   // Sync storeForm with store data when store loads
   useEffect(() => {
     if (store) {
@@ -1491,10 +1521,7 @@ export default function SellerDashboardPage() {
                                   <input type="file" accept="image/*" className="hidden"
                                     onChange={async (e) => {
                                       const file = e.target.files?.[0];
-                                      if (file && store?._id) {
-                                        const url = URL.createObjectURL(file);
-                                        await updateStore({ id: store._id, logo: url });
-                                      }
+                                      if (file) await handleImageUpload(file, "logo");
                                     }} />
                                 </label>
                               </div>
@@ -1507,10 +1534,7 @@ export default function SellerDashboardPage() {
                               <input type="file" accept="image/*" className="hidden"
                                 onChange={async (e) => {
                                   const file = e.target.files?.[0];
-                                  if (file && store?._id) {
-                                    const url = URL.createObjectURL(file);
-                                    await updateStore({ id: store._id, logo: url });
-                                  }
+                                  if (file) await handleImageUpload(file, "logo");
                                 }} />
                             </label>
                           )}
@@ -1526,10 +1550,7 @@ export default function SellerDashboardPage() {
                                   <input type="file" accept="image/*" className="hidden"
                                     onChange={async (e) => {
                                       const file = e.target.files?.[0];
-                                      if (file && store?._id) {
-                                        const url = URL.createObjectURL(file);
-                                        await updateStore({ id: store._id, banner: url });
-                                      }
+                                      if (file) await handleImageUpload(file, "banner");
                                     }} />
                                 </label>
                               </div>
@@ -1542,10 +1563,7 @@ export default function SellerDashboardPage() {
                               <input type="file" accept="image/*" className="hidden"
                                 onChange={async (e) => {
                                   const file = e.target.files?.[0];
-                                  if (file && store?._id) {
-                                    const url = URL.createObjectURL(file);
-                                    await updateStore({ id: store._id, banner: url });
-                                  }
+                                  if (file) await handleImageUpload(file, "banner");
                                 }} />
                             </label>
                           )}
@@ -1587,7 +1605,7 @@ export default function SellerDashboardPage() {
                     <div className="p-6 glass rounded-xl">
                       <h3 className="text-lg font-semibold mb-4">Danger Zone</h3>
                       <div className="space-y-3">
-                        <button className="w-full py-2.5 border border-red-500/30 text-red-500 rounded-xl text-sm font-medium hover:bg-red-500/10 transition-colors">
+                        <button onClick={handleDeactivateStore} className="w-full py-2.5 border border-red-500/30 text-red-500 rounded-xl text-sm font-medium hover:bg-red-500/10 transition-colors">
                           Deactivate Store
                         </button>
                         <p className="text-xs text-muted-foreground text-center">

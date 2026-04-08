@@ -50,12 +50,22 @@ export default function SellerDashboardPage() {
   const [settingsSubTab, setSettingsSubTab] = useState("store");
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [storeForm, setStoreForm] = useState({
-    name: "Nakato Styles", slug: "nakato-styles", phone: "+256772100001",
-    description: "Trendy African fashion, handbags & accessories for the modern Ugandan woman.",
-    currency: "UGX", timezone: "Africa/Kampala"
+    name: "", slug: "", phone: "",
+    description: "", currency: "UGX", timezone: "Africa/Kampala"
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  
+  // Payment methods state
+  const [paymentMethods, setPaymentMethods] = useState({
+    mtnMomo: true, airtelMoney: true, cashOnDelivery: true, bankTransfer: false
+  });
+  const [payoutFrequency, setPayoutFrequency] = useState("weekly");
+  
+  // Security settings state
+  const [securitySettings, setSecuritySettings] = useState({
+    twoFactorEnabled: false, paymentPinEnabled: false
+  });
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [newProduct, setNewProduct] = useState({ name: "", price: 0, stock: 0, category: "", description: "" });
@@ -126,10 +136,109 @@ export default function SellerDashboardPage() {
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
+      
+      // Trigger notification
+      try {
+        await fetch("/api/notify/email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "store_settings_updated",
+            storeId: store._id,
+            message: `Store settings have been updated by ${(session?.user as any)?.email}`
+          })
+        });
+      } catch (e) {
+        console.log("Notification sent silently");
+      }
     } catch (e) {
       console.error("Failed to update store:", e);
     }
     setSaving(false);
+  };
+
+  // Sync storeForm with store data when store loads
+  useEffect(() => {
+    if (store) {
+      setStoreForm({
+        name: store.name || "",
+        slug: store.slug || "",
+        phone: store.phone || "",
+        description: store.description || "",
+        currency: (store as any).currency || "UGX",
+        timezone: (store as any).timezone || "Africa/Kampala"
+      });
+      if ((store as any).paymentSettings) {
+        setPaymentMethods((store as any).paymentSettings);
+      }
+      if ((store as any).payoutFrequency) {
+        setPayoutFrequency((store as any).payoutFrequency);
+      }
+      if ((store as any).securitySettings) {
+        setSecuritySettings((store as any).securitySettings);
+      }
+    }
+  }, [store]);
+
+  // Handle payment method toggle
+  const handlePaymentMethodToggle = async (method: keyof typeof paymentMethods) => {
+    const newValue = !paymentMethods[method];
+    const methodName = method === "mtnMomo" ? "MTN Mobile Money" : method === "airtelMoney" ? "Airtel Money" : method === "cashOnDelivery" ? "Cash on Delivery" : "Bank Transfer";
+    setPaymentMethods(prev => ({ ...prev, [method]: newValue }));
+    
+    if (store?._id) {
+      try {
+        await updateStore({
+          id: store._id,
+          paymentSettings: {
+            ...paymentMethods,
+            [method]: newValue
+          }
+        });
+      } catch (e) {
+        console.error("Failed to update payment settings:", e);
+        setPaymentMethods(prev => ({ ...prev, [method]: !newValue }));
+      }
+    }
+  };
+
+  // Handle payout frequency change
+  const handlePayoutFrequencyChange = async (frequency: string) => {
+    const oldValue = payoutFrequency;
+    setPayoutFrequency(frequency);
+    
+    if (store?._id) {
+      try {
+        await updateStore({
+          id: store._id,
+          payoutFrequency: frequency
+        });
+      } catch (e) {
+        console.error("Failed to update payout frequency:", e);
+        setPayoutFrequency(oldValue);
+      }
+    }
+  };
+
+  // Handle security settings toggle
+  const handleSecurityToggle = async (setting: keyof typeof securitySettings) => {
+    const newValue = !securitySettings[setting];
+    setSecuritySettings(prev => ({ ...prev, [setting]: newValue }));
+    
+    if (store?._id) {
+      try {
+        await updateStore({
+          id: store._id,
+          securitySettings: {
+            ...securitySettings,
+            [setting]: newValue
+          }
+        });
+      } catch (e) {
+        console.error("Failed to update security settings:", e);
+        setSecuritySettings(prev => ({ ...prev, [setting]: !newValue }));
+      }
+    }
   };
 
   // Handle product operations
@@ -1769,55 +1878,33 @@ export default function SellerDashboardPage() {
                       </p>
                       <div className="space-y-4">
                         {[
-                          { name: "MTN Mobile Money", desc: "Accept payments via MTN MoMo. Most popular in Uganda.", enabled: true, icon: "🟡", status: "Connected", color: "text-yellow-500" },
-                          { name: "Airtel Money", desc: "Accept payments via Airtel Money.", enabled: true, icon: "🔴", status: "Connected", color: "text-red-500" },
-                          { name: "Cash on Delivery", desc: "Let customers pay when they receive their order.", enabled: true, icon: "💵", status: "Active", color: "text-green-500" },
-                          { name: "Bank Transfer", desc: "Accept direct bank transfers.", enabled: false, icon: "🏦", status: "Not configured", color: "text-muted-foreground" },
-                        ].map((method, i) => (
-                          <div key={i} className="flex items-center justify-between p-4 rounded-xl border border-border hover:bg-accent/30 transition-colors">
-                            <div className="flex items-center gap-4">
-                              <div className="text-2xl">{method.icon}</div>
-                              <div>
-                                <div className="font-medium">{method.name}</div>
-                                <div className="text-sm text-muted-foreground">{method.desc}</div>
+                          { name: "MTN Mobile Money", key: "mtnMomo", desc: "Accept payments via MTN MoMo. Most popular in Uganda.", icon: "🟡", status: "Connected", color: "text-yellow-500" },
+                          { name: "Airtel Money", key: "airtelMoney", desc: "Accept payments via Airtel Money.", icon: "🔴", status: "Connected", color: "text-red-500" },
+                          { name: "Cash on Delivery", key: "cashOnDelivery", desc: "Let customers pay when they receive their order.", icon: "💵", status: "Active", color: "text-green-500" },
+                          { name: "Bank Transfer", key: "bankTransfer", desc: "Accept direct bank transfers.", icon: "🏦", status: "Not configured", color: "text-muted-foreground" },
+                        ].map((method) => {
+                          const isEnabled = paymentMethods[method.key as keyof typeof paymentMethods];
+                          return (
+                            <div key={method.key} className="flex items-center justify-between p-4 rounded-xl border border-border hover:bg-accent/30 transition-colors">
+                              <div className="flex items-center gap-4">
+                                <div className="text-2xl">{method.icon}</div>
+                                <div>
+                                  <div className="font-medium">{method.name}</div>
+                                  <div className="text-sm text-muted-foreground">{method.desc}</div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-4">
+                                <span className={`text-xs font-medium ${isEnabled ? method.color : "text-muted-foreground"}`}>{isEnabled ? method.status : "Disabled"}</span>
+                                <button 
+                                  onClick={() => handlePaymentMethodToggle(method.key as keyof typeof paymentMethods)}
+                                  className={`w-12 h-6 ${isEnabled ? "bg-green-500" : "bg-accent"} rounded-full relative cursor-pointer transition-colors`}
+                                >
+                                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${isEnabled ? "right-1" : "left-1"}`} />
+                                </button>
                               </div>
                             </div>
-                            <div className="flex items-center gap-4">
-                              <span className={`text-xs font-medium ${method.color}`}>{method.status}</span>
-                              <div className={`w-12 h-6 ${method.enabled ? "bg-green-500" : "bg-accent"} rounded-full relative cursor-pointer transition-colors`}>
-                                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${method.enabled ? "right-1" : "left-1"}`} />
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="p-6 glass rounded-xl">
-                      <h3 className="text-lg font-semibold mb-6">MTN Mobile Money Configuration</h3>
-                      <div className="grid sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium mb-2">API Key</label>
-                          <input type="password" readOnly value="sk_live_xxxxxxxxxxxxxx"
-                            className="w-full px-4 py-2.5 bg-accent/50 rounded-xl text-sm focus:outline-none" />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-2">Collection Account</label>
-                          <input type="text" readOnly value="+256772100001"
-                            className="w-full px-4 py-2.5 bg-accent/50 rounded-xl text-sm focus:outline-none" />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-2">Environment</label>
-                          <select className="w-full px-4 py-2.5 bg-accent/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50">
-                            <option value="sandbox">Sandbox (Testing)</option>
-                            <option value="production">Production (Live)</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-2">Callback URL</label>
-                          <input type="text" readOnly value="https://api.swiftshopy.com/webhooks/mtn"
-                            className="w-full px-4 py-2.5 bg-accent/50 rounded-xl text-sm focus:outline-none" />
-                        </div>
+                          );
+                        })}
                       </div>
                     </div>
 
@@ -1838,16 +1925,20 @@ export default function SellerDashboardPage() {
                           </div>
                           <div className="text-lg font-bold text-muted-foreground">1.5%</div>
                         </div>
-                        <div className="flex items-center justify-between p-4 bg-accent/50 rounded-xl">
+                          <div className="flex items-center justify-between p-4 bg-accent/50 rounded-xl">
                           <div>
                             <div className="font-medium">Payout Frequency</div>
                             <div className="text-sm text-muted-foreground">How often you receive earnings</div>
                           </div>
-                          <select className="px-3 py-1.5 bg-background rounded-lg text-sm border border-border">
-                            <option>Daily</option>
-                            <option>Weekly</option>
-                            <option>Bi-weekly</option>
-                            <option>Monthly</option>
+                          <select 
+                            value={payoutFrequency} 
+                            onChange={(e) => handlePayoutFrequencyChange(e.target.value)}
+                            className="px-3 py-1.5 bg-background rounded-lg text-sm border border-border"
+                          >
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="bi-weekly">Bi-weekly</option>
+                            <option value="monthly">Monthly</option>
                           </select>
                         </div>
                       </div>
@@ -1881,19 +1972,27 @@ export default function SellerDashboardPage() {
                       <div className="space-y-3">
                         <div className="flex items-center justify-between p-3 bg-accent/50 rounded-lg">
                           <div className="flex items-center gap-2">
-                            <Shield className="w-4 h-4 text-green-500" />
+                            <Shield className={`w-4 h-4 ${securitySettings.twoFactorEnabled ? "text-green-500" : "text-muted-foreground"}`} />
                             <span className="text-sm">Two-Factor Auth</span>
                           </div>
-                          <div className="w-10 h-5 bg-green-500 rounded-full relative cursor-pointer">
-                            <div className="absolute right-0.5 top-0.5 w-4 h-4 bg-white rounded-full" />
-                          </div>
+                          <button 
+                            onClick={() => handleSecurityToggle("twoFactorEnabled")}
+                            className={`w-10 h-5 ${securitySettings.twoFactorEnabled ? "bg-green-500" : "bg-accent"} rounded-full relative cursor-pointer transition-colors`}
+                          >
+                            <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all ${securitySettings.twoFactorEnabled ? "right-0.5" : "left-0.5"}`} />
+                          </button>
                         </div>
                         <div className="flex items-center justify-between p-3 bg-accent/50 rounded-lg">
                           <div className="flex items-center gap-2">
-                            <LockIcon className="w-4 h-4 text-green-500" />
+                            <LockIcon className={`w-4 h-4 ${securitySettings.paymentPinEnabled ? "text-green-500" : "text-muted-foreground"}`} />
                             <span className="text-sm">Payment PIN</span>
                           </div>
-                          <button className="text-xs text-primary font-medium">Set PIN</button>
+                          <button 
+                            onClick={() => handleSecurityToggle("paymentPinEnabled")}
+                            className={`w-10 h-5 ${securitySettings.paymentPinEnabled ? "bg-green-500" : "bg-accent"} rounded-full relative cursor-pointer transition-colors`}
+                          >
+                            <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all ${securitySettings.paymentPinEnabled ? "right-0.5" : "left-0.5"}`} />
+                          </button>
                         </div>
                       </div>
                     </div>

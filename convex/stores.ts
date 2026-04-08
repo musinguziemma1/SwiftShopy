@@ -110,6 +110,19 @@ export const update = mutation({
     logo: v.optional(v.string()),
     banner: v.optional(v.string()),
     slug: v.optional(v.string()),
+    currency: v.optional(v.string()),
+    timezone: v.optional(v.string()),
+    paymentSettings: v.optional(v.object({
+      mtnMomo: v.boolean(),
+      airtelMoney: v.boolean(),
+      cashOnDelivery: v.boolean(),
+      bankTransfer: v.boolean(),
+    })),
+    payoutFrequency: v.optional(v.string()),
+    securitySettings: v.optional(v.object({
+      twoFactorEnabled: v.boolean(),
+      paymentPinEnabled: v.boolean(),
+    })),
   },
   handler: async (ctx, { id, ...updates }) => {
     if (updates.slug) {

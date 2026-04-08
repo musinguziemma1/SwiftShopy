@@ -75,8 +75,15 @@ if (typeof window === "undefined") {
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+      clientId: process.env.GOOGLE_CLIENT_ID || "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+      authorization: {
+        params: {
+          prompt: "consent",
+          access_type: "offline",
+          response_type: "code"
+        }
+      }
     }),
     CredentialsProvider({
       name: "Credentials",
@@ -161,42 +168,79 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async signIn({ user, account }) {
+    async signIn({ user, account, profile }) {
+      console.log("🔐 Google signIn callback triggered", { 
+        provider: account?.provider, 
+        email: user.email,
+        name: user.name 
+      });
+      
       if (account?.provider === "google") {
         try {
           const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
-          if (convexUrl) {
-            const convex = new ConvexHttpClient(convexUrl);
-            const email = user.email?.toLowerCase();
+          console.log("📡 Convex URL:", convexUrl);
+          
+          if (!convexUrl) {
+            console.error("❌ NEXT_PUBLIC_CONVEX_URL not configured");
+            return true; // Still allow sign in, user can be created later
+          }
+          
+          const convex = new ConvexHttpClient(convexUrl);
+          const email = user.email?.toLowerCase();
+          
+          if (!email) {
+            console.error("❌ No email in user object");
+            return true;
+          }
+          
+          console.log("🔍 Checking for existing user:", email);
+          
+          // Check if user already exists
+          let existingUser;
+          try {
+            existingUser = await convex.query(api.users.getByEmail, { email });
+          } catch (queryError) {
+            console.error("❌ Query error:", queryError);
+          }
+          
+          if (!existingUser) {
+            console.log("👤 Creating new user for:", email);
             
-            // Check if user already exists
-            let existingUser = await convex.query(api.users.getByEmail, { email: email! });
-            
-            if (!existingUser) {
-              // Create user in Convex if they don't exist
-              const newUserId = await convex.mutation(api.users.create, {
+            // Create user in Convex if they don't exist
+            let newUserId;
+            try {
+              newUserId = await convex.mutation(api.users.create, {
                 name: user.name || "Google User",
-                email: email!,
+                email: email,
                 passwordHash: "google_oauth_" + Date.now(),
                 role: "seller",
                 phone: "+256700000000",
               });
-              
-              // Create default store for new user
-              const storeSlug = email!.split("@")[0].replace(/[^a-z0-9]/g, "-") + "-store";
-              await convex.mutation(api.stores.create, {
+              console.log("✅ User created with ID:", newUserId);
+            } catch (createError) {
+              console.error("❌ Error creating user:", createError);
+              return true; // Still allow sign in
+            }
+            
+            // Create default store for new user
+            try {
+              const storeSlug = email.split("@")[0].replace(/[^a-z0-9]/g, "-") + "-" + Date.now().toString(36);
+              const store = await convex.mutation(api.stores.create, {
                 userId: newUserId,
-                name: user.name || "My Store",
+                name: user.name ? user.name + "'s Store" : "My Store",
                 slug: storeSlug,
                 description: "Welcome to my store",
                 phone: "+256700000000",
               });
-              
-              console.log("Created new user and store for Google user:", email);
+              console.log("✅ Store created:", store);
+            } catch (storeError) {
+              console.error("❌ Error creating store:", storeError);
             }
+          } else {
+            console.log("✅ User already exists:", existingUser._id);
           }
-        } catch (e) {
-          console.error("Error creating user on Google sign in:", e);
+        } catch (e: any) {
+          console.error("❌ Overall signIn error:", e?.message || e);
         }
       }
       return true;

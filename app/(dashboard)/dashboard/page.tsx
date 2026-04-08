@@ -135,6 +135,47 @@ export default function SellerDashboardPage() {
   const [payoutAccount, setPayoutAccount] = useState("");
   const [requestingPayout, setRequestingPayout] = useState(false);
 
+  // Handle general support ticket
+  const [showSupportModal, setShowSupportModal] = useState(false);
+  const [supportSubject, setSupportSubject] = useState("");
+  const [supportCategory, setSupportCategory] = useState<"payment" | "account" | "technical" | "billing" | "integration" | "other">("other");
+  const [supportDescription, setSupportDescription] = useState("");
+  const [sendingSupport, setSendingSupport] = useState(false);
+
+  const handleSendSupportTicket = async () => {
+    if (!userId || !store) return;
+    if (!supportSubject.trim() || !supportDescription.trim()) {
+      alert("Please fill in all fields");
+      return;
+    }
+
+    setSendingSupport(true);
+    try {
+      const userName = (session?.user as any)?.name || store?.name || "Seller";
+      await createTicket({
+        userId: userId as any,
+        userName: userName,
+        userEmail: userEmail || "",
+        userPhone: store?.phone || "",
+        storeId: store._id as any,
+        storeName: store?.name,
+        subject: supportSubject,
+        description: supportDescription,
+        category: supportCategory,
+        priority: "medium",
+      });
+
+      setShowSupportModal(false);
+      setSupportSubject("");
+      setSupportDescription("");
+      alert("Support ticket submitted! We'll respond shortly.");
+    } catch (e) {
+      console.error("Failed to submit support ticket:", e);
+      alert("Failed to submit ticket. Please try again.");
+    }
+    setSendingSupport(false);
+  };
+
   const handleRequestPayout = async () => {
     if (!userId || !store) return;
     const amount = parseInt(payoutAmount);
@@ -1949,7 +1990,10 @@ export default function SellerDashboardPage() {
                       <p className="text-sm text-muted-foreground mb-4">
                         Contact our support team for billing questions or upgrade assistance.
                       </p>
-                      <button className="w-full py-2.5 border border-border rounded-xl text-sm font-medium hover:bg-accent transition-colors">
+                      <button 
+                        onClick={() => setShowSupportModal(true)}
+                        className="w-full py-2.5 border border-border rounded-xl text-sm font-medium hover:bg-accent transition-colors"
+                      >
                         Contact Support
                       </button>
                     </div>
@@ -2605,6 +2649,60 @@ export default function SellerDashboardPage() {
                 <button onClick={handleRequestPayout} disabled={requestingPayout || !payoutAmount || !payoutAccount}
                   className="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-medium disabled:opacity-50">
                   {requestingPayout ? "Submitting..." : "Submit Payout Request"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Support Ticket Modal */}
+      <AnimatePresence>
+        {showSupportModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowSupportModal(false)}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-background border border-border rounded-2xl p-6 w-full max-w-md"
+              onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold">Contact Support</h3>
+                <button onClick={() => setShowSupportModal(false)} className="p-2 hover:bg-accent rounded-lg">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Subject</label>
+                  <input type="text" value={supportSubject} onChange={(e) => setSupportSubject(e.target.value)}
+                    className="w-full px-4 py-3 bg-accent/50 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    placeholder="Brief description of your issue" />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-2">Category</label>
+                  <select value={supportCategory} onChange={(e) => setSupportCategory(e.target.value as any)}
+                    className="w-full px-4 py-3 bg-accent/50 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-primary/50">
+                    <option value="payment">Payment</option>
+                    <option value="account">Account</option>
+                    <option value="technical">Technical</option>
+                    <option value="billing">Billing</option>
+                    <option value="integration">Integration</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-2">Description</label>
+                  <textarea value={supportDescription} onChange={(e) => setSupportDescription(e.target.value)}
+                    className="w-full px-4 py-3 bg-accent/50 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[120px]"
+                    placeholder="Describe your issue in detail..." />
+                </div>
+                
+                <button onClick={handleSendSupportTicket} disabled={sendingSupport || !supportSubject.trim() || !supportDescription.trim()}
+                  className="w-full py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl font-medium disabled:opacity-50">
+                  {sendingSupport ? "Sending..." : "Submit Ticket"}
                 </button>
               </div>
             </motion.div>

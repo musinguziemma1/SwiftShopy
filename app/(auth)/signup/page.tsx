@@ -172,7 +172,7 @@ export default function SignupPage() {
             )}
 
             <button
-              onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+              onClick={() => signIn("google", { callbackUrl: "/" })}
               className="w-full flex items-center justify-center gap-3 py-3.5 rounded-xl border border-border/50 hover:bg-accent/50 transition-all font-medium"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">

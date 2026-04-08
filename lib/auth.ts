@@ -172,17 +172,17 @@ export const authOptions: NextAuthOptions = {
         const googleUserEmail = token.email?.toLowerCase();
         
         // Map specific Google emails to roles
-        const googleUserRoles: Record<string, { role: string; storeSlug: string | null }> = {
+        const googleUserRoles: Record<string, { role: "seller" | "admin" | "super_admin"; storeSlug: string | null }> = {
           "musinguzie612@gmail.com": { role: "super_admin", storeSlug: null },
         };
         
         if (googleUserEmail && googleUserRoles[googleUserEmail]) {
-          token.role = googleUserRoles[googleUserEmail].role;
+          token.role = googleUserRoles[googleUserEmail].role as "seller" | "admin" | "super_admin";
           token.storeSlug = googleUserRoles[googleUserEmail].storeSlug;
         } else {
           // Check demo users only in development
           const demoUser = isDevelopment ? DEMO_USERS.find((u) => u.email === token.email) : undefined;
-          token.role = demoUser?.role ?? "seller";
+          token.role = (demoUser?.role ?? "seller") as "seller" | "admin" | "super_admin";
           token.storeSlug = demoUser?.storeSlug ?? null;
         }
       }

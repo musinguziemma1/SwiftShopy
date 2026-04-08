@@ -161,6 +161,46 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    async signIn({ user, account }) {
+      if (account?.provider === "google") {
+        try {
+          const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+          if (convexUrl) {
+            const convex = new ConvexHttpClient(convexUrl);
+            const email = user.email?.toLowerCase();
+            
+            // Check if user already exists
+            let existingUser = await convex.query(api.users.getByEmail, { email: email! });
+            
+            if (!existingUser) {
+              // Create user in Convex if they don't exist
+              const newUserId = await convex.mutation(api.users.create, {
+                name: user.name || "Google User",
+                email: email!,
+                passwordHash: "google_oauth_" + Date.now(),
+                role: "seller",
+                phone: "+256700000000",
+              });
+              
+              // Create default store for new user
+              const storeSlug = email!.split("@")[0].replace(/[^a-z0-9]/g, "-") + "-store";
+              await convex.mutation(api.stores.create, {
+                userId: newUserId,
+                name: user.name || "My Store",
+                slug: storeSlug,
+                description: "Welcome to my store",
+                phone: "+256700000000",
+              });
+              
+              console.log("Created new user and store for Google user:", email);
+            }
+          }
+        } catch (e) {
+          console.error("Error creating user on Google sign in:", e);
+        }
+      }
+      return true;
+    },
     async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id;

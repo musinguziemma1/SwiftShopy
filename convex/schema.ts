@@ -24,6 +24,19 @@ export default defineSchema({
     logo: v.optional(v.string()),
     banner: v.optional(v.string()),
     isActive: v.boolean(),
+    currency: v.optional(v.string()),
+    timezone: v.optional(v.string()),
+    paymentSettings: v.optional(v.object({
+      mtnMomo: v.boolean(),
+      airtelMoney: v.boolean(),
+      cashOnDelivery: v.boolean(),
+      bankTransfer: v.boolean(),
+    })),
+    payoutFrequency: v.optional(v.string()),
+    securitySettings: v.optional(v.object({
+      twoFactorEnabled: v.boolean(),
+      paymentPinEnabled: v.boolean(),
+    })),
   })
     .index("by_user", ["userId"])
     .index("by_slug", ["slug"]),

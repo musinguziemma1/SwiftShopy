@@ -46,6 +46,9 @@ export function BackgroundPaths({ className = "", variant = "hero" }: Background
     : ["rgba(73, 6, 132, 0.06)", "rgba(139, 92, 246, 0.04)", "rgba(99, 102, 241, 0.03)"];
 
   const blobCount = variant === "minimal" ? 2 : variant === "section" ? 3 : 5;
+  
+  // Ensure we have valid values
+  const safeBlobCount = typeof blobCount === 'number' && blobCount > 0 ? blobCount : 5;
 
   return (
     <div
@@ -122,10 +125,10 @@ export function BackgroundPaths({ className = "", variant = "hero" }: Background
         ))}
 
         {/* Floating gradient orbs */}
-        {[...Array(blobCount)].map((_, i) => {
+        {[...Array(safeBlobCount)].map((_, i) => {
           const cx = 150 + i * 280;
           const cy = 100 + Math.sin(i * 1.2) * 200 + i * 80;
-          const r = 100 + i * 40;
+          const r = Math.max(10, 100 + i * 40); // Ensure r is always at least 10
           return (
             <motion.circle
               key={`orb-${i}`}

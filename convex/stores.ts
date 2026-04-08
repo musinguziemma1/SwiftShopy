@@ -19,11 +19,28 @@ export const getByUser = query({
 export const getByEmail = query({
   args: { email: v.string() },
   handler: async (ctx, { email }) => {
+    // Try to find user by email - check both email and emailAddress fields
     const users = await ctx.db.query("users").collect();
-    const user = users.find(u => u.email === email);
-    if (!user) return null;
+    const user = users.find(u => 
+      u.email?.toLowerCase() === email.toLowerCase() || 
+      (u as any).emailAddress?.toLowerCase() === email.toLowerCase()
+    );
+    
+    if (!user) {
+      console.log("No user found for email:", email);
+      return null;
+    }
+    
+    // Find store by userId
     const stores = await ctx.db.query("stores").collect();
-    return stores.find(s => s.userId === user._id) ?? null;
+    const store = stores.find(s => s.userId === user._id);
+    
+    if (!store) {
+      console.log("No store found for userId:", user._id);
+      return null;
+    }
+    
+    return store;
   },
 });
 
@@ -112,6 +129,7 @@ export const update = mutation({
     slug: v.optional(v.string()),
     currency: v.optional(v.string()),
     timezone: v.optional(v.string()),
+    isActive: v.optional(v.boolean()),
     paymentSettings: v.optional(v.object({
       mtnMomo: v.boolean(),
       airtelMoney: v.boolean(),

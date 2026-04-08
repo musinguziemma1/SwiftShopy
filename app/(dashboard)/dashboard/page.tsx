@@ -125,15 +125,23 @@ export default function SellerDashboardPage() {
 
   // Update store info in Convex
   const handleSaveStore = async () => {
-    if (!store?._id) return;
+    if (!store?._id) {
+      console.error("No store ID found");
+      alert("Error: Store not found. Please refresh the page.");
+      return;
+    }
     setSaving(true);
+    console.log("Saving store with ID:", store._id, "data:", storeForm);
     try {
-      await updateStore({
+      const result = await updateStore({
         id: store._id,
         name: storeForm.name,
         description: storeForm.description,
         phone: storeForm.phone,
+        currency: storeForm.currency,
+        timezone: storeForm.timezone,
       });
+      console.log("Store update result:", result);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
       
@@ -151,22 +159,32 @@ export default function SellerDashboardPage() {
       } catch (e) {
         console.log("Notification sent silently");
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error("Failed to update store:", e);
+      alert(`Failed to save: ${e.message || "Unknown error"}`);
     }
     setSaving(false);
   };
 
   // Handle image upload to external storage
   const handleImageUpload = async (file: File, field: "logo" | "banner") => {
-    if (!store?._id || !file) return;
+    if (!store?._id || !file) {
+      console.error("No store ID or file");
+      return;
+    }
     
     try {
-      // Convert file to base64 for storage (in production, use proper cloud storage like Cloudinary/S3)
+      console.log(`Uploading ${field} image...`);
+      // Convert file to base64 for storage
       const reader = new FileReader();
       reader.onloadend = async () => {
         const base64 = reader.result as string;
+        console.log(`Updating store with ${field}:`, base64.substring(0, 50) + "...");
         await updateStore({ id: store._id, [field]: base64 });
+        console.log(`${field} uploaded successfully`);
+      };
+      reader.onerror = () => {
+        console.error("Failed to read file");
       };
       reader.readAsDataURL(file);
     } catch (e) {
@@ -176,14 +194,19 @@ export default function SellerDashboardPage() {
 
   // Handle store deactivate
   const handleDeactivateStore = async () => {
-    if (!store?._id) return;
+    if (!store?._id) {
+      console.error("No store ID");
+      return;
+    }
     if (!confirm("Are you sure you want to deactivate your store? This will hide it from customers.")) return;
     
     try {
-      await updateStore({ id: store._id, isActive: false } as any);
+      console.log("Deactivating store:", store._id);
+      await updateStore({ id: store._id, isActive: false });
       alert("Store has been deactivated");
-    } catch (e) {
+    } catch (e: any) {
       console.error("Failed to deactivate store:", e);
+      alert(`Failed: ${e.message || "Unknown error"}`);
     }
   };
 

@@ -49,6 +49,10 @@ const iconMap: Record<string, React.ReactNode> = {
   product_limit_reached: <AlertCircle className="w-4 h-4" />,
   referral_bonus: <Gift className="w-4 h-4" />,
   usage_discount_applied: <Percent className="w-4 h-4" />,
+  support_ticket: <MessageSquare className="w-4 h-4" />,
+  ticket_update: <MessageSquare className="w-4 h-4" />,
+  ticket_reply: <MessageSquare className="w-4 h-4" />,
+  support_ticket_created: <CheckCircle className="w-4 h-4" />,
 }
 
 const colorMap: Record<string, { bg: string; color: string }> = {
@@ -85,6 +89,10 @@ const colorMap: Record<string, { bg: string; color: string }> = {
   product_limit_reached: { bg: "bg-red-500/20", color: "text-red-500" },
   referral_bonus: { bg: "bg-purple-500/20", color: "text-purple-500" },
   usage_discount_applied: { bg: "bg-green-500/20", color: "text-green-500" },
+  support_ticket: { bg: "bg-blue-500/20", color: "text-blue-500" },
+  ticket_update: { bg: "bg-blue-500/20", color: "text-blue-500" },
+  ticket_reply: { bg: "bg-blue-500/20", color: "text-blue-500" },
+  support_ticket_created: { bg: "bg-green-500/20", color: "text-green-500" },
 }
 
 function getTimeAgo(timestamp: number): string {

@@ -384,7 +384,8 @@ export default defineSchema({
       v.literal("usage_discount_applied"),
       v.literal("support_ticket"),
       v.literal("ticket_update"),
-      v.literal("ticket_reply")
+      v.literal("ticket_reply"),
+      v.literal("support_ticket_created")
     ),
     title: v.string(),
     message: v.string(),

@@ -57,6 +57,18 @@ export const createTicket = mutation({
       createdAt: now,
     });
 
+    // Notify seller about their ticket
+    await ctx.db.insert("notifications", {
+      userId: args.userId,
+      type: "support_ticket_created",
+      title: "Payout Request Submitted",
+      message: `Your payout request for UGX ${args.description.match(/UGX ([\d,]+)/)?.[1] || "0"} has been submitted. Ticket #${ticketNumber}. Admin will review and process it shortly.`,
+      isRead: false,
+      actionUrl: "/dashboard?tab=settings",
+      metadata: { ticketId, ticketNumber, category: args.category },
+      createdAt: now,
+    });
+
     return { ticketId, ticketNumber };
   },
 });

@@ -168,9 +168,23 @@ export const authOptions: NextAuthOptions = {
         token.storeSlug = (user as any).storeSlug ?? null;
       }
       if (account?.provider === "google") {
-        const demoUser = DEMO_USERS.find((u) => u.email === token.email);
-        token.role = demoUser?.role ?? "seller";
-        token.storeSlug = demoUser?.storeSlug ?? null;
+        // Special handling for known Google users
+        const googleUserEmail = token.email?.toLowerCase();
+        
+        // Map specific Google emails to roles
+        const googleUserRoles: Record<string, { role: string; storeSlug: string | null }> = {
+          "musinguzie612@gmail.com": { role: "super_admin", storeSlug: null },
+        };
+        
+        if (googleUserEmail && googleUserRoles[googleUserEmail]) {
+          token.role = googleUserRoles[googleUserEmail].role;
+          token.storeSlug = googleUserRoles[googleUserEmail].storeSlug;
+        } else {
+          // Check demo users only in development
+          const demoUser = isDevelopment ? DEMO_USERS.find((u) => u.email === token.email) : undefined;
+          token.role = demoUser?.role ?? "seller";
+          token.storeSlug = demoUser?.storeSlug ?? null;
+        }
       }
       return token;
     },

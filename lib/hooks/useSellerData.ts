@@ -46,6 +46,11 @@ export const useSellerData = (userEmail?: string | null) => {
     userId ? { userId: userId as any } : "skip"
   );
 
+  const payouts = useQuery(
+    api.payouts.getByStore,
+    storeId ? { storeId: storeId as any } : "skip"
+  );
+
   return {
     store: store ?? null,
     storeId: storeId ?? null,
@@ -56,16 +61,20 @@ export const useSellerData = (userEmail?: string | null) => {
     billingInfo: billingInfo ?? null,
     referralStats: referralStats ?? null,
     usageDiscount: usageDiscount ?? null,
+    payouts: payouts ?? [],
     isLoading: store === undefined || products === undefined || orders === undefined,
   };
 };
 
 export const useStoreMutations = () => {
-  const updateStore = useMutation(api.stores.update);
-  const createStore = useMutation(api.stores.create);
-  const updateStoreStatus = useMutation(api.stores.updateStatus);
+  const updateStore = useMutation(api.stores.update as any);
+  const createStore = useMutation(api.stores.create as any);
+  const updateStoreStatus = useMutation(api.stores.updateStatus as any);
+  const createPayout = useMutation(api.payouts.create as any);
+  const createTicket = useMutation(api.support.createTicket as any);
+  const updateTicketStatus = useMutation(api.support.updateTicketStatus as any);
 
-  return { updateStore, createStore, updateStoreStatus };
+  return { updateStore, createStore, updateStoreStatus, createPayout, createTicket, updateTicketStatus };
 };
 
 export const useProductMutations = () => {

@@ -272,6 +272,10 @@ export const getUserBillingInfo = query({
 
     const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
 
+    const billingSettings = await ctx.db.query("billing_settings")
+      .withIndex("by_user", q => q.eq("userId", userId))
+      .first();
+
     return {
       plan,
       status: subscription?.status ?? "expired",
@@ -282,6 +286,7 @@ export const getUserBillingInfo = query({
       transactionFee: limits.transactionFee,
       monthlyFee: limits.monthlyFee,
       totalPaid,
+      walletBalance: billingSettings?.walletBalance ?? 0,
       daysRemaining: subscription?.endDate 
         ? Math.max(0, Math.ceil((subscription.endDate - Date.now()) / (1000 * 60 * 60 * 24)))
         : 0,

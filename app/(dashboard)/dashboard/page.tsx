@@ -75,7 +75,7 @@ export default function SellerDashboardPage() {
   const itemsPerPage = 8;
 
   // Mutations
-  const { updateStore } = useStoreMutations();
+  const { updateStore, createTicket } = useStoreMutations();
   const { createProduct, updateProduct, deleteProduct, toggleProduct } = useProductMutations();
   const { updateOrderStatus } = useOrderMutations();
   const { upgradePlan, renewSubscription, createSubscription } = useSubscriptionMutations();
@@ -83,12 +83,17 @@ export default function SellerDashboardPage() {
 
   // Get seller store data from Convex using session email
   const userEmail = (session?.user as any)?.email;
-  const { store, storeId, userId, products: convexProducts, orders: convexOrders, isLoading, subscription, billingInfo, referralStats, usageDiscount } = useSellerData(userEmail);
+  const { store, storeId, userId, products: convexProducts, orders: convexOrders, isLoading, subscription, billingInfo, referralStats, usageDiscount, payouts } = useSellerData(userEmail);
 
   // Calculate stats from real data
   const totalRevenue = convexOrders?.filter(o => o.status === "paid").reduce((sum, o) => sum + o.total, 0) ?? 0;
   const totalOrders = convexOrders?.length ?? 0;
   const totalProducts = convexProducts?.length ?? 0;
+
+  // Calculate payout stats from real data
+  const availableBalance = billingInfo?.walletBalance ?? 0;
+  const pendingPayouts = payouts?.filter(p => p.status === "pending").reduce((sum, p) => sum + p.amount, 0) ?? 0;
+  const totalEarned = totalRevenue;
 
   // Use real data from Convex
   const stats: DashboardStats = {
@@ -122,6 +127,47 @@ export default function SellerDashboardPage() {
     date: new Date(o.createdAt ?? o._creationTime).toLocaleDateString(),
     items: o.items.length,
   })) ?? [];
+
+  // Handle payout request
+  const [showPayoutModal, setShowPayoutModal] = useState(false);
+  const [payoutAmount, setPayoutAmount] = useState("");
+  const [payoutMethod, setPayoutMethod] = useState<"mtn_momo" | "bank_transfer">("mtn_momo");
+  const [payoutAccount, setPayoutAccount] = useState("");
+  const [requestingPayout, setRequestingPayout] = useState(false);
+
+  const handleRequestPayout = async () => {
+    if (!userId || !store) return;
+    const amount = parseInt(payoutAmount);
+    if (!amount || amount <= 0) {
+      alert("Please enter a valid amount");
+      return;
+    }
+    if (amount > availableBalance) {
+      alert("Amount exceeds available balance");
+      return;
+    }
+
+    setRequestingPayout(true);
+    try {
+      await createTicket({
+        userId: userId as any,
+        storeId: store._id as any,
+        subject: `Payout Request: UGX ${amount.toLocaleString()}`,
+        description: `Payout Method: ${payoutMethod === "mtn_momo" ? "MTN Mobile Money" : "Bank Transfer"}\nAccount: ${payoutAccount}\nAmount: UGX ${amount.toLocaleString()}\nAvailable Balance: UGX ${availableBalance.toLocaleString()}`,
+        category: "payment",
+        priority: "high",
+      });
+      
+      setShowPayoutModal(false);
+      setPayoutAmount("");
+      setPayoutAccount("");
+      alert("Payout request submitted! Admin will review and process it.");
+    } catch (e) {
+      console.error("Failed to request payout:", e);
+      alert("Failed to submit payout request. Please try again.");
+    }
+    setRequestingPayout(false);
+  };
 
   // Update store info in Convex
   const handleSaveStore = async () => {
@@ -1992,17 +2038,28 @@ export default function SellerDashboardPage() {
                       <div className="space-y-4">
                         <div className="p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20">
                           <div className="text-sm text-muted-foreground mb-1">Available Balance</div>
-                          <div className="text-2xl font-bold text-green-500">UGX 2,500,000</div>
+                          <div className="text-2xl font-bold text-green-500">UGX {availableBalance.toLocaleString()}</div>
                         </div>
                         <div className="flex justify-between items-center p-3 bg-accent/50 rounded-lg">
                           <span className="text-sm text-muted-foreground">Pending</span>
-                          <span className="font-medium">UGX 450,000</span>
+                          <span className="font-medium">UGX {pendingPayouts.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between items-center p-3 bg-accent/50 rounded-lg">
                           <span className="text-sm text-muted-foreground">Total Earned</span>
-                          <span className="font-medium">UGX 40,707,000</span>
+                          <span className="font-medium">UGX {totalEarned.toLocaleString()}</span>
                         </div>
-                        <button className="w-full py-2.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity">
+                        <button 
+                          onClick={() => {
+                            if (availableBalance <= 0) {
+                              alert("No available balance for payout");
+                              return;
+                            }
+                            setPayoutAmount(availableBalance.toString());
+                            setShowPayoutModal(true);
+                          }}
+                          disabled={availableBalance <= 0}
+                          className="w-full py-2.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
                           Request Payout
                         </button>
                       </div>
@@ -2483,6 +2540,66 @@ export default function SellerDashboardPage() {
               <div className="p-4 border-t border-border/50">
                 <button onClick={() => setShowReportsModal(false)} className="w-full py-2.5 border border-border rounded-xl text-sm font-medium hover:bg-accent transition-colors">
                   Close
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Payout Request Modal */}
+      <AnimatePresence>
+        {showPayoutModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowPayoutModal(false)}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-background border border-border rounded-2xl p-6 w-full max-w-md"
+              onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold">Request Payout</h3>
+                <button onClick={() => setShowPayoutModal(false)} className="p-2 hover:bg-accent rounded-lg">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Amount (UGX)</label>
+                  <input type="number" value={payoutAmount} onChange={(e) => setPayoutAmount(e.target.value)}
+                    className="w-full px-4 py-3 bg-accent/50 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    placeholder="Enter amount" />
+                  <p className="text-xs text-muted-foreground mt-1">Available: UGX {availableBalance.toLocaleString()}</p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-2">Payout Method</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button type="button" onClick={() => setPayoutMethod("mtn_momo")}
+                      className={`p-4 rounded-xl border-2 transition-all ${payoutMethod === "mtn_momo" ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"}`}>
+                      <div className="text-2xl mb-1">🟡</div>
+                      <div className="text-sm font-medium">MTN MoMo</div>
+                    </button>
+                    <button type="button" onClick={() => setPayoutMethod("bank_transfer")}
+                      className={`p-4 rounded-xl border-2 transition-all ${payoutMethod === "bank_transfer" ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"}`}>
+                      <div className="text-2xl mb-1">🏦</div>
+                      <div className="text-sm font-medium">Bank Transfer</div>
+                    </button>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    {payoutMethod === "mtn_momo" ? "Phone Number" : "Account Number"}
+                  </label>
+                  <input type="text" value={payoutAccount} onChange={(e) => setPayoutAccount(e.target.value)}
+                    className="w-full px-4 py-3 bg-accent/50 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    placeholder={payoutMethod === "mtn_momo" ? "+256700000000" : "1234567890"} />
+                </div>
+                
+                <button onClick={handleRequestPayout} disabled={requestingPayout || !payoutAmount || !payoutAccount}
+                  className="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-medium disabled:opacity-50">
+                  {requestingPayout ? "Submitting..." : "Submit Payout Request"}
                 </button>
               </div>
             </motion.div>

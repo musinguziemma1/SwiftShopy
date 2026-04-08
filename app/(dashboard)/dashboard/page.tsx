@@ -149,9 +149,14 @@ export default function SellerDashboardPage() {
 
     setRequestingPayout(true);
     try {
+      const userName = (session?.user as any)?.name || store?.name || "Seller";
       await createTicket({
         userId: userId as any,
+        userName: userName,
+        userEmail: userEmail || "",
+        userPhone: store?.phone || "",
         storeId: store._id as any,
+        storeName: store?.name,
         subject: `Payout Request: UGX ${amount.toLocaleString()}`,
         description: `Payout Method: ${payoutMethod === "mtn_momo" ? "MTN Mobile Money" : "Bank Transfer"}\nAccount: ${payoutAccount}\nAmount: UGX ${amount.toLocaleString()}\nAvailable Balance: UGX ${availableBalance.toLocaleString()}`,
         category: "payment",

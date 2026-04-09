@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingCart, MessageCircle, Phone, Star, Package, Search, Minus, Plus, X, Check, Loader } from "lucide-react";
+import { ShoppingCart, MessageCircle, Phone, Star, Package, Search, Minus, Plus, X, Check, Loader, CreditCard } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 
@@ -388,49 +388,49 @@ export default function StorefrontPage() {
       <AnimatePresence>
         {orderPlaced && orderDetails && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-white dark:bg-gray-800 rounded-2xl p-8 text-center max-w-sm mx-4">
-              <div className="w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Check className="w-8 h-8 text-green-500" />
+            className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+            <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden max-w-md w-full shadow-2xl">
+              <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-6 text-white text-center">
+                <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Check className="w-10 h-10" />
+                </div>
+                <h2 className="text-2xl font-bold">Order Confirmed!</h2>
+                <p className="text-green-100 text-sm mt-1">Thank you for your purchase</p>
               </div>
-              <h2 className="text-xl font-bold mb-2">Order Placed!</h2>
-              <p className="text-muted-foreground mb-4">Your order has been confirmed.</p>
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 mb-6 text-left">
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm text-muted-foreground">Order Number</span>
-                  <span className="text-sm font-medium">{orderDetails.orderNumber}</span>
+              <div className="p-6">
+                <div className="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-xl p-4 mb-6">
+                  <div className="flex justify-between items-center mb-3 pb-3 border-b border-purple-100 dark:border-purple-800">
+                    <div>
+                      <p className="text-xs text-gray-500">Order Number</p>
+                      <p className="font-mono font-semibold text-purple-600">{orderDetails.orderNumber}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-500">Tracking</p>
+                      <p className="font-mono text-sm text-gray-700">{orderDetails.trackingNumber}</p>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Total Amount</span>
+                    <span className="text-2xl font-bold text-purple-600">{fmt(orderDetails.total)}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm text-muted-foreground">Tracking</span>
-                  <span className="text-sm font-medium">{orderDetails.trackingNumber}</span>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <button onClick={() => initiatePayment(orderDetails.orderNumber, orderDetails.total)}
+                    className="py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2">
+                    <CreditCard className="w-4 h-4" /> Pay Now
+                  </button>
+                  <button onClick={() => window.location.href = `/track?tracking=${orderDetails.trackingNumber}`}
+                    className="py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2">
+                    <Package className="w-4 h-4" /> Track
+                  </button>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Total</span>
-                  <span className="text-sm font-bold">{fmt(orderDetails.total)}</span>
-                </div>
-              </div>
-
-              <div className="flex gap-2 mb-4">
-                <button
-                  onClick={() => initiatePayment(orderDetails.orderNumber, orderDetails.total)}
-                  className="flex-1 py-2 bg-green-500 text-white rounded-xl font-medium hover:bg-green-600 transition-colors"
-                >
-                  Pay Now
+                <p className="text-center text-sm text-gray-500 mb-4">📧 Confirmation sent to your email & WhatsApp</p>
+                <button onClick={() => { setOrderPlaced(false); setOrderDetails(null); setCustomerName(""); setCustomerPhone(""); setCustomerEmail(""); setShippingAddress(""); }}
+                  className="w-full py-3 border-2 border-gray-200 dark:border-gray-700 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors">
+                  Continue Shopping
                 </button>
-                <button
-                  onClick={() => {
-                    window.open(`/track?${orderDetails.trackingNumber}`, '_blank');
-                  }}
-                  className="flex-1 py-2 bg-primary text-white rounded-xl font-medium hover:bg-primary/90 transition-colors"
-                >
-                  Track Order
-                </button>
               </div>
-
-              <button onClick={() => { setOrderPlaced(false); setOrderDetails(null); setCustomerName(""); setCustomerPhone(""); setCustomerEmail(""); setShippingAddress(""); }}
-                className="px-6 py-2 bg-primary text-white rounded-xl">
-                Continue Shopping
-              </button>
             </motion.div>
           </motion.div>
         )}

@@ -273,9 +273,21 @@ function SwiftShopyLanding({ className = "" }: SwiftShopyLandingProps) {
             </div>
 
             <div className="hidden md:flex items-center gap-6">
-               <a href="#features" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
-                 Features
-               </a>
+                <a href="#features" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
+                  Features
+                </a>
+                <Link href="/pricing" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
+                  Pricing
+                </Link>
+                <Link href="/shop" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
+                  Shop
+                </Link>
+                <a href="#testimonials" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
+                  Testimonials
+                </a>
+                <a href="#faq" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
+                  FAQ
+                </a>
                <Link href="/pricing" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
                  Pricing
                </Link>
@@ -321,10 +333,22 @@ function SwiftShopyLanding({ className = "" }: SwiftShopyLandingProps) {
               exit={{ opacity: 0, height: 0 }}
               className="md:hidden border-t border-border glass"
             >
-             <div className="container mx-auto px-4 py-4 space-y-4">
-                 <a href="#features" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
-                   Features
-                 </a>
+              <div className="container mx-auto px-4 py-4 space-y-4">
+                  <a href="#features" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
+                    Features
+                  </a>
+                  <Link href="/pricing" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
+                    Pricing
+                  </Link>
+                  <Link href="/shop" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
+                    Shop
+                  </Link>
+                  <a href="#testimonials" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
+                    Testimonials
+                  </a>
+                  <a href="#faq" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
+                    FAQ
+                  </a>
                  <Link href="/pricing" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
                    Pricing
                  </Link>

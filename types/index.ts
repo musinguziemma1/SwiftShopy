@@ -60,21 +60,16 @@ export type AuditAction =
   | "transaction_refunded" | "transaction_disputed"
   | "settings_updated" | "commission_changed"
   | "bulk_operation" | "export_performed" | "import_performed"
-  | "login_success" | "login_failed" | "logout";
-
-export interface AuditLog {
-  _id: string;
-  adminId: string;
-  adminName: string;
-  action: AuditAction;
-  targetType: "user" | "seller" | "order" | "product" | "transaction" | "settings" | "system";
-  targetId: string;
-  targetName?: string;
-  details: Record<string, any>;
-  ipAddress?: string;
-  userAgent?: string;
-  createdAt: number;
-}
+  | "login_success" | "login_failed" | "logout"
+  | "seller_approve" 
+  | "seller_suspend" 
+  | "ticket_create" 
+  | "ticket_resolve" 
+  | "ticket_reply" 
+  | "payment_refund" 
+  | "config_update" 
+  | "role_update" 
+  | "export_data";
 
 // ─── Store ────────────────────────────────────────────────
 export interface Store {
@@ -571,3 +566,75 @@ export type InviteAdminInput = z.infer<typeof InviteAdminSchema>;
 export type CreateProductInput = z.infer<typeof CreateProductSchema>;
 export type ForgotPasswordInput = z.infer<typeof ForgotPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof ResetPasswordSchema>;
+
+// ─── Additional Type Exports ──────────────────────────────────
+
+export interface PaymentDispute {
+  _id: string;
+  transactionId?: string;
+  subscriptionPaymentId?: string;
+  userId: string;
+  amount: number;
+  currency: string;
+  reason: string;
+  description: string;
+  status: "open" | "investigating" | "resolved" | "rejected";
+  resolution?: string;
+  resolvedAt?: number;
+  resolvedBy?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface WebhookRetry {
+  _id: string;
+  webhookType: string;
+  referenceId: string;
+  payload: any;
+  attempt: number;
+  maxAttempts: number;
+  nextRetryAt: number;
+  status: "pending" | "processing" | "completed" | "failed";
+  lastError?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface PaymentReconciliation {
+  _id: string;
+  date: number;
+  totalExpected: number;
+  totalReceived: number;
+  totalRefunded: number;
+  transactionCount: number;
+  discrepancy: number;
+  status: "pending" | "reconciled" | "discrepancy";
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface PaymentReceipt {
+  _id: string;
+  paymentId: string;
+  receiptNumber: string;
+  userId: string;
+  amount: number;
+  currency: string;
+  plan: string;
+  provider: string;
+  status: string;
+  pdfUrl?: string;
+  generatedAt: number;
+}
+
+export interface ErrorBoundaryProps {
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
+}
+
+export interface LoadingSkeletonProps {
+  className?: string;
+  variant?: "text" | "circular" | "rectangular";
+  width?: string | number;
+  height?: string | number;
+}

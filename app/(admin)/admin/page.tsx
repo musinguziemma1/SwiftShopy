@@ -560,8 +560,18 @@ function AdminDashboard() {
       <main className={`pt-16 transition-all duration-300 ${sidebarOpen ? "lg:pl-64" : "lg:pl-20"}`}>
         <div className="p-4 sm:p-6 lg:p-8">
 
+          {/* Loading State */}
+          {isLoading && (
+            <div className="flex items-center justify-center min-h-[400px]">
+              <div className="text-center">
+                <div className="w-12 h-12 mx-auto mb-4 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+                <p className="text-muted-foreground">Loading dashboard...</p>
+              </div>
+            </div>
+          )}
+
           {/* ── Overview Tab ── */}
-          {activeTab === "overview" && (
+          {!isLoading && activeTab === "overview" && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
               <div className="mb-8">
                 <h1 className="text-3xl font-bold mb-2">Admin Overview</h1>
@@ -774,7 +784,7 @@ function AdminDashboard() {
           )}
 
           {/* ── Sellers Tab ── */}
-          {activeTab === "sellers" && (
+          {!isLoading && activeTab === "sellers" && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
               <div className="flex items-center justify-between mb-8">
                 <div>
@@ -1210,7 +1220,7 @@ function AdminDashboard() {
           )}
 
           {/* ── Transactions Tab ── */}
-          {activeTab === "transactions" && (
+          {!isLoading && activeTab === "transactions" && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
               <div className="flex items-center justify-between mb-8">
                 <div>

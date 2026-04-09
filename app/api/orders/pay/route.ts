@@ -1,18 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ConvexHttpClient } from "convex/browser";
 import { rateLimit } from "@/lib/rate-limit";
 import { requestToPay, normalizeUgandaPhone, isMtnUgandaNumber } from "@/lib/mtn/mtn-momo";
-import { api } from "@/convex/_generated/api";
-
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export async function POST(req: NextRequest) {
   const rateLimitResult = rateLimit(req, 10, 60000);
   if (rateLimitResult.limited) {
-    return NextResponse.json(
-      { error: "Too many requests. Please try again later." },
-      { status: 429, headers: { "Retry-After": "60" } }
-    );
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
   try {
@@ -20,14 +13,14 @@ export async function POST(req: NextRequest) {
     const { orderNumber, trackingNumber, amount, phone, paymentMethod = "mtn_momo" } = body;
 
     if (!orderNumber || !amount || !phone) {
-      return NextResponse.json({ error: "orderNumber, amount, and phone are required." }, { status: 400 });
+      return NextResponse.json({ error: "orderNumber, amount, and phone are required" }, { status: 400 });
     }
 
-    const orders = await convex.query(api.orders.list);
-    const order = orders.find((o: any) => o.orderNumber === orderNumber || o.orderNumber.startsWith(orderNumber));
-
+    // Find order in memory storage
+    const order = global.orderStorage?.get(orderNumber) || global.orderStorage?.get(trackingNumber);
+    
     if (!order) {
-      return NextResponse.json({ error: "Order not found." }, { status: 404 });
+      return NextResponse.json({ error: "Order not found. Please place an order first." }, { status: 404 });
     }
 
     let referenceId: string;
@@ -35,7 +28,7 @@ export async function POST(req: NextRequest) {
     if (paymentMethod === "mtn_momo") {
       const msisdn = normalizeUgandaPhone(phone);
       if (!isMtnUgandaNumber(msisdn)) {
-        return NextResponse.json({ error: "Phone must be MTN Uganda number." }, { status: 400 });
+        return NextResponse.json({ error: "Phone must be MTN Uganda number (07x, 078x, 077x)" }, { status: 400 });
       }
 
       referenceId = await requestToPay({
@@ -47,25 +40,25 @@ export async function POST(req: NextRequest) {
         payerMessage: `Payment for SwiftShopy Order ${orderNumber}`,
         payeeNote: `Order ${orderNumber}`,
       });
+
+      // Update order status in memory
+      if (global.orderStorage) {
+        const updatedOrder = { ...order, paymentStatus: "pending_confirmation", status: "paid" };
+        global.orderStorage.set(orderNumber, updatedOrder);
+        global.orderStorage.set(trackingNumber, updatedOrder);
+      }
+
+      return NextResponse.json({
+        success: true,
+        referenceId,
+        status: "PENDING",
+        message: "Payment request sent! Check your phone and approve.",
+      });
     } else {
-      return NextResponse.json({ error: "Payment method not supported yet." }, { status: 400 });
+      return NextResponse.json({ error: "Payment method not supported" }, { status: 400 });
     }
-
-    await convex.mutation(api.orders.updateStatus, {
-      id: order._id,
-      status: "pending",
-      paymentStatus: "pending_confirmation",
-    });
-
-    return NextResponse.json({
-      success: true,
-      referenceId,
-      status: "PENDING",
-      message: "Payment request sent. Please approve on your phone.",
-    });
-  } catch (err: unknown) {
+  } catch (err: any) {
     console.error("[/api/orders/pay] Error:", err);
-    const message = err instanceof Error ? err.message : "Payment initiation failed.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: err.message || "Payment failed" }, { status: 500 });
   }
 }

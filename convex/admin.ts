@@ -75,9 +75,9 @@ export const updateLastLogin = mutation({
 export const logAction = mutation({
   args: {
     adminId: v.string(),
-    adminName: v.string(),
+    adminName: v.optional(v.string()),
     action: v.string(),
-    targetType: v.union(v.literal("user"), v.literal("seller"), v.literal("order"), v.literal("product"), v.literal("transaction"), v.literal("settings"), v.literal("system")),
+    targetType: v.union(v.literal("user"), v.literal("seller"), v.literal("order"), v.literal("product"), v.literal("transaction"), v.literal("settings"), v.literal("system"), v.literal("ticket")),
     targetId: v.string(),
     targetName: v.optional(v.string()),
     details: v.any(),
@@ -87,6 +87,7 @@ export const logAction = mutation({
   handler: async (ctx, args) => {
     return await ctx.db.insert("audit_logs", {
       ...args,
+      adminName: args.adminName || "Admin",
       createdAt: Date.now(),
     });
   },

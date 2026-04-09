@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { Search, Package, Truck, CheckCircle, Clock, XCircle, MapPin, Phone, Mail, ShoppingBag } from "lucide-react";
+import { Search, Package, Truck, CheckCircle, MapPin, Phone, Mail, ShoppingBag } from "lucide-react";
 
 const statusSteps = [
   { key: "pending", label: "Order Placed", icon: ShoppingBag },
@@ -18,14 +19,28 @@ const getStepIndex = (status: string) => {
 };
 
 export default function TrackOrderPage() {
+  const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [order, setOrder] = useState<any>(null);
   const [tracking, setTracking] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
+  useEffect(() => {
+    const params = searchParams?.toString();
+    const trackingNum = searchParams?.get("tracking");
+    const orderNum = searchParams?.get("orderNumber");
+    if (trackingNum) {
+      setSearchQuery(trackingNum);
+      searchOrder(trackingNum);
+    } else if (orderNum) {
+      setSearchQuery(orderNum);
+      searchOrder(orderNum);
+    }
+  }, [searchParams]);
+
+  const searchOrder = async (query: string) => {
+    if (!query.trim()) return;
     
     setLoading(true);
     setError("");
@@ -33,12 +48,14 @@ export default function TrackOrderPage() {
     setTracking(null);
 
     try {
-      const response = await fetch(`/api/orders/create?orderNumber=${encodeURIComponent(searchQuery)}&tracking=${encodeURIComponent(searchQuery)}`);
+      const response = await fetch(`/api/orders/create?orderNumber=${encodeURIComponent(query)}&tracking=${encodeURIComponent(query)}`);
       const data = await response.json();
 
       if (data.order) {
         setOrder(data.order);
         setTracking(data.tracking);
+      } else if (data.error) {
+        setError(data.error);
       } else {
         setError("Order not found. Please check your order number or tracking number and try again.");
       }
@@ -47,6 +64,10 @@ export default function TrackOrderPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSearch = () => {
+    searchOrder(searchQuery);
   };
 
   const fmt = (n: number) => `UGX ${n.toLocaleString()}`;
@@ -70,7 +91,7 @@ export default function TrackOrderPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            placeholder="Enter order number (e.g., ORD-XXXXX) or tracking number"
+            placeholder="Enter order number or tracking number"
             className="flex-1 px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
           />
           <button
@@ -83,8 +104,7 @@ export default function TrackOrderPage() {
         </div>
 
         {error && (
-          <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl flex items-center gap-2">
-            <XCircle className="w-5 h-5" />
+          <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl">
             {error}
           </div>
         )}

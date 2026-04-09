@@ -140,20 +140,24 @@ export const create = mutation({
 export const updateStatus = mutation({
   args: {
     id: v.id("orders"),
-    status: v.union(v.literal("pending"), v.literal("paid"), v.literal("failed"), v.literal("cancelled")),
+    status: v.optional(v.union(v.literal("pending"), v.literal("paid"), v.literal("failed"), v.literal("cancelled"))),
     escrowStatus: v.optional(v.union(v.literal("awaiting_payment"), v.literal("held"), v.literal("released"), v.literal("refunded"))),
     deliveryStatus: v.optional(v.union(v.literal("pending"), v.literal("dispatched"), v.literal("delivered"), v.literal("buyer_confirmed"))),
+    paymentStatus: v.optional(v.union(v.literal("pending"), v.literal("pending_confirmation"), v.literal("paid"), v.literal("failed"))),
   },
-  handler: async (ctx, { id, status, escrowStatus, deliveryStatus }) => {
+  handler: async (ctx, { id, status, escrowStatus, deliveryStatus, paymentStatus }) => {
     const order = await ctx.db.get(id);
     if (!order) throw new Error("Order not found");
     
-    const patchData: any = { status };
+    const patchData: any = {};
+    if (status) patchData.status = status;
     if (escrowStatus) patchData.escrowStatus = escrowStatus;
     if (deliveryStatus) patchData.deliveryStatus = deliveryStatus;
+    if (paymentStatus) patchData.paymentStatus = paymentStatus;
     await ctx.db.patch(id, patchData);
     
     const now = Date.now();
+    const currentStatus = status || order.status;
     const store = await ctx.db.get(order.storeId);
     const sellerId = store?.userId;
 
@@ -174,19 +178,19 @@ export const updateStatus = mutation({
       adminMessage = `Order ${order.orderNumber} has been cancelled`;
       sellerMessage = `Order #${order.orderNumber} has been cancelled`;
     } else {
-      adminMessage = `Order ${order.orderNumber} status updated to ${status}`;
-      sellerMessage = `Order #${order.orderNumber} status updated to ${status}`;
+      adminMessage = `Order ${order.orderNumber} status updated to ${currentStatus}`;
+      sellerMessage = `Order #${order.orderNumber} status updated to ${currentStatus}`;
     }
 
     // Notify admin
     await ctx.db.insert("notifications", {
       userId: "admin",
       type: notificationType,
-      title: `Order ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+      title: `Order ${currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1)}`,
       message: adminMessage,
       isRead: false,
       actionUrl: "/admin",
-      metadata: { orderId: id, orderNumber: order.orderNumber, status, total: order.total },
+      metadata: { orderId: id, orderNumber: order.orderNumber, status: currentStatus, total: order.total },
       createdAt: now,
     });
 
@@ -196,11 +200,11 @@ export const updateStatus = mutation({
         userId: sellerId,
         storeId: order.storeId,
         type: notificationType,
-        title: `Order ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+        title: `Order ${currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1)}`,
         message: sellerMessage,
         isRead: false,
         actionUrl: "/dashboard",
-        metadata: { orderId: id, orderNumber: order.orderNumber, status, total: order.total },
+        metadata: { orderId: id, orderNumber: order.orderNumber, status: currentStatus, total: order.total },
         createdAt: now,
       });
     }

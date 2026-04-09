@@ -19,7 +19,7 @@ export default function StorefrontPage() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [orderPlaced, setOrderPlaced] = useState(false);
-  const [orderDetails, setOrderDetails] = useState<{ orderNumber: string; trackingNumber: string; total: number } | null>(null);
+  const [orderDetails, setOrderDetails] = useState<{ orderNumber: string; trackingNumber: string; total: number; paymentMethod?: string; sellerOrderIds?: string[] } | null>(null);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
@@ -69,6 +69,7 @@ export default function StorefrontPage() {
         quantity: item.quantity,
         storeId: item.storeId,
         sellerId: item.sellerId,
+        storeName: store?.name,
       }));
 
       const response = await fetch("/api/orders/create", {
@@ -91,10 +92,30 @@ export default function StorefrontPage() {
           orderNumber: data.orderNumber,
           trackingNumber: data.trackingNumber,
           total: data.total,
+          paymentMethod: data.paymentMethod,
+          sellerOrderIds: data.sellerOrderIds,
         });
         setOrderPlaced(true);
         setCheckoutOpen(false);
         setCart([]);
+
+        if (data.sellerOrderIds && data.sellerOrderIds.length > 0) {
+          setTimeout(async () => {
+            try {
+              await fetch("/api/orders/confirm", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  orderNumber: data.orderNumber,
+                  sendEmail: true,
+                  sendWhatsApp: true,
+                }),
+              });
+            } catch (e) {
+              console.log("Confirmation send failed:", e);
+            }
+          }, 2000);
+        }
       } else {
         alert(data.error || "Order failed. Please try again.");
       }
@@ -103,6 +124,32 @@ export default function StorefrontPage() {
       alert("Failed to place order. Please try again.");
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const initiatePayment = async (orderNumber: string, amount: number) => {
+    try {
+      const response = await fetch("/api/orders/pay", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderNumber,
+          trackingNumber: orderDetails?.trackingNumber,
+          amount,
+          phone: customerPhone,
+          paymentMethod: "mtn_momo",
+        }),
+      });
+
+      const data = await response.json();
+      if (data.referenceId) {
+        alert("Payment request sent! Please approve on your MTN MoMo.");
+      } else {
+        alert(data.error || "Payment failed.");
+      }
+    } catch (err) {
+      console.error("Payment error:", err);
+      alert("Payment failed. Please try again.");
     }
   };
 
@@ -362,6 +409,24 @@ export default function StorefrontPage() {
                   <span className="text-sm font-bold">{fmt(orderDetails.total)}</span>
                 </div>
               </div>
+
+              <div className="flex gap-2 mb-4">
+                <button
+                  onClick={() => initiatePayment(orderDetails.orderNumber, orderDetails.total)}
+                  className="flex-1 py-2 bg-green-500 text-white rounded-xl font-medium hover:bg-green-600 transition-colors"
+                >
+                  Pay Now
+                </button>
+                <button
+                  onClick={() => {
+                    window.open(`/track?${orderDetails.trackingNumber}`, '_blank');
+                  }}
+                  className="flex-1 py-2 bg-primary text-white rounded-xl font-medium hover:bg-primary/90 transition-colors"
+                >
+                  Track Order
+                </button>
+              </div>
+
               <button onClick={() => { setOrderPlaced(false); setOrderDetails(null); setCustomerName(""); setCustomerPhone(""); setCustomerEmail(""); setShippingAddress(""); }}
                 className="px-6 py-2 bg-primary text-white rounded-xl">
                 Continue Shopping

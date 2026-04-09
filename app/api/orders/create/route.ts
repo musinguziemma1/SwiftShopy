@@ -54,8 +54,23 @@ export async function POST(req: NextRequest) {
       orderNumber,
       trackingNumber,
       total,
+      subtotal,
       status: "pending",
-      message: "Order created. Payment processing available.",
+      paymentMethod,
+      paymentStatus: "pending",
+      customerName,
+      customerPhone,
+      customerEmail: customerEmail || null,
+      shippingAddress: shippingAddress || null,
+      items: items.map((item: any) => ({
+        productId: item.productId,
+        productName: item.productName,
+        price: item.price,
+        quantity: item.quantity,
+        total: item.price * item.quantity,
+      })),
+      createdAt: now,
+      message: "Order created. Proceed to payment.",
     });
   } catch (err: unknown) {
     console.error("[/api/orders/create] Error:", err);
@@ -65,8 +80,16 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const orderNumber = searchParams.get("orderNumber");
+  const tracking = searchParams.get("tracking");
+
+  if (!orderNumber && !tracking) {
+    return NextResponse.json({ error: "orderNumber or tracking required." }, { status: 400 });
+  }
+
   return NextResponse.json({ 
-    orders: [],
-    message: "Use order number or tracking number to search. This is a demo endpoint."
+    error: "Use the search functionality on the tracking page.",
+    message: "Order lookup via API requires database integration." 
   });
 }

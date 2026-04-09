@@ -50,10 +50,17 @@ export default function TrackOrderPage() {
     try {
       const response = await fetch(`/api/orders/create?orderNumber=${encodeURIComponent(query)}&tracking=${encodeURIComponent(query)}`);
       const data = await response.json();
-      if (data.order) { setOrder(data.order); }
-      else if (data.error) { setError(data.error); }
-      else { setError("Order not found. Please check your details."); }
-    } catch { setError("Something went wrong. Please try again."); }
+      
+      if (data.order) { 
+        setOrder(data.order); 
+      } else if (data.error) { 
+        setError(data.error); 
+      } else { 
+        setError("Order not found. Please check your details."); 
+      }
+    } catch { 
+      setError("Something went wrong. Please try again."); 
+    }
     finally { setLoading(false); }
   };
 

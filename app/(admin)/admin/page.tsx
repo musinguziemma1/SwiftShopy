@@ -320,8 +320,8 @@ function AdminDashboard() {
   }
 
   // Get real data from Convex
-  const { sellers: convexSellers, stores, orders, transactions, subscriptions, payments, billingAnalytics, revenueByPlan, referralStats, expiringSubscriptions, isLoading } = useAdminData()
-  const { toggleUserActive, updateOrderStatus, upgradePlan, renewSubscription, cancelSubscription, expireSubscription, updatePaymentStatus, createAuditLog } = useAdminMutations()
+  const { sellers: convexSellers, stores, orders, transactions, subscriptions, payments, billingAnalytics, revenueByPlan, referralStats, expiringSubscriptions, isLoading, disputes } = useAdminData()
+  const { toggleUserActive, updateOrderStatus, upgradePlan, renewSubscription, cancelSubscription, expireSubscription, updatePaymentStatus, createAuditLog, refundPayment, resolveDispute } = useAdminMutations()
   
   // Session
   const { data: session } = useSession()
@@ -545,6 +545,7 @@ function AdminDashboard() {
           <SidebarButton icon={<Shield className="w-5 h-5" />} label="Permissions" active={activeTab === "permissions"} onClick={() => { setActiveTab("permissions"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
           <SidebarButton icon={<Activity className="w-5 h-5" />} label="Analytics" active={activeTab === "analytics"} onClick={() => { setActiveTab("analytics"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
           <SidebarButton icon={<MessageSquare className="w-5 h-5" />} label="Support" active={activeTab === "support"} onClick={() => { setActiveTab("support"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
+          <SidebarButton icon={<AlertCircle className="w-5 h-5" />} label="Disputes" active={activeTab === "disputes"} onClick={() => { setActiveTab("disputes"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
           <SidebarButton icon={<FileText className="w-5 h-5" />} label="Audit Trail" active={activeTab === "audit"} onClick={() => { setActiveTab("audit"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
           <SidebarButton icon={<FileBarChart className="w-5 h-5" />} label="Reports" active={activeTab === "reports"} onClick={() => { setActiveTab("reports"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
           <div className="pt-4 mt-4 border-t border-border">
@@ -2661,6 +2662,88 @@ function AdminDashboard() {
                   </motion.div>
                 </div>
               )}
+            </motion.div>
+          )}
+
+          {/* ── Disputes Tab ── */}
+          {activeTab === "disputes" && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+              <div className="mb-8">
+                <h1 className="text-3xl font-bold mb-2">Payment Disputes</h1>
+                <p className="text-muted-foreground">Manage customer payment disputes and refunds</p>
+              </div>
+
+              <div className="grid sm:grid-cols-4 gap-6 mb-8">
+                {(() => {
+                  const open = disputes?.filter(d => d.status === "open").length ?? 0;
+                  const investigating = disputes?.filter(d => d.status === "investigating").length ?? 0;
+                  const resolved = disputes?.filter(d => d.status === "resolved").length ?? 0;
+                  const total = disputes?.length ?? 0;
+                  return [
+                    { label: "Open Disputes", count: open, color: "text-red-500", bg: "bg-red-500/5", border: "border-red-500/20" },
+                    { label: "Under Review", count: investigating, color: "text-yellow-500", bg: "bg-yellow-500/5", border: "border-yellow-500/20" },
+                    { label: "Resolved", count: resolved, color: "text-green-500", bg: "bg-green-500/5", border: "border-green-500/20" },
+                    { label: "Total Disputes", count: total, color: "text-blue-500", bg: "bg-blue-500/5", border: "border-blue-500/20" },
+                  ].map((s, i) => (
+                    <div key={i} className={`p-6 rounded-xl border-2 ${s.border} ${s.bg}`}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <AlertCircle className={`w-6 h-6 ${s.color}`} />
+                        <span className="font-semibold">{s.label}</span>
+                      </div>
+                      <div className="text-3xl font-bold mb-1">{s.count}</div>
+                    </div>
+                  ));
+                })()}
+              </div>
+
+              <div className="p-6 rounded-xl border border-border bg-card">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-semibold">All Disputes</h3>
+                  <select className="px-3 py-1.5 text-sm border border-border rounded-lg">
+                    <option value="all">All Status</option>
+                    <option value="open">Open</option>
+                    <option value="investigating">Under Review</option>
+                    <option value="resolved">Resolved</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </div>
+                {disputes && disputes.length > 0 ? (
+                  <div className="space-y-3">
+                    {disputes.map((dispute: any) => (
+                      <div key={dispute._id} className="p-4 rounded-lg border border-border hover:bg-accent/50">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                dispute.status === "open" ? "bg-red-500/10 text-red-500" :
+                                dispute.status === "investigating" ? "bg-yellow-500/10 text-yellow-500" :
+                                "bg-green-500/10 text-green-500"
+                              }`}>
+                                {dispute.status}
+                              </span>
+                              <span className="text-sm font-mono">UGX {dispute.amount?.toLocaleString()}</span>
+                            </div>
+                            <p className="font-medium">{dispute.reason}</p>
+                            <p className="text-sm text-muted-foreground">{dispute.description}</p>
+                            <span className="text-xs text-muted-foreground">{new Date(dispute.createdAt).toLocaleString()}</span>
+                          </div>
+                          {dispute.status === "open" && (
+                            <button className="px-3 py-1.5 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                              Review
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <AlertCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                    <p>No disputes found</p>
+                    <p className="text-sm">Disputes will appear here when customers raise payment issues</p>
+                  </div>
+                )}
+              </div>
             </motion.div>
           )}
 

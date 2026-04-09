@@ -16,6 +16,8 @@ export const useAdminData = () => {
   const ticketStats = useQuery(api.support.getTicketStats as any);
   const auditLogsRaw = useQuery(api.admin.listAuditLogs as any, { limit: 50 } as any);
   const auditLogs = (auditLogsRaw ?? []) as any;
+  const disputesRaw = useQuery(api.payments.getDisputes as any, { status: "all" } as any);
+  const disputes = (disputesRaw ?? []) as any;
 
   return {
     sellers: sellers ?? [],
@@ -31,6 +33,7 @@ export const useAdminData = () => {
     adminSummary: adminSummary ?? null,
     ticketStats: ticketStats ?? null,
     auditLogs: auditLogs ?? [],
+    disputes: disputes,
     isLoading: sellers === undefined || stores === undefined || orders === undefined,
   };
 };
@@ -54,6 +57,10 @@ export const useAdminMutations = () => {
   // Audit log mutation
   const createAuditLog = useMutation(api.admin.logAction as any);
 
+  // Payment mutations
+  const refundPayment = useMutation(api.payments.refundPayment as any);
+  const resolveDispute = useMutation(api.payments.resolveDispute as any);
+
   return {
     toggleUserActive,
     updateUserRole,
@@ -68,6 +75,8 @@ export const useAdminMutations = () => {
     addTicketMessage,
     logAction,
     createAuditLog,
+    refundPayment,
+    resolveDispute,
   };
 };
 

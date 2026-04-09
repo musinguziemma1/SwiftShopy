@@ -75,7 +75,7 @@ export default function SellerDashboardPage() {
   const itemsPerPage = 8;
 
   // Mutations
-  const { updateStore, createTicket, addTicketMessage } = useStoreMutations();
+  const { updateStore, createTicket, addTicketMessage, getTicketById } = useStoreMutations();
   const { createProduct, updateProduct, deleteProduct, toggleProduct } = useProductMutations();
   const { updateOrderStatus } = useOrderMutations();
   const { upgradePlan, renewSubscription, createSubscription } = useSubscriptionMutations();
@@ -146,6 +146,7 @@ export default function SellerDashboardPage() {
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const [showTicketDetailsModal, setShowTicketDetailsModal] = useState(false);
   const [ticketReply, setTicketReply] = useState("");
+  const [ticketMessages, setTicketMessages] = useState<any[]>([]);
 
   const handleSendSupportTicket = async () => {
     if (!userId || !store) return;
@@ -2165,7 +2166,17 @@ export default function SellerDashboardPage() {
                         <div className="space-y-3">
                           {tickets.map((ticket: any) => (
                             <div key={ticket._id} 
-                              onClick={() => { setSelectedTicket(ticket); setShowTicketDetailsModal(true); }}
+                              onClick={async () => { 
+                                setSelectedTicket(ticket); 
+                                setShowTicketDetailsModal(true);
+                                try {
+                                  const result = await getTicketById({ id: ticket._id as any });
+                                  setTicketMessages(result?.messages || []);
+                                } catch (e) {
+                                  console.error("Failed to get ticket messages:", e);
+                                  setTicketMessages([]);
+                                }
+                              }}
                               className="p-4 rounded-lg border border-border hover:bg-accent/50 cursor-pointer transition-colors">
                               <div className="flex items-start justify-between gap-4">
                                 <div className="flex-1">
@@ -2823,9 +2834,21 @@ export default function SellerDashboardPage() {
               </div>
 
               <div className="mb-6">
-                <p className="text-xs text-muted-foreground mb-2">Reply from Admin</p>
-                <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20 text-sm">
-                  <p className="text-muted-foreground text-center py-4">No replies yet. Admin will respond soon.</p>
+                <p className="text-xs text-muted-foreground mb-2">Conversation</p>
+                <div className="space-y-3 max-h-60 overflow-y-auto">
+                  {ticketMessages && ticketMessages.length > 0 ? (
+                    ticketMessages.filter((m: any) => !m.isInternal || m.senderType === "admin").map((msg: any, idx: number) => (
+                      <div key={idx} className={`p-3 rounded-lg ${msg.senderType === "admin" ? "bg-blue-500/10 border border-blue-500/20" : "bg-accent/50"}`}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-medium">{msg.senderType === "admin" ? "Admin" : "You"}</span>
+                          <span className="text-xs text-muted-foreground">{new Date(msg.createdAt).toLocaleString()}</span>
+                        </div>
+                        <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-muted-foreground text-center py-4">No replies yet. Admin will respond soon.</p>
+                  )}
                 </div>
               </div>
 

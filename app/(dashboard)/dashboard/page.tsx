@@ -273,20 +273,23 @@ export default function SellerDashboardPage() {
     
     try {
       console.log(`Uploading ${field} image...`);
-      // Convert file to base64 for storage
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64 = reader.result as string;
-        console.log(`Updating store with ${field}:`, base64.substring(0, 50) + "...");
-        await updateStore({ id: store._id, [field]: base64 });
-        console.log(`${field} uploaded successfully`);
-      };
-      reader.onerror = () => {
-        console.error("Failed to read file");
-      };
-      reader.readAsDataURL(file);
+      
+      // Convert file to base64
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      
+      console.log(`Updating store with ${field}, size: ${base64.length} chars`);
+      
+      // Update store with image
+      await updateStore({ id: store._id, [field]: base64 });
+      console.log(`${field} uploaded successfully`);
     } catch (e) {
       console.error(`Failed to upload ${field}:`, e);
+      alert(`Failed to upload ${field}. Please try again.`);
     }
   };
 

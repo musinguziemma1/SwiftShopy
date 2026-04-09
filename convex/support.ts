@@ -73,6 +73,16 @@ export const createTicket = mutation({
   },
 });
 
+export const getUserTickets = query({
+  args: { userId: v.string() },
+  handler: async (ctx, { userId }) => {
+    const tickets = await ctx.db.query("support_tickets")
+      .withIndex("by_user", q => q.eq("userId", userId))
+      .collect();
+    return tickets.sort((a, b) => b.createdAt - a.createdAt);
+  },
+});
+
 export const getAllTickets = query({
   args: {
     status: v.optional(v.string()),

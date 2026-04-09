@@ -75,7 +75,7 @@ export default function SellerDashboardPage() {
   const itemsPerPage = 8;
 
   // Mutations
-  const { updateStore, createTicket } = useStoreMutations();
+  const { updateStore, createTicket, addTicketMessage } = useStoreMutations();
   const { createProduct, updateProduct, deleteProduct, toggleProduct } = useProductMutations();
   const { updateOrderStatus } = useOrderMutations();
   const { upgradePlan, renewSubscription, createSubscription } = useSubscriptionMutations();
@@ -83,7 +83,7 @@ export default function SellerDashboardPage() {
 
   // Get seller store data from Convex using session email
   const userEmail = (session?.user as any)?.email;
-  const { store, storeId, userId, products: convexProducts, orders: convexOrders, isLoading, subscription, billingInfo, referralStats, usageDiscount, payouts } = useSellerData(userEmail);
+  const { store, storeId, userId, products: convexProducts, orders: convexOrders, isLoading, subscription, billingInfo, referralStats, usageDiscount, payouts, tickets } = useSellerData(userEmail);
 
   // Calculate stats from real data
   const totalRevenue = convexOrders?.filter(o => o.status === "paid").reduce((sum, o) => sum + o.total, 0) ?? 0;
@@ -141,6 +141,11 @@ export default function SellerDashboardPage() {
   const [supportCategory, setSupportCategory] = useState<"payment" | "account" | "technical" | "billing" | "integration" | "other">("other");
   const [supportDescription, setSupportDescription] = useState("");
   const [sendingSupport, setSendingSupport] = useState(false);
+
+  // Handle ticket details
+  const [selectedTicket, setSelectedTicket] = useState<any>(null);
+  const [showTicketDetailsModal, setShowTicketDetailsModal] = useState(false);
+  const [ticketReply, setTicketReply] = useState("");
 
   const handleSendSupportTicket = async () => {
     if (!userId || !store) return;
@@ -1525,6 +1530,7 @@ export default function SellerDashboardPage() {
                   { id: "store", label: "Store Info", icon: <Store className="w-4 h-4" /> },
                   { id: "subscription", label: "Subscription", icon: <Zap className="w-4 h-4" /> },
                   { id: "payment", label: "Payment Methods", icon: <CreditCard className="w-4 h-4" /> },
+                  { id: "support", label: "My Tickets", icon: <MessageSquare className="w-4 h-4" /> },
                 ].map((tab) => (
                   <button key={tab.id} onClick={() => setSettingsSubTab(tab.id)}
                     className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-all ${
@@ -2146,6 +2152,71 @@ export default function SellerDashboardPage() {
                   </div>
                 </div>
               )}
+
+              {/* My Support Tickets */}
+              {settingsSubTab === "support" && (
+                <div className="grid lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2 space-y-6">
+                    <div className="p-6 glass rounded-xl">
+                      <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+                        <MessageSquare className="w-5 h-5 text-primary" /> My Support Tickets
+                      </h3>
+                      {tickets && tickets.length > 0 ? (
+                        <div className="space-y-3">
+                          {tickets.map((ticket: any) => (
+                            <div key={ticket._id} 
+                              onClick={() => { setSelectedTicket(ticket); setShowTicketDetailsModal(true); }}
+                              className="p-4 rounded-lg border border-border hover:bg-accent/50 cursor-pointer transition-colors">
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-3 mb-2">
+                                    <span className="text-sm font-mono font-medium">{ticket.ticketNumber}</span>
+                                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                      ticket.priority === "critical" ? "bg-red-500/10 text-red-500" :
+                                      ticket.priority === "high" ? "bg-orange-500/10 text-orange-500" :
+                                      ticket.priority === "medium" ? "bg-yellow-500/10 text-yellow-500" :
+                                      "bg-blue-500/10 text-blue-500"}`}>
+                                      {ticket.priority}
+                                    </span>
+                                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                      ticket.status === "open" ? "bg-green-500/10 text-green-500" :
+                                      ticket.status === "in_progress" ? "bg-yellow-500/10 text-yellow-500" :
+                                      ticket.status === "resolved" ? "bg-blue-500/10 text-blue-500" :
+                                      "bg-gray-500/10 text-gray-500"}`}>
+                                      {ticket.status.replace("_", " ")}
+                                    </span>
+                                  </div>
+                                  <h4 className="font-semibold mb-1">{ticket.subject}</h4>
+                                  <p className="text-sm text-muted-foreground line-clamp-2">{ticket.description}</p>
+                                  <span className="text-xs text-muted-foreground">{new Date(ticket.createdAt).toLocaleString()}</span>
+                                </div>
+                                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                          <p>No support tickets yet</p>
+                          <p className="text-sm">Contact support if you have any issues</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="space-y-6">
+                    <div className="p-6 glass rounded-xl">
+                      <h3 className="text-lg font-semibold mb-4">Need More Help?</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Can't find what you're looking for? Submit a new support ticket.
+                      </p>
+                      <button onClick={() => setShowSupportModal(true)} className="w-full py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl text-sm font-medium">
+                        Submit New Ticket
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -2703,6 +2774,67 @@ export default function SellerDashboardPage() {
                 <button onClick={handleSendSupportTicket} disabled={sendingSupport || !supportSubject.trim() || !supportDescription.trim()}
                   className="w-full py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl font-medium disabled:opacity-50">
                   {sendingSupport ? "Sending..." : "Submit Ticket"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Ticket Details Modal */}
+      <AnimatePresence>
+        {showTicketDetailsModal && selectedTicket && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowTicketDetailsModal(false)}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-background border border-border rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+              onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-xl font-bold">Ticket {selectedTicket.ticketNumber}</h3>
+                  <p className="text-sm text-muted-foreground">{selectedTicket.subject}</p>
+                </div>
+                <button onClick={() => setShowTicketDetailsModal(false)} className="p-2 hover:bg-accent rounded-lg">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="p-4 rounded-lg bg-accent/50">
+                  <p className="text-xs text-muted-foreground mb-1">Status</p>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    selectedTicket.status === "open" ? "bg-green-500/10 text-green-500" :
+                    selectedTicket.status === "in_progress" ? "bg-yellow-500/10 text-yellow-500" :
+                    selectedTicket.status === "resolved" ? "bg-blue-500/10 text-blue-500" :
+                    "bg-gray-500/10 text-gray-500"}`}>
+                    {selectedTicket.status.replace("_", " ")}
+                  </span>
+                </div>
+                <div className="p-4 rounded-lg bg-accent/50">
+                  <p className="text-xs text-muted-foreground mb-1">Category</p>
+                  <span className="font-medium capitalize">{selectedTicket.category}</span>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <p className="text-xs text-muted-foreground mb-2">Your Message</p>
+                <div className="p-4 rounded-lg bg-accent/50 text-sm whitespace-pre-wrap">{selectedTicket.description}</div>
+              </div>
+
+              <div className="mb-6">
+                <p className="text-xs text-muted-foreground mb-2">Reply from Admin</p>
+                <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20 text-sm">
+                  <p className="text-muted-foreground text-center py-4">No replies yet. Admin will respond soon.</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowTicketDetailsModal(false)}
+                  className="px-6 py-2.5 border border-border rounded-xl hover:bg-accent"
+                >
+                  Close
                 </button>
               </div>
             </motion.div>

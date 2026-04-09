@@ -51,6 +51,11 @@ export const useSellerData = (userEmail?: string | null) => {
     storeId ? { storeId: storeId as any } : "skip"
   );
 
+  const tickets = useQuery(
+    api.support.getUserTickets,
+    userId ? { userId: userId as string } : "skip"
+  );
+
   return {
     store: store ?? null,
     storeId: storeId ?? null,
@@ -62,6 +67,7 @@ export const useSellerData = (userEmail?: string | null) => {
     referralStats: referralStats ?? null,
     usageDiscount: usageDiscount ?? null,
     payouts: payouts ?? [],
+    tickets: tickets ?? [],
     isLoading: store === undefined || products === undefined || orders === undefined,
   };
 };
@@ -73,8 +79,10 @@ export const useStoreMutations = () => {
   const createPayout = useMutation(api.payouts.create as any);
   const createTicket = useMutation(api.support.createTicket as any);
   const updateTicketStatus = useMutation(api.support.updateTicketStatus as any);
+  const addTicketMessage = useMutation(api.support.addTicketMessage as any);
+  const getTicketById = useMutation(api.support.getTicketById as any);
 
-  return { updateStore, createStore, updateStoreStatus, createPayout, createTicket, updateTicketStatus };
+  return { updateStore, createStore, updateStoreStatus, createPayout, createTicket, updateTicketStatus, addTicketMessage, getTicketById };
 };
 
 export const useProductMutations = () => {

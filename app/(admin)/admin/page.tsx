@@ -3449,6 +3449,106 @@ function AdminDashboard() {
           </motion.div>
         </motion.div>
       )}
+
+      {/* ── Ticket Details Modal ── */}
+      {showTicketModal && selectedTicket && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto"
+          onClick={() => { setShowTicketModal(false); setSelectedTicket(null); }}>
+          <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
+            className="bg-card rounded-2xl w-full max-w-2xl p-6 my-8"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-bold">Ticket {selectedTicket.ticketNumber}</h2>
+                <p className="text-sm text-muted-foreground">{selectedTicket.subject}</p>
+              </div>
+              <button onClick={() => { setShowTicketModal(false); setSelectedTicket(null); }} className="p-2 hover:bg-accent rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="p-4 rounded-lg bg-accent/50">
+                <p className="text-xs text-muted-foreground mb-1">From</p>
+                <p className="font-medium">{selectedTicket.userName}</p>
+                <p className="text-sm text-muted-foreground">{selectedTicket.userEmail}</p>
+              </div>
+                <div className="p-4 rounded-lg bg-accent/50">
+                <p className="text-xs text-muted-foreground mb-1">Status</p>
+                <select
+                  value={selectedTicket.status}
+                  onChange={async (e) => {
+                    const newStatus = e.target.value as "open" | "in_progress" | "resolved" | "closed";
+                    try {
+                      await updateTicketStatus({ id: selectedTicket._id, status: newStatus });
+                      setSelectedTicket({ ...selectedTicket, status: newStatus });
+                    } catch (err) {
+                      console.error("Failed to update status:", err);
+                    }
+                  }}
+                  className="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-background"
+                >
+                  <option value="open">Open</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="resolved">Resolved</option>
+                  <option value="closed">Closed</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <p className="text-xs text-muted-foreground mb-2">Description</p>
+              <div className="p-4 rounded-lg bg-accent/50 text-sm whitespace-pre-wrap">{selectedTicket.description}</div>
+            </div>
+
+            <div className="mb-6">
+              <p className="text-xs text-muted-foreground mb-2">Reply to Customer</p>
+              <textarea
+                id="ticketReply"
+                className="w-full px-4 py-3 rounded-lg border border-border bg-background min-h-[100px]"
+                placeholder="Type your reply here..."
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={async () => {
+                  const reply = (document.getElementById("ticketReply") as HTMLTextAreaElement)?.value;
+                  if (!reply?.trim()) {
+                    alert("Please enter a reply");
+                    return;
+                  }
+                  try {
+                    await addTicketMessage({
+                      ticketId: selectedTicket._id,
+                      senderId: "admin",
+                      senderName: "Admin",
+                      senderType: "admin",
+                      message: reply,
+                      isInternal: false,
+                    });
+                    (document.getElementById("ticketReply") as HTMLTextAreaElement).value = "";
+                    alert("Reply sent to customer!");
+                  } catch (err) {
+                    console.error("Failed to send reply:", err);
+                    alert("Failed to send reply");
+                  }
+                }}
+                className="flex-1 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:opacity-90"
+              >
+                Send Reply
+              </button>
+              <button
+                onClick={() => { setShowTicketModal(false); setSelectedTicket(null); }}
+                className="px-6 py-2.5 border border-border rounded-lg hover:bg-accent"
+              >
+                Close
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
     </div>
   )
 }

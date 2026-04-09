@@ -62,33 +62,105 @@ export default defineSchema({
 
   orders: defineTable({
     storeId: v.id("stores"),
+    userId: v.optional(v.id("users")),
     orderNumber: v.string(),
+    trackingNumber: v.optional(v.string()),
     customerName: v.string(),
     customerPhone: v.string(),
+    customerEmail: v.optional(v.string()),
+    shippingAddress: v.optional(v.string()),
     items: v.array(v.object({
       productId: v.string(),
       productName: v.string(),
       price: v.number(),
       quantity: v.number(),
       total: v.number(),
+      sellerId: v.optional(v.id("users")),
+      storeId: v.optional(v.id("stores")),
     })),
     subtotal: v.number(),
     total: v.number(),
     status: v.union(
       v.literal("pending"),
       v.literal("paid"),
+      v.literal("processing"),
+      v.literal("shipped"),
+      v.literal("delivered"),
+      v.literal("completed"),
       v.literal("failed"),
-      v.literal("cancelled")
+      v.literal("cancelled"),
+      v.literal("refunded")
     ),
-    deliveryStatus: v.optional(v.union(v.literal("pending"), v.literal("dispatched"), v.literal("delivered"), v.literal("buyer_confirmed"))),
+    deliveryStatus: v.optional(v.union(v.literal("pending"), v.literal("processing"), v.literal("dispatched"), v.literal("in_transit"), v.literal("delivered"), v.literal("buyer_confirmed"))),
     escrowStatus: v.optional(v.union(v.literal("awaiting_payment"), v.literal("held"), v.literal("released"), v.literal("refunded"))),
+    paymentMethod: v.optional(v.union(v.literal("mtn_momo"), v.literal("airtel_money"), v.literal("cash_on_delivery"), v.literal("bank_transfer"))),
+    paymentStatus: v.optional(v.union(v.literal("pending"), v.literal("pending_confirmation"), v.literal("paid"), v.literal("failed"), v.literal("refunded"))),
     notes: v.optional(v.string()),
     createdAt: v.optional(v.number()),
+    updatedAt: v.optional(v.number()),
   })
     .index("by_store", ["storeId"])
+    .index("by_user", ["userId"])
     .index("by_status", ["status"])
     .index("by_orderNumber", ["orderNumber"])
+    .index("by_tracking", ["trackingNumber"])
     .index("by_createdAt", ["createdAt"]),
+
+  // ─── Order Tracking ───────────────────────────────────────
+  order_tracking: defineTable({
+    orderId: v.id("orders"),
+    storeId: v.id("stores"),
+    sellerId: v.id("users"),
+    status: v.union(v.literal("pending"), v.literal("processing"), v.literal("packed"), v.literal("shipped"), v.literal("in_transit"), v.literal("delivered"), v.literal("cancelled")),
+    currentLocation: v.optional(v.string()),
+    estimatedDelivery: v.optional(v.number()),
+    actualDelivery: v.optional(v.number()),
+    trackingHistory: v.array(v.object({
+      status: v.string(),
+      location: v.optional(v.string()),
+      description: v.string(),
+      timestamp: v.number(),
+    })),
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_order", ["orderId"])
+    .index("by_store", ["storeId"])
+    .index("by_seller", ["sellerId"])
+    .index("by_status", ["status"]),
+
+  // ─── Customer Orders (for multi-seller cart) ───────────────
+  customer_orders: defineTable({
+    userId: v.id("users"),
+    orderNumber: v.string(),
+    trackingNumber: v.optional(v.string()),
+    items: v.array(v.object({
+      productId: v.string(),
+      productName: v.string(),
+      price: v.number(),
+      quantity: v.number(),
+      total: v.number(),
+      storeId: v.id("stores"),
+      sellerId: v.id("users"),
+    })),
+    subtotal: v.number(),
+    total: v.number(),
+    customerName: v.string(),
+    customerPhone: v.string(),
+    customerEmail: v.optional(v.string()),
+    shippingAddress: v.optional(v.string()),
+    status: v.union(v.literal("pending"), v.literal("paid"), v.literal("processing"), v.literal("shipped"), v.literal("delivered"), v.literal("completed"), v.literal("cancelled"), v.literal("refunded")),
+    deliveryStatus: v.optional(v.union(v.literal("pending"), v.literal("processing"), v.literal("dispatched"), v.literal("in_transit"), v.literal("delivered"), v.literal("buyer_confirmed"))),
+    paymentMethod: v.optional(v.union(v.literal("mtn_momo"), v.literal("airtel_money"), v.literal("cash_on_delivery"), v.literal("bank_transfer"))),
+    paymentStatus: v.optional(v.union(v.literal("pending"), v.literal("pending_confirmation"), v.literal("paid"), v.literal("failed"), v.literal("refunded"))),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_orderNumber", ["orderNumber"])
+    .index("by_tracking", ["trackingNumber"])
+    .index("by_status", ["status"]),
 
   transactions: defineTable({
     orderId: v.id("orders"),

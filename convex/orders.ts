@@ -57,29 +57,57 @@ export const getByDateRange = query({
 export const create = mutation({
   args: {
     storeId: v.id("stores"),
+    userId: v.optional(v.id("users")),
     orderNumber: v.string(),
+    trackingNumber: v.optional(v.string()),
     customerName: v.string(),
     customerPhone: v.string(),
+    customerEmail: v.optional(v.string()),
+    shippingAddress: v.optional(v.string()),
     items: v.array(v.object({
       productId: v.string(),
       productName: v.string(),
       price: v.number(),
       quantity: v.number(),
       total: v.number(),
+      sellerId: v.optional(v.id("users")),
+      storeId: v.optional(v.id("stores")),
     })),
     subtotal: v.number(),
     total: v.number(),
+    status: v.optional(v.union(v.literal("pending"), v.literal("paid"), v.literal("processing"), v.literal("shipped"), v.literal("delivered"), v.literal("completed"), v.literal("cancelled"))),
+    paymentMethod: v.optional(v.union(v.literal("mtn_momo"), v.literal("airtel_money"), v.literal("cash_on_delivery"), v.literal("bank_transfer"))),
+    paymentStatus: v.optional(v.union(v.literal("pending"), v.literal("pending_confirmation"), v.literal("paid"), v.literal("failed"))),
     notes: v.optional(v.string()),
+    createdAt: v.optional(v.number()),
+    updatedAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const now = Date.now();
-    const orderId = await ctx.db.insert("orders", { ...args, status: "pending", createdAt: now });
+    const now = args.createdAt || Date.now();
+    const orderId = await ctx.db.insert("orders", {
+      storeId: args.storeId,
+      userId: args.userId,
+      orderNumber: args.orderNumber,
+      trackingNumber: args.trackingNumber,
+      customerName: args.customerName,
+      customerPhone: args.customerPhone,
+      customerEmail: args.customerEmail,
+      shippingAddress: args.shippingAddress,
+      items: args.items,
+      subtotal: args.subtotal,
+      total: args.total,
+      status: args.status || "pending",
+      paymentMethod: args.paymentMethod,
+      paymentStatus: args.paymentStatus || "pending",
+      notes: args.notes,
+      deliveryStatus: "pending",
+      createdAt: now,
+      updatedAt: args.updatedAt || now,
+    });
     
-    // Get store info for seller notification
     const store = await ctx.db.get(args.storeId);
-    const sellerId = store?.userId;
+    const sellerId = store ? store.userId : undefined;
 
-    // Notify admin about new order
     await ctx.db.insert("notifications", {
       userId: "admin",
       type: "order_new",
@@ -91,7 +119,6 @@ export const create = mutation({
       createdAt: now,
     });
 
-    // Notify seller about new order
     if (sellerId) {
       await ctx.db.insert("notifications", {
         userId: sellerId,

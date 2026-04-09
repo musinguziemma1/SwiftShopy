@@ -25,6 +25,8 @@ interface CartItem {
   image: string;
   quantity: number;
   storeName: string;
+  storeId: string;
+  sellerId: string;
 }
 
 export default function ShopPage() {
@@ -38,6 +40,14 @@ export default function ShopPage() {
   const [showCart, setShowCart] = useState(false);
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [quickViewProduct, setQuickViewProduct] = useState<any>(null);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [shippingAddress, setShippingAddress] = useState("");
+  const [orderPlaced, setOrderPlaced] = useState(false);
+  const [orderDetails, setOrderDetails] = useState<{ orderNumber: string; trackingNumber: string; total: number } | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Fetch products from Convex (real-time updates)
   const products = useQuery(api.products.getAllActive, {
@@ -71,6 +81,8 @@ export default function ShopPage() {
         image: product.image || "",
         quantity: 1,
         storeName: product.store?.name || "Unknown Store",
+        storeId: product.storeId || "",
+        sellerId: product.store?.userId || "",
       }];
     });
   };
@@ -99,6 +111,85 @@ export default function ShopPage() {
   };
 
   const fmt = (n: number) => `UGX ${n.toLocaleString()}`;
+
+  const handleCheckout = async () => {
+    if (!customerName || !customerPhone) {
+      alert("Please enter your name and phone number.");
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      const items = cart.map(item => ({
+        productId: item.id,
+        productName: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        storeId: item.storeId,
+        sellerId: item.sellerId,
+      }));
+
+      const response = await fetch("/api/orders/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items,
+          customerName,
+          customerPhone,
+          customerEmail: customerEmail || undefined,
+          shippingAddress: shippingAddress || undefined,
+          paymentMethod: "mtn_momo",
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setOrderDetails({
+          orderNumber: data.orderNumber,
+          trackingNumber: data.trackingNumber,
+          total: data.total,
+        });
+        setOrderPlaced(true);
+        setCheckoutOpen(false);
+        setCart([]);
+      } else {
+        alert(data.error || "Order failed. Please try again.");
+      }
+    } catch (err) {
+      console.error("Checkout error:", err);
+      alert("Failed to place order. Please try again.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const initiatePayment = async (orderId: string, amount: number) => {
+    try {
+      const response = await fetch("/api/pay", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId,
+          amount,
+          phone: customerPhone,
+          storeName: "SwiftShopy",
+          items: cart.map(i => ({ name: i.name, qty: i.quantity })),
+        }),
+      });
+
+      const data = await response.json();
+      if (data.referenceId) {
+        alert("Payment request sent! Please approve on your MTN MoMo.");
+      } else {
+        alert(data.error || "Payment failed.");
+      }
+    } catch (err) {
+      console.error("Payment error:", err);
+      alert("Payment failed. Please try again.");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -534,7 +625,7 @@ export default function ShopPage() {
                     <span className="text-muted-foreground">Subtotal</span>
                     <span className="font-bold text-xl">{fmt(cartTotal)}</span>
                   </div>
-                  <button className="w-full py-3 bg-gradient-to-r from-primary to-indigo-600 text-white rounded-xl font-medium hover:shadow-lg transition-all flex items-center justify-center gap-2">
+                  <button onClick={() => setCheckoutOpen(true)} className="w-full py-3 bg-gradient-to-r from-primary to-indigo-600 text-white rounded-xl font-medium hover:shadow-lg transition-all flex items-center justify-center gap-2">
                     Checkout <ArrowRight className="w-4 h-4" />
                   </button>
                   <p className="text-xs text-muted-foreground text-center mt-3">
@@ -699,6 +790,167 @@ export default function ShopPage() {
           </div>
         </div>
       </footer>
+
+      {/* Checkout Modal */}
+      <AnimatePresence>
+        {checkoutOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setCheckoutOpen(false)}
+              className="absolute inset-0 bg-black/50 pointer-events-auto"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl pointer-events-auto max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Checkout</h2>
+                <button onClick={() => setCheckoutOpen(false)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4 mb-6">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Full Name *</label>
+                  <input
+                    type="text"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="Your full name"
+                    className="w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Phone Number (MTN) *</label>
+                  <input
+                    type="tel"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    placeholder="07XXXXXXXX"
+                    className="w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Email (Optional)</label>
+                  <input
+                    type="email"
+                    value={customerEmail}
+                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    placeholder="your@email.com"
+                    className="w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Shipping Address (Optional)</label>
+                  <input
+                    type="text"
+                    value={shippingAddress}
+                    onChange={(e) => setShippingAddress(e.target.value)}
+                    placeholder="Delivery address"
+                    className="w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+              </div>
+
+              <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
+                <h3 className="font-medium mb-3">Order Summary ({cart.length} items)</h3>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {cart.map((item) => (
+                    <div key={item.id} className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">{item.name} x{item.quantity}</span>
+                      <span className="font-medium">{fmt(item.price * item.quantity)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-between mb-6 py-3 border-t border-b">
+                <span className="font-medium">Total</span>
+                <span className="font-bold text-xl">{fmt(cartTotal)}</span>
+              </div>
+
+              <button
+                onClick={handleCheckout}
+                disabled={isProcessing || !customerName || !customerPhone}
+                className="w-full py-3 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isProcessing ? (
+                  <>
+                    <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    Place Order & Pay
+                  </>
+                )}
+              </button>
+              <p className="text-xs text-muted-foreground text-center mt-3">
+                You will receive an MTN MoMo prompt to complete payment
+              </p>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Order Success Modal */}
+      <AnimatePresence>
+        {orderPlaced && orderDetails && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl p-8 text-center max-w-sm mx-4"
+            >
+              <div className="w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Check className="w-8 h-8 text-green-500" />
+              </div>
+              <h2 className="text-xl font-bold mb-2">Order Placed!</h2>
+              <p className="text-muted-foreground mb-4">Your order has been confirmed.</p>
+              
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 mb-6 text-left">
+                <div className="flex justify-between mb-2">
+                  <span className="text-sm text-muted-foreground">Order Number</span>
+                  <span className="text-sm font-medium">{orderDetails.orderNumber}</span>
+                </div>
+                <div className="flex justify-between mb-2">
+                  <span className="text-sm text-muted-foreground">Tracking</span>
+                  <span className="text-sm font-medium">{orderDetails.trackingNumber}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Total</span>
+                  <span className="text-sm font-bold">{fmt(orderDetails.total)}</span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  setOrderPlaced(false);
+                  setOrderDetails(null);
+                  setCustomerName("");
+                  setCustomerPhone("");
+                  setCustomerEmail("");
+                  setShippingAddress("");
+                }}
+                className="px-6 py-2 bg-primary text-white rounded-xl"
+              >
+                Continue Shopping
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

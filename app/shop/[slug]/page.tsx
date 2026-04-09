@@ -7,7 +7,7 @@ import { ShoppingCart, MessageCircle, Phone, Star, Package, Search, Minus, Plus,
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 
-interface CartItem { id: string; name: string; price: number; quantity: number; image: string; }
+interface CartItem { id: string; name: string; price: number; quantity: number; image: string; storeId: string; sellerId: string; }
 
 const fmt = (n: number) => `UGX ${n.toLocaleString()}`;
 
@@ -19,9 +19,13 @@ export default function StorefrontPage() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [orderPlaced, setOrderPlaced] = useState(false);
+  const [orderDetails, setOrderDetails] = useState<{ orderNumber: string; trackingNumber: string; total: number } | null>(null);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [shippingAddress, setShippingAddress] = useState("");
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const store = useQuery(api.stores.getBySlug, { slug });
   const products = useQuery(api.products.getByStore, store?._id ? { storeId: store._id as any, activeOnly: true } : "skip");
@@ -38,7 +42,7 @@ export default function StorefrontPage() {
     setCart((prev) => {
       const existing = prev.find((i) => i.id === product._id);
       if (existing) return prev.map((i) => i.id === product._id ? { ...i, quantity: i.quantity + 1 } : i);
-      return [...prev, { id: product._id, name: product.name, price: product.price, quantity: 1, image: product.image ?? "" }];
+      return [...prev, { id: product._id, name: product.name, price: product.price, quantity: 1, image: product.image ?? "", storeId: store?._id || "", sellerId: store?.userId || "" }];
     });
   };
 
@@ -48,6 +52,59 @@ export default function StorefrontPage() {
 
   const total = cart.reduce((s, i) => s + i.price * i.quantity, 0);
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
+
+  const handleCheckout = async () => {
+    if (!customerName || !customerPhone) {
+      alert("Please enter your name and phone number.");
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      const items = cart.map(item => ({
+        productId: item.id,
+        productName: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        storeId: item.storeId,
+        sellerId: item.sellerId,
+      }));
+
+      const response = await fetch("/api/orders/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items,
+          customerName,
+          customerPhone,
+          customerEmail: customerEmail || undefined,
+          shippingAddress: shippingAddress || undefined,
+          paymentMethod: "mtn_momo",
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setOrderDetails({
+          orderNumber: data.orderNumber,
+          trackingNumber: data.trackingNumber,
+          total: data.total,
+        });
+        setOrderPlaced(true);
+        setCheckoutOpen(false);
+        setCart([]);
+      } else {
+        alert(data.error || "Order failed. Please try again.");
+      }
+    } catch (err) {
+      console.error("Checkout error:", err);
+      alert("Failed to place order. Please try again.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   if (!store) {
     return (
@@ -217,28 +274,64 @@ export default function StorefrontPage() {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setCheckoutOpen(false)}
               className="absolute inset-0 bg-black/50 pointer-events-auto" />
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              className="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl pointer-events-auto">
-              <h2 className="text-xl font-bold mb-4">Checkout</h2>
+              className="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl pointer-events-auto max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Checkout</h2>
+                <button onClick={() => setCheckoutOpen(false)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
               <div className="space-y-4 mb-6">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Name</label>
-                  <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Your name"
+                  <label className="block text-sm font-medium mb-2">Full Name *</label>
+                  <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Your full name"
                     className="w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">Phone (MTN)</label>
+                  <label className="block text-sm font-medium mb-2">Phone (MTN) *</label>
                   <input type="tel" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="07XXXXXXXX"
                     className="w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Email (Optional)</label>
+                  <input type="email" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} placeholder="your@email.com"
+                    className="w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Shipping Address (Optional)</label>
+                  <input type="text" value={shippingAddress} onChange={(e) => setShippingAddress(e.target.value)} placeholder="Delivery address"
+                    className="w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                </div>
               </div>
-              <div className="flex justify-between mb-4 py-3 border-t border-b">
-                <span>Total</span>
-                <span className="font-bold">{fmt(total)}</span>
+              <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
+                <h3 className="font-medium mb-3">Order Summary ({cart.length} items)</h3>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {cart.map((item) => (
+                    <div key={item.id} className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">{item.name} x{item.quantity}</span>
+                      <span className="font-medium">{fmt(item.price * item.quantity)}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <button onClick={() => { setOrderPlaced(true); setCheckoutOpen(false); setCart([]); }}
-                className="w-full py-3 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 transition-colors">
-                Place Order & Pay
+              <div className="flex justify-between mb-6 py-3 border-t border-b">
+                <span className="font-medium">Total</span>
+                <span className="font-bold text-xl">{fmt(total)}</span>
+              </div>
+              <button onClick={handleCheckout} disabled={isProcessing || !customerName || !customerPhone}
+                className="w-full py-3 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                {isProcessing ? (
+                  <>
+                    <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    Processing...
+                  </>
+                ) : (
+                  "Place Order & Pay"
+                )}
               </button>
+              <p className="text-xs text-muted-foreground text-center mt-3">
+                You will receive an MTN MoMo prompt to complete payment
+              </p>
             </motion.div>
           </div>
         )}
@@ -246,7 +339,7 @@ export default function StorefrontPage() {
 
       {/* Order Success */}
       <AnimatePresence>
-        {orderPlaced && (
+        {orderPlaced && orderDetails && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
             <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-white dark:bg-gray-800 rounded-2xl p-8 text-center max-w-sm mx-4">
@@ -254,8 +347,23 @@ export default function StorefrontPage() {
                 <Check className="w-8 h-8 text-green-500" />
               </div>
               <h2 className="text-xl font-bold mb-2">Order Placed!</h2>
-              <p className="text-muted-foreground mb-6">Check your phone for MTN MoMo payment prompt.</p>
-              <button onClick={() => setOrderPlaced(false)} className="px-6 py-2 bg-primary text-white rounded-xl">
+              <p className="text-muted-foreground mb-4">Your order has been confirmed.</p>
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 mb-6 text-left">
+                <div className="flex justify-between mb-2">
+                  <span className="text-sm text-muted-foreground">Order Number</span>
+                  <span className="text-sm font-medium">{orderDetails.orderNumber}</span>
+                </div>
+                <div className="flex justify-between mb-2">
+                  <span className="text-sm text-muted-foreground">Tracking</span>
+                  <span className="text-sm font-medium">{orderDetails.trackingNumber}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Total</span>
+                  <span className="text-sm font-bold">{fmt(orderDetails.total)}</span>
+                </div>
+              </div>
+              <button onClick={() => { setOrderPlaced(false); setOrderDetails(null); setCustomerName(""); setCustomerPhone(""); setCustomerEmail(""); setShippingAddress(""); }}
+                className="px-6 py-2 bg-primary text-white rounded-xl">
                 Continue Shopping
               </button>
             </motion.div>

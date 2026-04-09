@@ -25,7 +25,7 @@ interface Product {
 }
 interface Order {
   id: string; customer: string; amount: number;
-  status: "pending" | "paid" | "failed" | "cancelled"; date: string; items: number;
+  status: "pending" | "paid" | "processing" | "shipped" | "delivered" | "completed" | "failed" | "cancelled" | "refunded"; date: string; items: number;
 }
 interface DashboardStats {
   totalRevenue: number; totalOrders: number; totalProducts: number;

@@ -94,3 +94,31 @@ export function maskSensitiveInfo(info: string, visibleChars: number = 4): strin
   if (!info || info.length <= visibleChars) return "****";
   return "*".repeat(info.length - visibleChars) + info.slice(-visibleChars);
 }
+
+// ─── Payment Utilities ─────────────────────────────────────
+
+export function generateReceiptNumber(): string {
+  return `RCP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+}
+
+export function generateIdempotencyKey(action: string, identifier: string): string {
+  const hash = require("crypto").createHash("sha256");
+  return `${action}-${identifier}-${Date.now()}`;
+}
+
+export function formatCurrencyPrecise(amount: number, currency: string = "UGX"): string {
+  // Use integer math to avoid floating point issues
+  const rounded = Math.round(amount);
+  if (currency === "UGX") {
+    return `UGX ${rounded.toLocaleString("en-UG")}`;
+  }
+  return `${currency} ${(rounded / 100).toFixed(2)}`;
+}
+
+export function calculateRefundAmount(originalAmount: number, refundPercentage: number = 100): number {
+  return Math.floor(originalAmount * (refundPercentage / 100));
+}
+
+export function isValidPaymentAmount(amount: number, min: number = 100, max: number = 100000000): boolean {
+  return amount >= min && amount <= max && Number.isInteger(amount);
+}

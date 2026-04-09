@@ -87,8 +87,9 @@ export async function POST(req: NextRequest) {
     }
 
     const externalRef = `SUB-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`;
+    const idempotencyKey = `IDM-${externalRef}`;
 
-    const paymentId = await convex.mutation(api.payments.createPayment, {
+    const paymentResult = await convex.mutation(api.payments.createPayment, {
       userId: userId as any,
       amount: finalAmount,
       currency: "UGX",
@@ -96,7 +97,20 @@ export async function POST(req: NextRequest) {
       plan,
       provider,
       externalRef,
+      idempotencyKey,
     });
+
+    // Handle duplicate payment scenario
+    if (paymentResult.duplicate) {
+      return NextResponse.json({ 
+        success: false, 
+        message: "Duplicate payment detected",
+        paymentId: paymentResult.paymentId,
+        status: paymentResult.status
+      }, { status: 409 });
+    }
+
+    const paymentId = paymentResult.paymentId;
 
     if (provider === "mtn_momo") {
       try {

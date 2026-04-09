@@ -34,6 +34,7 @@ import type * as support from "../support.js";
 import type * as tokenization from "../tokenization.js";
 import type * as transactions from "../transactions.js";
 import type * as users from "../users.js";
+import type * as webhooks from "../webhooks.js";
 import type * as whatsapp from "../whatsapp.js";
 
 import type {
@@ -69,6 +70,7 @@ declare const fullApi: ApiFromModules<{
   tokenization: typeof tokenization;
   transactions: typeof transactions;
   users: typeof users;
+  webhooks: typeof webhooks;
   whatsapp: typeof whatsapp;
 }>;
 

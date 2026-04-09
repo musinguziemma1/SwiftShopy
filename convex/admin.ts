@@ -77,7 +77,7 @@ export const logAction = mutation({
     adminId: v.string(),
     adminName: v.optional(v.string()),
     action: v.string(),
-    targetType: v.union(v.literal("user"), v.literal("seller"), v.literal("order"), v.literal("product"), v.literal("transaction"), v.literal("settings"), v.literal("system"), v.literal("ticket")),
+    targetType: v.union(v.literal("user"), v.literal("seller"), v.literal("order"), v.literal("product"), v.literal("transaction"), v.literal("settings"), v.literal("system"), v.literal("ticket"), v.literal("payment")),
     targetId: v.string(),
     targetName: v.optional(v.string()),
     details: v.any(),

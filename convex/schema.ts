@@ -98,18 +98,24 @@ export default defineSchema({
     provider: v.union(v.literal("mtn_momo"), v.literal("airtel_money")),
     providerRef: v.string(),
     externalRef: v.string(),
+    idempotencyKey: v.optional(v.string()),
     status: v.union(
       v.literal("pending"),
       v.literal("successful"),
-      v.literal("failed")
+      v.literal("failed"),
+      v.literal("refunded")
     ),
     customerPhone: v.string(),
     metadata: v.optional(v.any()),
+    failureReason: v.optional(v.string()),
+    createdAt: v.optional(v.number()),
+    processedAt: v.optional(v.number()),
   })
     .index("by_order", ["orderId"])
     .index("by_store", ["storeId"])
     .index("by_externalRef", ["externalRef"])
-    .index("by_providerRef", ["providerRef"]),
+    .index("by_providerRef", ["providerRef"])
+    .index("by_idempotency", ["idempotencyKey"]),
 
   // ─── Admin & Operations ─────────────────────────────────
   admin_users: defineTable({
@@ -130,7 +136,7 @@ export default defineSchema({
     adminId: v.string(),
     adminName: v.string(),
     action: v.string(),
-    targetType: v.union(v.literal("user"), v.literal("seller"), v.literal("order"), v.literal("product"), v.literal("transaction"), v.literal("settings"), v.literal("system"), v.literal("ticket")),
+    targetType: v.union(v.literal("user"), v.literal("seller"), v.literal("order"), v.literal("product"), v.literal("transaction"), v.literal("settings"), v.literal("system"), v.literal("ticket"), v.literal("payment")),
     targetId: v.string(),
     targetName: v.optional(v.string()),
     details: v.any(),
@@ -383,6 +389,9 @@ export default defineSchema({
       v.literal("payment_pending"),
       v.literal("payment_success"),
       v.literal("payment_failed"),
+      v.literal("payment_refunded"),
+      v.literal("payment_dispute"),
+      v.literal("dispute_resolved"),
       v.literal("product_limit_reached"),
       v.literal("referral_bonus"),
       v.literal("usage_discount_applied"),
@@ -466,11 +475,16 @@ export default defineSchema({
      currency: v.string(),
      phone: v.string(),
      plan: v.union(v.literal("free"), v.literal("pro"), v.literal("business"), v.literal("enterprise")),
-     status: v.union(v.literal("pending"), v.literal("success"), v.literal("failed"), v.literal("cancelled")),
+     status: v.union(v.literal("pending"), v.literal("success"), v.literal("failed"), v.literal("cancelled"), v.literal("refunded")),
      provider: v.union(v.literal("mtn_momo"), v.literal("airtel_money")),
      providerRef: v.optional(v.string()),
      externalRef: v.string(),
+     idempotencyKey: v.optional(v.string()),
      failureReason: v.optional(v.string()),
+     refundAmount: v.optional(v.number()),
+     refundReason: v.optional(v.string()),
+     refundedAt: v.optional(v.number()),
+     refundedBy: v.optional(v.string()),
      createdAt: v.number(),
      processedAt: v.optional(v.number()),
    })
@@ -478,9 +492,81 @@ export default defineSchema({
      .index("by_subscription", ["subscriptionId"])
      .index("by_status", ["status"])
      .index("by_externalRef", ["externalRef"])
+     .index("by_idempotency", ["idempotencyKey"])
      .index("by_date", ["createdAt"]),
 
-    // ─── Tokenization Tables ───────────────────────────────────
+   // ─── Payment Disputes ────────────────────────────────────────
+   payment_disputes: defineTable({
+     transactionId: v.id("transactions"),
+     subscriptionPaymentId: v.optional(v.id("subscription_payments")),
+     userId: v.id("users"),
+     amount: v.number(),
+     currency: v.string(),
+     reason: v.string(),
+     description: v.string(),
+     status: v.union(v.literal("open"), v.literal("investigating"), v.literal("resolved"), v.literal("rejected")),
+     resolution: v.optional(v.string()),
+     resolvedAt: v.optional(v.number()),
+     resolvedBy: v.optional(v.string()),
+     createdAt: v.number(),
+     updatedAt: v.number(),
+   })
+     .index("by_transaction", ["transactionId"])
+     .index("by_user", ["userId"])
+     .index("by_status", ["status"])
+     .index("by_date", ["createdAt"]),
+
+   // ─── Webhook Retries ───────────────────────────────────────
+   webhook_retries: defineTable({
+     webhookType: v.string(),
+     referenceId: v.string(),
+     payload: v.any(),
+     attempt: v.number(),
+     maxAttempts: v.number(),
+     nextRetryAt: v.number(),
+     status: v.union(v.literal("pending"), v.literal("processing"), v.literal("completed"), v.literal("failed")),
+     lastError: v.optional(v.string()),
+     createdAt: v.number(),
+     updatedAt: v.number(),
+   })
+     .index("by_webhook_type", ["webhookType"])
+     .index("by_reference", ["referenceId"])
+     .index("by_status", ["status"])
+    .index("by_next_retry", ["nextRetryAt"]),
+
+  // ─── Payment Reconciliation ─────────────────────────────────
+  payment_reconciliation: defineTable({
+    date: v.number(),
+    totalExpected: v.number(),
+    totalReceived: v.number(),
+    totalRefunded: v.number(),
+    transactionCount: v.number(),
+    discrepancy: v.number(),
+    status: v.union(v.literal("pending"), v.literal("reconciled"), v.literal("discrepancy")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_date", ["date"])
+    .index("by_status", ["status"]),
+
+  // ─── Payment Receipts ─────────────────────────────────────
+  payment_receipts: defineTable({
+    paymentId: v.string(),
+    receiptNumber: v.string(),
+    userId: v.id("users"),
+    amount: v.number(),
+    currency: v.string(),
+    plan: v.string(),
+    provider: v.string(),
+    status: v.string(),
+    pdfUrl: v.optional(v.string()),
+    generatedAt: v.number(),
+  })
+    .index("by_payment", ["paymentId"])
+    .index("by_receipt", ["receiptNumber"])
+    .index("by_user", ["userId"]),
+
+  // ─── Tokenization Tables ───────────────────────────────────
     payment_tokens: defineTable({
       token: v.string(),
       hashedData: v.string(),

@@ -304,6 +304,8 @@ export const updateDisbursementStatus = mutation({
         status: "successful",
         customerPhone: disbursement.sellerPhone,
         metadata: { type: "disbursement", batchId: disbursement.batchId },
+        createdAt: Date.now(),
+        processedAt: Date.now(),
       });
     }
 

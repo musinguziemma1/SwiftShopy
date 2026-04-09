@@ -2,7 +2,7 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { PLAN_PRICES } from "./subscriptions";
 
-export type PaymentStatus = "pending" | "success" | "failed" | "cancelled";
+export type PaymentStatus = "pending" | "success" | "failed" | "cancelled" | "refunded";
 export type PaymentProvider = "mtn_momo" | "airtel_money";
 
 export const createPayment = mutation({
@@ -14,8 +14,35 @@ export const createPayment = mutation({
     plan: v.union(v.literal("free"), v.literal("pro"), v.literal("business"), v.literal("enterprise")),
     provider: v.union(v.literal("mtn_momo"), v.literal("airtel_money")),
     externalRef: v.string(),
+    idempotencyKey: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Check for idempotency - prevent duplicate payments
+    if (args.idempotencyKey) {
+      const existingByKey = await ctx.db.query("subscription_payments")
+        .withIndex("by_idempotency", q => q.eq("idempotencyKey", args.idempotencyKey))
+        .first();
+      if (existingByKey) {
+        return { 
+          duplicate: true, 
+          paymentId: existingByKey._id, 
+          status: existingByKey.status 
+        };
+      }
+    }
+
+    // Also check by externalRef to prevent duplicates
+    const existing = await ctx.db.query("subscription_payments")
+      .withIndex("by_externalRef", q => q.eq("externalRef", args.externalRef))
+      .first();
+    if (existing) {
+      return { 
+        duplicate: true, 
+        paymentId: existing._id, 
+        status: existing.status 
+      };
+    }
+
     const now = Date.now();
     const paymentId = await ctx.db.insert("subscription_payments", {
       userId: args.userId,
@@ -28,6 +55,7 @@ export const createPayment = mutation({
       provider: args.provider,
       providerRef: undefined,
       externalRef: args.externalRef,
+      idempotencyKey: args.idempotencyKey,
       failureReason: undefined,
       createdAt: now,
       processedAt: undefined,
@@ -42,7 +70,7 @@ export const createPayment = mutation({
       createdAt: Date.now(),
     });
 
-    return paymentId;
+    return { duplicate: false, paymentId, status: "pending" };
   },
 });
 
@@ -261,5 +289,143 @@ export const getPaymentsSummary = query({
       pending: pending.length,
       totalRevenue: success.reduce((sum, p) => sum + p.amount, 0),
     };
+  },
+});
+
+// ─── Refund Functions ─────────────────────────────────────
+export const refundPayment = mutation({
+  args: {
+    paymentId: v.id("subscription_payments"),
+    refundAmount: v.number(),
+    reason: v.string(),
+    refundedBy: v.string(),
+  },
+  handler: async (ctx, { paymentId, refundAmount, reason, refundedBy }) => {
+    const payment = await ctx.db.get(paymentId);
+    if (!payment) throw new Error("Payment not found");
+    if (payment.status !== "success") throw new Error("Can only refund successful payments");
+    if (payment.refundAmount) throw new Error("Payment already refunded");
+
+    const now = Date.now();
+    
+    // Update payment as refunded
+    await ctx.db.patch(paymentId, {
+      status: "refunded",
+      refundAmount,
+      refundReason: reason,
+      refundedAt: now,
+      refundedBy,
+    });
+
+    // Notify user
+    await ctx.db.insert("notifications", {
+      userId: payment.userId,
+      type: "payment_refunded",
+      title: "Payment Refunded",
+      message: `Your payment of UGX ${payment.amount.toLocaleString()} has been refunded. Reason: ${reason}`,
+      isRead: false,
+      createdAt: now,
+    });
+
+    // Create audit log
+    await ctx.db.insert("audit_logs", {
+      adminId: refundedBy,
+      adminName: "Admin",
+      action: "payment_refund",
+      targetType: "payment",
+      targetId: paymentId,
+      targetName: payment.externalRef,
+      details: { amount: refundAmount, reason, originalAmount: payment.amount },
+      createdAt: now,
+    });
+
+    return { success: true };
+  },
+});
+
+// ─── Dispute Functions ─────────────────────────────────────
+export const createDispute = mutation({
+  args: {
+    transactionId: v.optional(v.id("transactions")),
+    subscriptionPaymentId: v.optional(v.id("subscription_payments")),
+    userId: v.id("users"),
+    amount: v.number(),
+    currency: v.string(),
+    reason: v.string(),
+    description: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    
+    const disputeId = await ctx.db.insert("payment_disputes", {
+      transactionId: args.transactionId as any,
+      subscriptionPaymentId: args.subscriptionPaymentId as any,
+      userId: args.userId,
+      amount: args.amount,
+      currency: args.currency,
+      reason: args.reason,
+      description: args.description,
+      status: "open",
+      resolution: undefined,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Notify admin
+    await ctx.db.insert("notifications", {
+      userId: "admin",
+      type: "payment_dispute",
+      title: "New Payment Dispute",
+      message: `User dispute: ${args.reason} - UGX ${args.amount.toLocaleString()}`,
+      isRead: false,
+      actionUrl: "/admin?tab=disputes",
+      metadata: { disputeId, amount: args.amount },
+      createdAt: now,
+    });
+
+    return disputeId;
+  },
+});
+
+export const resolveDispute = mutation({
+  args: {
+    disputeId: v.id("payment_disputes"),
+    resolution: v.string(),
+    resolvedBy: v.string(),
+  },
+  handler: async (ctx, { disputeId, resolution, resolvedBy }) => {
+    const now = Date.now();
+    const dispute = await ctx.db.get(disputeId);
+    if (!dispute) throw new Error("Dispute not found");
+
+    await ctx.db.patch(disputeId, {
+      status: "resolved",
+      resolution,
+      resolvedAt: now,
+      resolvedBy,
+    });
+
+    // Notify user
+    await ctx.db.insert("notifications", {
+      userId: dispute.userId,
+      type: "dispute_resolved",
+      title: "Dispute Resolved",
+      message: `Your dispute has been resolved. Resolution: ${resolution}`,
+      isRead: false,
+      createdAt: now,
+    });
+
+    return { success: true };
+  },
+});
+
+export const getDisputes = query({
+  args: { status: v.optional(v.string()) },
+  handler: async (ctx, { status }) => {
+    let disputes = await ctx.db.query("payment_disputes").collect();
+    if (status && status !== "all") {
+      disputes = disputes.filter(d => d.status === status);
+    }
+    return disputes.sort((a, b) => b.createdAt - a.createdAt);
   },
 });

@@ -321,7 +321,7 @@ function AdminDashboard() {
 
   // Get real data from Convex
   const { sellers: convexSellers, stores, orders, transactions, subscriptions, payments, billingAnalytics, revenueByPlan, referralStats, expiringSubscriptions, isLoading } = useAdminData()
-  const { toggleUserActive, updateOrderStatus, upgradePlan, renewSubscription, cancelSubscription, expireSubscription, updatePaymentStatus } = useAdminMutations()
+  const { toggleUserActive, updateOrderStatus, upgradePlan, renewSubscription, cancelSubscription, expireSubscription, updatePaymentStatus, createAuditLog } = useAdminMutations()
   
   // Session
   const { data: session } = useSession()
@@ -841,6 +841,7 @@ function AdminDashboard() {
                       <button onClick={async () => {
                         for (const id of selectedSellers) {
                           await toggleUserActive({ id: id as any, isActive: true });
+                          await createAuditLog({ adminId: "admin", action: "seller_approve", targetType: "seller", targetId: id as string, targetName: "Seller", details: { action: "Activated seller account" } });
                         }
                         setSelectedSellers([]);
                       }} className="px-3 py-1.5 text-sm bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center gap-1">
@@ -849,6 +850,7 @@ function AdminDashboard() {
                       <button onClick={async () => {
                         for (const id of selectedSellers) {
                           await toggleUserActive({ id: id as any, isActive: false });
+                          await createAuditLog({ adminId: "admin", action: "seller_suspend", targetType: "seller", targetId: id as string, targetName: "Seller", details: { action: "Suspended seller account" } });
                         }
                         setSelectedSellers([]);
                       }} className="px-3 py-1.5 text-sm bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors flex items-center gap-1">
@@ -965,6 +967,14 @@ function AdminDashboard() {
                               <button onClick={async () => {
                                 const newStatus = seller.status === "active" ? false : true;
                                 await toggleUserActive({ id: seller.id as any, isActive: newStatus });
+                                await createAuditLog({ 
+                                  adminId: "admin", 
+                                  action: newStatus ? "seller_approve" : "seller_suspend", 
+                                  targetType: "seller", 
+                                  targetId: seller.id as string, 
+                                  targetName: seller.name, 
+                                  details: { action: newStatus ? "Activated seller" : "Suspended seller" } 
+                                });
                               }} 
                                 className={`p-2 rounded-lg transition-colors ${
                                   seller.status === "active" 
@@ -3482,6 +3492,7 @@ function AdminDashboard() {
                     const newStatus = e.target.value as "open" | "in_progress" | "resolved" | "closed";
                     try {
                       await updateTicketStatus({ id: selectedTicket._id, status: newStatus });
+                      await createAuditLog({ adminId: "admin", action: "ticket_resolve", targetType: "ticket", targetId: selectedTicket._id, targetName: selectedTicket.ticketNumber, details: { action: `Updated ticket status to ${newStatus}`, subject: selectedTicket.subject } });
                       setSelectedTicket({ ...selectedTicket, status: newStatus });
                     } catch (err) {
                       console.error("Failed to update status:", err);
@@ -3528,6 +3539,7 @@ function AdminDashboard() {
                       message: reply,
                       isInternal: false,
                     });
+                    await createAuditLog({ adminId: "admin", action: "ticket_reply", targetType: "ticket", targetId: selectedTicket._id, targetName: selectedTicket.ticketNumber, details: { action: "Replied to ticket", subject: selectedTicket.subject, reply: reply.substring(0, 100) } });
                     (document.getElementById("ticketReply") as HTMLTextAreaElement).value = "";
                     alert("Reply sent to customer!");
                   } catch (err) {

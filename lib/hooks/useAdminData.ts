@@ -51,6 +51,9 @@ export const useAdminMutations = () => {
   const addTicketMessage = useMutation(api.support.addTicketMessage);
   const logAction = useMutation(api.support.logAction);
 
+  // Audit log mutation
+  const createAuditLog = useMutation(api.admin.logAction as any);
+
   return {
     toggleUserActive,
     updateUserRole,
@@ -64,6 +67,7 @@ export const useAdminMutations = () => {
     updateTicketStatus,
     addTicketMessage,
     logAction,
+    createAuditLog,
   };
 };
 

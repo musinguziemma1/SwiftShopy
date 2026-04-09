@@ -10,6 +10,10 @@ export default defineSchema({
     phone: v.optional(v.string()),
     isActive: v.boolean(),
     joinDate: v.optional(v.number()),
+    twoFactorEnabled: v.optional(v.boolean()),
+    twoFactorSecret: v.optional(v.string()),
+    twoFactorBackupCodes: v.optional(v.array(v.string())),
+    lastLoginAt: v.optional(v.number()),
   })
     .index("by_email", ["email"])
     .index("by_role", ["role"])

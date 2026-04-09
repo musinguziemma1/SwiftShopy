@@ -8,8 +8,24 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { requestToPay, normalizeUgandaPhone, isMtnUgandaNumber } from "@/lib/mtn/mtn-momo";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
+  // Apply rate limiting - 10 requests per minute for payments
+  const rateLimitResult = rateLimit(req, 10, 60000);
+  if (rateLimitResult.limited) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      { 
+        status: 429,
+        headers: {
+          "Retry-After": "60",
+          "X-RateLimit-Remaining": "0",
+        }
+      }
+    );
+  }
+  
   try {
     const body = await req.json();
     const { orderId, amount, phone, storeName, items } = body;

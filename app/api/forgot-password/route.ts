@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ForgotPasswordSchema } from "@/types";
 
 // ─── Forgot Password Email API ─────────────────────────────────────────
 
@@ -107,14 +108,18 @@ function generateEmailHTML({ email, resetLink }: ForgotPasswordRequest): string 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, resetLink } = body as ForgotPasswordRequest;
-
-    if (!email || !resetLink) {
-      return NextResponse.json(
-        { error: "Missing required fields: email, resetLink" },
-        { status: 400 }
-      );
+    
+    // Validate input with Zod
+    const validation = ForgotPasswordSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json({ 
+        error: "Validation failed", 
+        details: validation.error.errors.map(e => ({ field: e.path.join("."), message: e.message }))
+      }, { status: 400 });
     }
+    
+    const { email } = validation.data;
+    const resetLink = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3014"}/reset-password?token=${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
     const subject = "Reset your SwiftShopy password";
     const html = generateEmailHTML(body);

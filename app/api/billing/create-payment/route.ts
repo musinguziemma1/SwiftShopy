@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
+import { CreatePaymentSchema } from "@/types";
+import { rateLimit } from "@/lib/rate-limit";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL ?? "");
 
@@ -38,13 +40,34 @@ interface CreatePaymentRequest {
 }
 
 export async function POST(req: NextRequest) {
+  // Apply rate limiting - 5 subscription requests per minute
+  const rateLimitResult = rateLimit(req, 5, 60000);
+  if (rateLimitResult.limited) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      { 
+        status: 429,
+        headers: {
+          "Retry-After": "60",
+          "X-RateLimit-Remaining": "0",
+        }
+      }
+    );
+  }
+  
   try {
-    const body: CreatePaymentRequest = await req.json();
-    const { userId, plan, phone, provider = "mtn_momo" } = body;
-
-    if (!userId || !plan || !phone) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    const body = await req.json();
+    
+    // Validate input with Zod
+    const validation = CreatePaymentSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json({ 
+        error: "Validation failed", 
+        details: validation.error.errors.map(e => ({ field: e.path.join("."), message: e.message }))
+      }, { status: 400 });
     }
+    
+    const { userId, plan, phone, provider = "mtn_momo" } = validation.data;
 
     const planPrices: Record<string, number> = {
       pro: 15000,

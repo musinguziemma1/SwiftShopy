@@ -59,3 +59,38 @@ export const statusColors: Record<string, string> = {
 export function getInitials(name: string): string {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 }
+
+// ─── Security Utilities ─────────────────────────────────────
+
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || "default-dev-key-change-in-production";
+
+export function encryptData(data: string): string {
+  // Simple XOR encryption for demo - in production use proper AES
+  const key = ENCRYPTION_KEY;
+  let result = "";
+  for (let i = 0; i < data.length; i++) {
+    result += String.fromCharCode(data.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+  }
+  return Buffer.from(result, "binary").toString("base64");
+}
+
+export function decryptData(encrypted: string): string {
+  const key = ENCRYPTION_KEY;
+  const data = Buffer.from(encrypted, "base64").toString("binary");
+  let result = "";
+  for (let i = 0; i < data.length; i++) {
+    result += String.fromCharCode(data.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+  }
+  return result;
+}
+
+export function hashSensitiveData(data: string): string {
+  // For data that should be hashed (not reversible)
+  const crypto = require("crypto");
+  return crypto.createHash("sha256").update(data).digest("hex");
+}
+
+export function maskSensitiveInfo(info: string, visibleChars: number = 4): string {
+  if (!info || info.length <= visibleChars) return "****";
+  return "*".repeat(info.length - visibleChars) + info.slice(-visibleChars);
+}

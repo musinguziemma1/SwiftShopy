@@ -484,3 +484,90 @@ export interface UserBillingInfo {
   totalPaid: number;
   daysRemaining: number;
 }
+
+// ─── Zod Validation Schemas ─────────────────────────────────
+import { z } from "zod";
+
+export const CreatePaymentSchema = z.object({
+  userId: z.string().min(1, "User ID is required"),
+  plan: z.enum(["pro", "business", "enterprise"]),
+  phone: z.string().regex(/^\+256[0-9]{9}$/, "Valid Uganda phone required (e.g., +256700000000)"),
+  provider: z.enum(["mtn_momo", "airtel_money"]).optional().default("mtn_momo"),
+});
+
+export const UpdateOrderStatusSchema = z.object({
+  orderId: z.string().min(1, "Order ID is required"),
+  status: z.enum(["pending", "paid", "shipped", "delivered", "cancelled"]),
+});
+
+export const CreateTicketSchema = z.object({
+  userId: z.string().min(1, "User ID is required"),
+  userName: z.string().min(1, "Name is required"),
+  userEmail: z.string().email("Valid email required"),
+  userPhone: z.string().optional(),
+  storeId: z.string().optional(),
+  storeName: z.string().optional(),
+  subject: z.string().min(5, "Subject must be at least 5 characters").max(200),
+  description: z.string().min(10, "Description must be at least 10 characters").max(5000),
+  category: z.enum(["payment", "account", "technical", "billing", "integration", "other"]).optional(),
+  priority: z.enum(["low", "medium", "high", "critical"]).optional(),
+});
+
+export const UpdateUserSchema = z.object({
+  id: z.string().min(1, "User ID is required"),
+  name: z.string().min(1, "Name is required").optional(),
+  email: z.string().email("Valid email required").optional(),
+  phone: z.string().optional(),
+  role: z.enum(["seller", "admin"]).optional(),
+  isActive: z.boolean().optional(),
+});
+
+export const CreatePayoutSchema = z.object({
+  storeId: z.string().min(1, "Store ID is required"),
+  amount: z.number().positive("Amount must be positive").max(100000000, "Amount exceeds maximum"),
+  method: z.enum(["mtn_momo", "bank_transfer"]),
+  account: z.string().min(5, "Account details required"),
+});
+
+export const InviteAdminSchema = z.object({
+  email: z.string().email("Valid email required"),
+  name: z.string().min(2, "Name is required"),
+  role: z.enum(["super_admin", "admin", "support", "analyst"]),
+  permissions: z.array(z.string()).optional(),
+});
+
+export const CreateProductSchema = z.object({
+  storeId: z.string().min(1, "Store ID is required"),
+  name: z.string().min(3, "Product name must be at least 3 characters").max(200),
+  description: z.string().max(5000).optional(),
+  price: z.number().positive("Price must be positive"),
+  compareAtPrice: z.number().positive().optional(),
+  category: z.string().optional(),
+  sku: z.string().optional(),
+  stock: z.number().int().min(0, "Stock cannot be negative").optional(),
+  images: z.array(z.string().url()).optional(),
+  isActive: z.boolean().optional(),
+});
+
+export const ForgotPasswordSchema = z.object({
+  email: z.string().email("Valid email required"),
+});
+
+export const ResetPasswordSchema = z.object({
+  token: z.string().min(1, "Token is required"),
+  password: z.string().min(8, "Password must be at least 8 characters").regex(
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])/,
+    "Password must contain uppercase, lowercase, number, and special character"
+  ),
+});
+
+// Type exports for validation
+export type CreatePaymentInput = z.infer<typeof CreatePaymentSchema>;
+export type UpdateOrderStatusInput = z.infer<typeof UpdateOrderStatusSchema>;
+export type CreateTicketInput = z.infer<typeof CreateTicketSchema>;
+export type UpdateUserInput = z.infer<typeof UpdateUserSchema>;
+export type CreatePayoutInput = z.infer<typeof CreatePayoutSchema>;
+export type InviteAdminInput = z.infer<typeof InviteAdminSchema>;
+export type CreateProductInput = z.infer<typeof CreateProductSchema>;
+export type ForgotPasswordInput = z.infer<typeof ForgotPasswordSchema>;
+export type ResetPasswordInput = z.infer<typeof ResetPasswordSchema>;

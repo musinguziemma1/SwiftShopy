@@ -521,7 +521,7 @@ export default function SellerDashboardPage() {
                 <Search className="w-5 h-5" />
               </button>
               <ThemeToggle />
-              <NotificationsCenter />
+              <NotificationsCenter userId={userId as string} />
               <button onClick={() => signOut({ callbackUrl: "/login" })} className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 glass rounded-lg hover:bg-accent/50 transition-all text-sm text-red-500 hover:text-red-600">
                 <LogOut className="w-4 h-4" /> <span className="hidden sm:inline">Sign Out</span>
               </button>

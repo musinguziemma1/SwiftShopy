@@ -13,6 +13,7 @@ import { useSession } from "next-auth/react"
 
 interface NotificationsCenterProps {
   adminMode?: boolean;
+  userId?: string;
 }
 
 const iconMap: Record<string, React.ReactNode> = {
@@ -106,9 +107,9 @@ function getTimeAgo(timestamp: number): string {
   return `${days}d ago`
 }
 
-export function NotificationsCenter({ adminMode = false }: NotificationsCenterProps) {
+export function NotificationsCenter({ adminMode = false, userId: propsUserId }: NotificationsCenterProps) {
   const { data: session } = useSession()
-  const userId = adminMode ? "admin" : (session?.user as any)?.id
+  const userId = propsUserId || (adminMode ? "admin" : (session?.user as any)?.id)
   const [open, setOpen] = useState(false)
 
   // For admin mode, use getAllAdmin; for seller mode, use getByUser

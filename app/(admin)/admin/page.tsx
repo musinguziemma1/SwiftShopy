@@ -718,67 +718,92 @@ function AdminDashboard() {
                 </div>
 
                 {/* Top Sellers */}
-                <div className="p-6 rounded-xl border border-border bg-card">
-                  <h3 className="text-lg font-semibold mb-1">Top Performing Sellers</h3>
-                  <p className="text-sm text-muted-foreground mb-6">Highest revenue generators</p>
-                  <div className="space-y-2">
-                    {sellers.map((seller, i) => (
-                      <motion.div key={seller.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: i * 0.1 }}
-                        className="flex items-center gap-4 p-3 rounded-lg hover:bg-accent transition-colors cursor-pointer">
-                        <div className="text-lg font-bold text-muted-foreground w-6">#{i + 1}</div>
-                        <img src={seller.avatar} alt={seller.name} className="w-10 h-10 rounded-full object-cover" />
+                <div className="p-4 rounded-xl border border-border bg-card">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h3 className="text-base font-semibold mb-0.5">Top Performing Sellers</h3>
+                      <p className="text-xs text-muted-foreground">Highest revenue generators</p>
+                    </div>
+                    <button onClick={() => setActiveTab("sellers")} className="px-3 py-1.5 text-xs font-medium text-purple-600 hover:bg-accent rounded-lg transition-colors">View All</button>
+                  </div>
+                  <div className="space-y-1">
+                    {sellers.slice((sellerPage - 1) * 5, sellerPage * 5).map((seller, i) => (
+                      <motion.div key={seller.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3, delay: i * 0.05 }}
+                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent transition-colors cursor-pointer">
+                        <div className="text-sm font-bold text-muted-foreground w-5">#{(sellerPage - 1) * 5 + i + 1}</div>
+                        <img src={seller.avatar} alt={seller.name} className="w-8 h-8 rounded-full object-cover" />
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium truncate">{seller.storeName}</div>
-                          <div className="text-sm text-muted-foreground">{seller.orders} orders</div>
+                          <div className="text-sm font-medium truncate">{seller.storeName}</div>
+                          <div className="text-xs text-muted-foreground">{seller.orders} orders</div>
                         </div>
                         <div className="text-right">
-                          <div className="font-semibold text-sm">{formatCurrency(seller.revenue)}</div>
+                          <div className="text-sm font-semibold">{formatCurrency(seller.revenue)}</div>
                           <div className="text-xs text-muted-foreground">{formatCurrency(seller.commission)} comm.</div>
                         </div>
                       </motion.div>
                     ))}
                   </div>
+                  {sellers.length > 5 && (
+                    <div className="flex items-center justify-between mt-3 pt-2 border-t border-border">
+                      <div className="text-xs text-muted-foreground">
+                        {(sellerPage - 1) * 5 + 1}-{Math.min(sellerPage * 5, sellers.length)} of {sellers.length}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => setSellerPage(Math.max(1, sellerPage - 1))} disabled={sellerPage === 1} className="px-2 py-1 text-xs font-medium hover:bg-accent rounded disabled:opacity-50 transition-all">Prev</button>
+                        <button onClick={() => setSellerPage(Math.min(Math.ceil(sellers.length / 5), sellerPage + 1))} disabled={sellerPage >= Math.ceil(sellers.length / 5)} className="px-2 py-1 text-xs font-medium hover:bg-accent rounded disabled:opacity-50 transition-all">Next</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Recent Transactions */}
-              <div className="p-6 rounded-xl border border-border bg-card">
-                <div className="flex items-center justify-between mb-6">
+              <div className="p-4 rounded-xl border border-border bg-card">
+                <div className="flex items-center justify-between mb-3">
                   <div>
-                    <h3 className="text-lg font-semibold mb-1">Recent Transactions</h3>
-                    <p className="text-sm text-muted-foreground">Latest platform transactions</p>
+                    <h3 className="text-base font-semibold mb-0.5">Recent Transactions</h3>
+                    <p className="text-xs text-muted-foreground">Latest platform transactions</p>
                   </div>
-                  <button className="px-4 py-2 text-sm font-medium text-purple-600 hover:bg-accent rounded-lg transition-colors">View All</button>
+                  <button onClick={() => setActiveTab("transactions")} className="px-3 py-1.5 text-xs font-medium text-purple-600 hover:bg-accent rounded-lg transition-colors">View All</button>
                 </div>
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto -mx-4 px-4">
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-border">
-                        {["Transaction ID","Seller","Amount","Commission","Status","Date"].map((h) => (
-                          <th key={h} className="text-left py-3 px-4 text-sm font-medium text-muted-foreground whitespace-nowrap">{h}</th>
+                        {["ID","Amount","Comm.","Status","Date"].map((h) => (
+                          <th key={h} className="text-left py-2 px-2 text-xs font-medium text-muted-foreground whitespace-nowrap">{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {txnList.map((txn, i) => (
-                        <motion.tr key={txn.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: i * 0.1 }}
+                      {txnList.slice((txnPage - 1) * 5, txnPage * 5).map((txn, i) => (
+                        <motion.tr key={txn.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, delay: i * 0.05 }}
                           className="border-b border-border hover:bg-accent/50 transition-colors">
-                          <td className="py-3 px-4 text-sm font-medium">{txn.id}</td>
-                          <td className="py-3 px-4 text-sm">{txn.seller}</td>
-                          <td className="py-3 px-4 text-sm font-medium">{formatCurrency(txn.amount)}</td>
-                          <td className="py-3 px-4 text-sm text-green-500 font-medium">{formatCurrency(txn.commission)}</td>
-                          <td className="py-3 px-4">
-                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(txn.status)}`}>
-                              {getStatusIcon(txn.status)}
+                          <td className="py-2 px-2 text-xs font-medium">{txn.id}</td>
+                          <td className="py-2 px-2 text-xs font-medium">{formatCurrency(txn.amount)}</td>
+                          <td className="py-2 px-2 text-xs text-green-500 font-medium">{formatCurrency(txn.commission)}</td>
+                          <td className="py-2 px-2">
+                            <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-medium border ${getStatusColor(txn.status)}`}>
                               {txn.status.charAt(0).toUpperCase() + txn.status.slice(1)}
                             </span>
                           </td>
-                          <td className="py-3 px-4 text-sm text-muted-foreground">{txn.date}</td>
+                          <td className="py-2 px-2 text-xs text-muted-foreground">{txn.date}</td>
                         </motion.tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
+                {txnList.length > 5 && (
+                  <div className="flex items-center justify-between mt-3 pt-2 border-t border-border">
+                    <div className="text-xs text-muted-foreground">
+                      {(txnPage - 1) * 5 + 1}-{Math.min(txnPage * 5, txnList.length)} of {txnList.length}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => setTxnPage(Math.max(1, txnPage - 1))} disabled={txnPage === 1} className="px-2 py-1 text-xs font-medium hover:bg-accent rounded disabled:opacity-50 transition-all">Prev</button>
+                      <button onClick={() => setTxnPage(Math.min(Math.ceil(txnList.length / 5), txnPage + 1))} disabled={txnPage >= Math.ceil(txnList.length / 5)} className="px-2 py-1 text-xs font-medium hover:bg-accent rounded disabled:opacity-50 transition-all">Next</button>
+                    </div>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}

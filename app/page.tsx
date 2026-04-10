@@ -276,9 +276,6 @@ function SwiftShopyLanding({ className = "" }: SwiftShopyLandingProps) {
                 <a href="#features" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
                   Features
                 </a>
-                <Link href="/pricing" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
-                  Pricing
-                </Link>
                 <Link href="/shop" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
                   Shop
                 </Link>
@@ -288,19 +285,7 @@ function SwiftShopyLanding({ className = "" }: SwiftShopyLandingProps) {
                 <a href="#faq" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
                   FAQ
                 </a>
-               <Link href="/pricing" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
-                 Pricing
-               </Link>
-               <Link href="/shop" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
-                 Shop
-               </Link>
-               <a href="#testimonials" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
-                 Testimonials
-               </a>
-               <a href="#faq" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
-                 FAQ
-               </a>
-               <div className="w-px h-6 bg-border mx-2" />
+                <div className="w-px h-6 bg-border mx-2" />
                <ThemeToggle />
                <Link
                  href="/dashboard"
@@ -337,9 +322,6 @@ function SwiftShopyLanding({ className = "" }: SwiftShopyLandingProps) {
                   <a href="#features" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
                     Features
                   </a>
-                  <Link href="/pricing" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
-                    Pricing
-                  </Link>
                   <Link href="/shop" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
                     Shop
                   </Link>
@@ -349,31 +331,19 @@ function SwiftShopyLanding({ className = "" }: SwiftShopyLandingProps) {
                   <a href="#faq" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
                     FAQ
                   </a>
-                 <Link href="/pricing" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
-                   Pricing
-                 </Link>
-                 <Link href="/shop" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
-                   Shop
-                 </Link>
-                 <a href="#testimonials" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
-                   Testimonials
-                 </a>
-                 <a href="#faq" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
-                   FAQ
-                 </a>
-                 <Link
-                   href="/dashboard"
-                   className="w-full block px-4 py-2 text-sm font-medium text-center border border-border rounded-lg hover:bg-accent transition-colors"
-                 >
-                   Dashboard
-                 </Link>
-                 <Link
-                   href="/signup"
-                   className="w-full block px-4 py-2 text-sm font-medium text-center bg-gradient-to-r from-primary to-indigo-600 text-primary-foreground rounded-xl transition-colors"
-                 >
-                   Get Started
-                 </Link>
-               </div>
+                  <Link
+                    href="/dashboard"
+                    className="w-full block px-4 py-2 text-sm font-medium text-center border border-border rounded-lg hover:bg-accent transition-colors"
+                  >
+                    Dashboard
+                  </Link>
+                  <Link
+                    href="/signup"
+                    className="w-full block px-4 py-2 text-sm font-medium text-center bg-gradient-to-r from-primary to-indigo-600 text-primary-foreground rounded-xl transition-colors"
+                  >
+                    Get Started
+                  </Link>
+                </div>
             </motion.div>
           )}
         </AnimatePresence>

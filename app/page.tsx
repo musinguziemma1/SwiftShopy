@@ -276,6 +276,9 @@ function SwiftShopyLanding({ className = "" }: SwiftShopyLandingProps) {
                 <a href="#features" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
                   Features
                 </a>
+                <Link href="/pricing" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
+                  Pricing
+                </Link>
                 <Link href="/shop" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">
                   Shop
                 </Link>
@@ -322,6 +325,9 @@ function SwiftShopyLanding({ className = "" }: SwiftShopyLandingProps) {
                   <a href="#features" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
                     Features
                   </a>
+                  <Link href="/pricing" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
+                    Pricing
+                  </Link>
                   <Link href="/shop" className="block py-2 text-sm font-medium hover:text-primary transition-colors">
                     Shop
                   </Link>

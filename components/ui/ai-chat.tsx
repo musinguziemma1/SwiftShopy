@@ -33,7 +33,7 @@ export function AIChatCard() {
   const [ticketCreated, setTicketCreated] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const chatAction = useAction(api.agent.chat)
+  const chatAction = useAction(api.agent.chat as any)
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })

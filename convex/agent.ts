@@ -17,7 +17,7 @@ export const chat = action({
     userId: v.optional(v.string()),
     userName: v.optional(v.string()),
   },
-  handler: async (ctx, args): Promise<{ response: string; ticketCreated?: boolean }> => {
+  handler: async (ctx, args): Promise<{ response: string; needsEscalation?: boolean; issueSummary?: string }> => {
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
       return {
@@ -78,34 +78,10 @@ Keep responses concise and helpful. If the user is asking about something you do
           .trim()
           .slice(0, 500);
 
-        if (args.userId && args.userName) {
-          await ctx.db.insert("support_tickets", {
-            ticketNumber: "TKT-AI-" + Date.now().toString(36).toUpperCase(),
-            userId: args.userId,
-            userName: args.userName,
-            userEmail: "",
-            userPhone: "",
-            category: "other",
-            priority: "medium",
-            status: "open",
-            subject: "AI Assistant Escalation",
-            description: issueSummary,
-            slaDeadline: Date.now() + 24 * 60 * 60 * 1000,
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-          });
-
-          return {
-            response:
-              "I've created a support ticket for you. Our team will review your issue and get back to shortly. You can track your ticket in your dashboard under Support.",
-            ticketCreated: true,
-          };
-        }
-
         return {
-          response:
-            "I've escalated your request to our support team. They'll be in touch shortly. If you'd like, you can also create a ticket directly through your dashboard.",
-          ticketCreated: true,
+          response: issueSummary + "\n\nI've escalated your request to our support team. They will contact you shortly.",
+          needsEscalation: true,
+          issueSummary,
         };
       }
 

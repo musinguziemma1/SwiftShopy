@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
+import { useQuery } from "convex/react"
+import { api } from "@/convex/_generated/api"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
 import { HeroMotionBackground } from "@/components/ui/hero-motion-background"
 import { BackgroundPaths } from "@/components/ui/background-paths"
@@ -142,7 +144,139 @@ export default function PricingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pricingRef = useRef<HTMLDivElement>(null);
 
-  const plans: Plan[] = [
+  // Fetch active plans from Convex
+  const activePlans = useQuery(api.plans.getActivePlans) ?? []
+
+  const plans: Plan[] = activePlans.length > 0
+    ? activePlans.map((plan: any, idx: number) => ({
+        id: plan._id || plan.name.toLowerCase(),
+        name: plan.name,
+        price: plan.price,
+        yearlyPrice: Math.round(plan.price * 10),
+        priceDisplay: `${plan.currency} ${plan.price.toLocaleString()}`,
+        period: plan.interval === "yearly" ? "/year" : plan.interval === "lifetime" ? "one-time" : "/month",
+        transactionFee: 0,
+        productLimit: -1,
+        highlighted: plan.isPopular,
+        color: ["gray", "blue", "purple", "orange", "green"][idx % 5],
+        cta: plan.price === 0 ? "Start Free" : "Get Started",
+        icon: <Zap className="w-6 h-6" />,
+        features: plan.features || [],
+        includes: plan.features ? [plan.name + " includes:"] : [],
+        featureDescription: plan.description || `Perfect plan for your business`,
+      }))
+    : [
+    {
+      id: "free",
+      name: "Free",
+      price: 0,
+      yearlyPrice: 0,
+      priceDisplay: "UGX 0",
+      period: "Free forever",
+      transactionFee: 4,
+      productLimit: 10,
+      highlighted: false,
+      color: "gray",
+      cta: "Start Free",
+      icon: <Package className="w-6 h-6" />,
+      features: [
+        "Up to 10 products",
+        "WhatsApp order button",
+        "MTN Mobile Money payments",
+      ],
+      includes: [
+        "Free includes:",
+        "Basic order tracking",
+        "Simple dashboard",
+        "Basic customer list",
+        "SwiftShopy branding included",
+      ],
+      featureDescription: "Perfect for getting started with online selling",
+    },
+    {
+      id: "pro",
+      name: "Pro",
+      price: 15000,
+      yearlyPrice: 144000,
+      priceDisplay: "UGX 15,000",
+      period: "/month",
+      transactionFee: 2.5,
+      productLimit: 25,
+      highlighted: true,
+      badge: "MOST POPULAR",
+      color: "blue",
+      cta: "Upgrade to Pro",
+      icon: <Zap className="w-6 h-6" />,
+      features: [
+        "Up to 25 products",
+        "Custom store link",
+        "Auto payment confirmation",
+      ],
+      includes: [
+        "Everything in Free, plus:",
+        "Remove SwiftShopy branding",
+        "Daily & weekly analytics",
+        "Customer insights (repeat buyers)",
+        "Basic promotional tools",
+      ],
+      featureDescription: "Best for growing businesses",
+    },
+    {
+      id: "business",
+      name: "Business",
+      price: 35000,
+      yearlyPrice: 336000,
+      priceDisplay: "UGX 35,000",
+      period: "/month",
+      transactionFee: 1.5,
+      productLimit: "50-75",
+      highlighted: false,
+      color: "purple",
+      cta: "Get Business",
+      icon: <TrendingUp className="w-6 h-6" />,
+      features: [
+        "50-75 products",
+        "Inventory management",
+        "Stock tracking & alerts",
+      ],
+      includes: [
+        "Everything in Pro, plus:",
+        "Advanced analytics & trends",
+        "Discount & coupon system",
+        "Bulk product upload",
+        "Custom branding (logo, colors)",
+      ],
+      featureDescription: "For established businesses scaling up",
+    },
+    {
+      id: "enterprise",
+      name: "Enterprise",
+      price: 60000,
+      yearlyPrice: 576000,
+      priceDisplay: "UGX 60,000",
+      period: "/month",
+      transactionFee: 1,
+      productLimit: "Unlimited",
+      highlighted: false,
+      badge: "BEST VALUE",
+      color: "orange",
+      cta: "Contact Sales",
+      icon: <Crown className="w-6 h-6" />,
+      features: [
+        "Unlimited products",
+        "Multi-user/team accounts",
+        "API access for integrations",
+      ],
+      includes: [
+        "Everything in Business, plus:",
+        "Dedicated account manager",
+        "White-label capabilities",
+        "Multi-store management",
+        "Priority payment processing",
+      ],
+      featureDescription: "Full-featured for large operations",
+    },
+  ]
     {
       id: "free",
       name: "Free",

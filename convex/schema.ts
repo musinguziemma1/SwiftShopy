@@ -966,4 +966,17 @@ export default defineSchema({
     .index("by_type", ["type"])
     .index("by_value", ["value"])
     .index("by_active", ["isActive"]),
+
+  // ─── Subscription Plans ──────────────────────────────────────
+  subscription_plans: defineTable({
+    name: v.string(),
+    description: v.optional(v.string()),
+    price: v.number(),
+    currency: v.string(),
+    interval: v.union(v.literal("monthly"), v.literal("yearly"), v.literal("lifetime")),
+    features: v.array(v.string()),
+    isPopular: v.optional(v.boolean()),
+    isActive: v.boolean(),
+  })
+    .index("by_active", ["isActive"]),
 });

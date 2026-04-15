@@ -895,3 +895,53 @@ export const seedPromotions = mutation({
     };
   },
 });
+
+// ─── Subscription Plans Seed ──────────────────────────────────────
+export const seedPlans = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const existingPlans = await ctx.db.query("subscription_plans").collect();
+    if (existingPlans.length > 0) {
+      return { success: true, message: "Plans already exist, skipping seed", count: 0 };
+    }
+
+    const plans = [
+      {
+        name: "Starter",
+        description: "Perfect for small businesses just getting started",
+        price: 0,
+        currency: "UGX",
+        interval: "monthly" as const,
+        features: ["Up to 10 products", "MTN Mobile Money payments", "WhatsApp order button", "Basic analytics", "Email support"],
+        isPopular: false,
+        isActive: true,
+      },
+      {
+        name: "Business",
+        description: "For growing businesses that need more",
+        price: 50000,
+        currency: "UGX",
+        interval: "monthly" as const,
+        features: ["Up to 50 products", "All payment methods", "Advanced analytics", "Priority support", "Custom branding", "Discounts & coupons"],
+        isPopular: true,
+        isActive: true,
+      },
+      {
+        name: "Enterprise",
+        description: "For large businesses with custom needs",
+        price: 150000,
+        currency: "UGX",
+        interval: "monthly" as const,
+        features: ["Unlimited products", "API access", "Multi-store support", "Dedicated account manager", "White-label options", "Custom integrations"],
+        isPopular: false,
+        isActive: true,
+      },
+    ];
+
+    for (const plan of plans) {
+      await ctx.db.insert("subscription_plans", plan);
+    }
+
+    return { success: true, message: "Plans seeded successfully", count: plans.length };
+  },
+});

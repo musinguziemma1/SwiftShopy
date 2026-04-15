@@ -3,6 +3,8 @@
 import React, { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
+import { useQuery } from "convex/react"
+import { api } from "@/convex/_generated/api"
 import { DottedSurface } from "@/components/ui/dotted-surface"
 import { BackgroundPaths } from "@/components/ui/background-paths"
 import { HeroMotionBackground } from "@/components/ui/hero-motion-background"
@@ -133,56 +135,38 @@ function SwiftShopyLanding({ className = "" }: SwiftShopyLandingProps) {
     },
   ]
 
-  const pricingTiers: PricingTier[] = [
-    {
-      name: "Free",
-      price: "UGX 0",
-      period: "forever",
-      features: [
-        "Up to 10 products",
-        "WhatsApp order button",
-        "MTN Mobile Money payments",
-        "Basic order tracking",
-        "Simple dashboard",
-        "SwiftShopy branding included",
-      ],
-      cta: "Start Free",
-      href: "/signup",
-    },
-    {
-      name: "Pro",
-      price: "UGX 15,000",
-      period: "per month",
-      features: [
-        "Everything in Free, plus:",
-        "Remove SwiftShopy branding",
-        "Custom store link",
-        "Auto payment confirmation",
-        "Daily & weekly analytics",
-        "Customer insights",
-        "Basic promotional tools",
-      ],
-      highlighted: true,
-      cta: "Upgrade to Pro",
-      href: "/pricing",
-    },
-    {
-      name: "Business",
-      price: "UGX 35,000",
-      period: "per month",
-      features: [
-        "Everything in Pro, plus:",
-        "Advanced analytics & trends",
-        "Inventory management",
-        "Stock tracking & alerts",
-        "Discount & coupon system",
-        "Bulk product upload",
-        "Custom branding (logo, colors)",
-      ],
-      cta: "Get Business",
-      href: "/pricing",
-    },
-  ]
+  // Get active subscription plans
+  const activePlans = useQuery(api.plans.getActivePlans) ?? []
+  
+  const pricingTiers: PricingTier[] = activePlans.length > 0
+    ? activePlans.map((plan: any) => ({
+        name: plan.name,
+        price: `${plan.currency} ${plan.price.toLocaleString()}`,
+        period: plan.interval === "lifetime" ? "one-time" : `per ${plan.interval}`,
+        features: plan.features || [],
+        highlighted: plan.isPopular,
+        cta: plan.price === 0 ? "Start Free" : "Get Started",
+        href: "/signup",
+      }))
+    : [
+        {
+          name: "Free",
+          price: "UGX 0",
+          period: "forever",
+          features: ["Up to 10 products", "WhatsApp order button", "MTN Mobile Money payments"],
+          cta: "Start Free",
+          href: "/signup",
+        },
+        {
+          name: "Pro",
+          price: "UGX 15,000",
+          period: "per month",
+          features: ["Everything in Free", "Remove branding", "Analytics"],
+          highlighted: true,
+          cta: "Upgrade to Pro",
+          href: "/pricing",
+        },
+      ]
 
   const testimonials: Testimonial[] = [
     {

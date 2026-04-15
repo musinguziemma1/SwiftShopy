@@ -58,6 +58,7 @@ import {
 import { useAdminData, useAdminMutations, useSupportTickets } from "@/lib/hooks/useAdminData"
 import { useMutation, useQuery } from "convex/react"
 import { api } from "@/convex/_generated/api"
+import { Id } from "@/convex/_generated/dataModel"
 import { useAdminDashboardData } from "@/lib/hooks/useAdminDashboardData"
 import { useKYCAdminData, useKYCMutations } from "@/lib/hooks/useKYCData"
 import { VerifiedBadge, KYCTierBadge } from "@/components/ui/verified-badge"
@@ -155,6 +156,46 @@ function AdminDashboard() {
   const [billingSubTab, setBillingSubTab] = useState<"overview" | "plans" | "subscribers">("overview")
   const [editingPlan, setEditingPlan] = useState<any>(null)
   const [showPlanModal, setShowPlanModal] = useState(false)
+  const [showCreatePlanModal, setShowCreatePlanModal] = useState(false)
+  const [newPlan, setNewPlan] = useState({ name: "", description: "", price: 0, currency: "UGX", interval: "monthly" as const, features: [], isPopular: false })
+
+  const handleCreatePlan = async () => {
+    try {
+      await createPlan(newPlan)
+      setShowCreatePlanModal(false)
+      setNewPlan({ name: "", description: "", price: 0, currency: "UGX", interval: "monthly", features: [], isPopular: false })
+    } catch (error) {
+      console.error("Failed to create plan:", error)
+    }
+  }
+
+  const handleUpdatePlan = async () => {
+    try {
+      await updatePlan({ id: editingPlan._id, ...editingPlan })
+      setShowPlanModal(false)
+      setEditingPlan(null)
+    } catch (error) {
+      console.error("Failed to update plan:", error)
+    }
+  }
+
+  const handleTogglePlanActive = async (planId: any, isActive: boolean) => {
+    try {
+      await updatePlan({ id: planId, isActive })
+    } catch (error) {
+      console.error("Failed to toggle plan:", error)
+    }
+  }
+
+  const confirmDeletePlan = async (planId: any) => {
+    if (confirm("Are you sure you want to delete this plan?")) {
+      try {
+        await deletePlan({ id: planId })
+      } catch (error) {
+        console.error("Failed to delete plan:", error)
+      }
+    }
+  }
   const [editingPromotion, setEditingPromotion] = useState<any>(null)
   const [showPromotionModal, setShowPromotionModal] = useState(false)
   
@@ -354,6 +395,12 @@ function AdminDashboard() {
   const updatePromotion = useMutation(api.promotions.updatePromotion)
   const deletePromotion = useMutation(api.promotions.deletePromotion)
   const togglePromotionStatus = useMutation(api.promotions.togglePromotionStatus)
+
+  // Subscription plans data and mutations
+  const plans = useQuery(api.plans.getPlans) ?? []
+  const createPlan = useMutation(api.plans.createPlan)
+  const updatePlan = useMutation(api.plans.updatePlan)
+  const deletePlan = useMutation(api.plans.deletePlan)
 
   // KYC admin data
   const { submissions: kycSubmissions, stats: kycStats, isLoading: kycLoading } = useKYCAdminData(kycStatusFilter)
@@ -1668,7 +1715,14 @@ function AdminDashboard() {
               <div className="space-y-6">
                 {/* Plans Header */}
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Subscription Plans</h3>
+                  <div>
+                    <h3 className="text-lg font-semibold">Subscription Plans</h3>
+                    <p className="text-sm text-muted-foreground">Manage pricing plans and features</p>
+                  </div>
+                  <button onClick={() => { setNewPlan({ name: "", description: "", price: 0, currency: "UGX", interval: "monthly", features: [], isPopular: false }); setShowCreatePlanModal(true) }}
+                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-indigo-600 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">
+                    <Plus className="w-4 h-4" /> Add Plan
+                  </button>
                   <div className="text-sm text-muted-foreground">
                     {subscriptions.filter(s => s.status === "active").length} active subscribers
                   </div>
@@ -1676,51 +1730,52 @@ function AdminDashboard() {
 
                 {/* Plan Cards */}
                 <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {[
-                    { id: "free", name: "Free", price: 0, productLimit: 10, transactionFee: 4, color: "gray", features: ["Up to 10 products", "4% transaction fee", "Basic support", "WhatsApp order button"] },
-                    { id: "pro", name: "Pro", price: 15000, productLimit: 25, transactionFee: 2.5, color: "blue", features: ["Up to 25 products", "2.5% transaction fee", "Analytics dashboard", "WhatsApp integration", "Remove branding"] },
-                    { id: "business", name: "Business", price: 35000, productLimit: 38, transactionFee: 1.5, color: "purple", features: ["Up to 38 products", "1.5% transaction fee", "Priority support", "Custom domain", "Discount & coupons"] },
-                    { id: "enterprise", name: "Enterprise", price: 60000, productLimit: -1, transactionFee: 1, color: "orange", features: ["Unlimited products", "1% transaction fee", "Dedicated support", "API access", "Multi-store"] },
-                  ].map((plan) => {
-                    const subscriberCount = subscriptions.filter(s => s.plan === plan.id && s.status === "active").length;
+                  {plans.map((plan: any, i: number) => {
+                    const planColors = ["gray", "blue", "purple", "orange", "green", "red", "pink", "cyan"]
+                    const color = planColors[i % planColors.length]
                     return (
-                      <motion.div key={plan.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                      <motion.div key={plan._id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                         className="p-6 rounded-xl border border-border bg-card hover:shadow-lg transition-shadow">
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center gap-3">
                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                              plan.color === "gray" ? "bg-gray-500/10 text-gray-500" :
-                              plan.color === "blue" ? "bg-blue-500/10 text-blue-500" :
-                              plan.color === "purple" ? "bg-purple-500/10 text-purple-500" :
-                              "bg-orange-500/10 text-orange-500"
+                              color === "gray" ? "bg-gray-500/10 text-gray-500" :
+                              color === "blue" ? "bg-blue-500/10 text-blue-500" :
+                              color === "purple" ? "bg-purple-500/10 text-purple-500" :
+                              color === "orange" ? "bg-orange-500/10 text-orange-500" :
+                              color === "green" ? "bg-green-500/10 text-green-500" :
+                              "bg-indigo-500/10 text-indigo-500"
                             }`}>
                               <Zap className="w-5 h-5" />
                             </div>
                             <h4 className="text-lg font-semibold">{plan.name}</h4>
+                            {plan.isPopular && (
+                              <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs font-medium rounded-full">Popular</span>
+                            )}
                           </div>
                           <button onClick={() => { setEditingPlan(plan); setShowPlanModal(true) }} className="p-1.5 hover:bg-accent rounded-lg transition-colors">
                             <Edit className="w-4 h-4" />
                           </button>
                         </div>
-                        <p className="text-3xl font-bold mb-1">UGX {plan.price.toLocaleString()}</p>
-                        <p className="text-sm text-muted-foreground mb-4">per month</p>
+                        <p className="text-3xl font-bold mb-1">{plan.currency} {plan.price.toLocaleString()}</p>
+                        <p className="text-sm text-muted-foreground mb-4">per {plan.interval}</p>
                         <div className="space-y-2 text-sm mb-6">
-                          {plan.features.map((f, i) => (
-                            <div key={i} className="flex items-center gap-2">
+                          {(plan.features || []).map((f: string, idx: number) => (
+                            <div key={idx} className="flex items-center gap-2">
                               <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
                               <span>{f}</span>
                             </div>
                           ))}
                         </div>
-                        <div className="pt-4 border-t border-border">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">Subscribers</span>
-                            <span className="font-semibold">{subscriberCount}</span>
-                          </div>
-                          <div className="flex items-center justify-between text-sm mt-1">
-                            <span className="text-muted-foreground">Revenue</span>
-                            <span className="font-semibold text-green-500">UGX {(plan.price * subscriberCount).toLocaleString()}</span>
-                          </div>
+                        <div className="pt-4 border-t border-border flex items-center justify-between">
+                          <button onClick={() => handleTogglePlanActive(plan._id, !plan.isActive)} 
+                            className={`flex items-center gap-2 text-sm ${plan.isActive ? "text-green-500" : "text-red-500"}`}>
+                            {plan.isActive ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
+                            {plan.isActive ? "Active" : "Disabled"}
+                          </button>
+                          <button onClick={() => confirmDeletePlan(plan._id)} className="text-red-500 hover:text-red-600 text-sm flex items-center gap-1">
+                            <Trash2 className="w-4 h-4" /> Delete
+                          </button>
                         </div>
                       </motion.div>
                     );
@@ -3701,23 +3756,48 @@ function AdminDashboard() {
                   className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary" />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Monthly Price (UGX)</label>
-                <input type="number" value={editingPlan.price}
-                  onChange={(e) => setEditingPlan({ ...editingPlan, price: parseInt(e.target.value) || 0 })}
-                  className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary" />
+                <label className="block text-sm font-medium mb-2">Description</label>
+                <textarea value={editingPlan.description || ""}
+                  onChange={(e) => setEditingPlan({ ...editingPlan, description: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary" rows={2} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Price</label>
+                  <input type="number" value={editingPlan.price}
+                    onChange={(e) => setEditingPlan({ ...editingPlan, price: parseInt(e.target.value) || 0 })}
+                    className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Currency</label>
+                  <input type="text" value={editingPlan.currency || "UGX"}
+                    onChange={(e) => setEditingPlan({ ...editingPlan, currency: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary" />
+                </div>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Product Limit</label>
-                <input type="number" value={editingPlan.productLimit}
-                  onChange={(e) => setEditingPlan({ ...editingPlan, productLimit: parseInt(e.target.value) || -1 })}
-                  className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary" />
-                <p className="text-xs text-muted-foreground mt-1">Use -1 for unlimited</p>
+                <label className="block text-sm font-medium mb-2">Billing Interval</label>
+                <select value={editingPlan.interval || "monthly"}
+                  onChange={(e) => setEditingPlan({ ...editingPlan, interval: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary">
+                  <option value="monthly">Monthly</option>
+                  <option value="yearly">Yearly</option>
+                  <option value="lifetime">Lifetime</option>
+                </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Transaction Fee (%)</label>
-                <input type="number" step="0.1" value={editingPlan.transactionFee}
-                  onChange={(e) => setEditingPlan({ ...editingPlan, transactionFee: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary" />
+                <label className="block text-sm font-medium mb-2">Features (comma-separated)</label>
+                <textarea value={(editingPlan.features || []).join(", ")}
+                  onChange={(e) => setEditingPlan({ ...editingPlan, features: e.target.value.split(",").map(f => f.trim()).filter(Boolean) })}
+                  className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary" rows={3} 
+                  placeholder="Up to 10 products, 4% transaction fee, Basic support" />
+              </div>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" id="isPopular"
+                  checked={editingPlan.isPopular || false}
+                  onChange={(e) => setEditingPlan({ ...editingPlan, isPopular: e.target.checked })}
+                  className="w-4 h-4" />
+                <label htmlFor="isPopular" className="text-sm">Mark as Popular</label>
               </div>
             </div>
 
@@ -3726,15 +3806,94 @@ function AdminDashboard() {
                 className="flex-1 py-2.5 border border-border rounded-lg hover:bg-accent transition-colors">
                 Cancel
               </button>
-              <button onClick={() => {
-                // In a real app, this would call a mutation to update plan settings in the database
-                // For now, the plan limits are defined in subscriptions.ts
-                alert(`Plan settings for "${editingPlan.name}" would be saved.\n\nNote: Plan configuration is currently defined in convex/subscriptions.ts.\nContact your developer to update plan limits in the backend.`);
-                setShowPlanModal(false);
-                setEditingPlan(null);
-              }}
+              <button onClick={handleUpdatePlan}
                 className="flex-1 py-2.5 bg-gradient-to-r from-primary to-indigo-600 text-white rounded-lg hover:opacity-90 transition-opacity">
                 Save Changes
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* ── Create Plan Modal ── */}
+      {showCreatePlanModal && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowCreatePlanModal(false)}>
+          <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
+            className="bg-card rounded-2xl w-full max-w-lg p-6"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold">Create New Plan</h2>
+              <button onClick={() => setShowCreatePlanModal(false)} className="p-2 hover:bg-accent rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Plan Name</label>
+                <input type="text" value={newPlan.name}
+                  onChange={(e) => setNewPlan({ ...newPlan, name: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary" 
+                  placeholder="e.g., Business" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Description</label>
+                <textarea value={newPlan.description}
+                  onChange={(e) => setNewPlan({ ...newPlan, description: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary" rows={2}
+                  placeholder="Great for growing businesses" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Price</label>
+                  <input type="number" value={newPlan.price}
+                    onChange={(e) => setNewPlan({ ...newPlan, price: parseInt(e.target.value) || 0 })}
+                    className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Currency</label>
+                  <input type="text" value={newPlan.currency}
+                    onChange={(e) => setNewPlan({ ...newPlan, currency: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary" 
+                    placeholder="UGX" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Billing Interval</label>
+                <select value={newPlan.interval}
+                  onChange={(e) => setNewPlan({ ...newPlan, interval: e.target.value as any })}
+                  className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary">
+                  <option value="monthly">Monthly</option>
+                  <option value="yearly">Yearly</option>
+                  <option value="lifetime">Lifetime</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Features (comma-separated)</label>
+                <textarea value={newPlan.features.join(", ")}
+                  onChange={(e) => setNewPlan({ ...newPlan, features: e.target.value.split(",").map(f => f.trim()).filter(Boolean) })}
+                  className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary" rows={3}
+                  placeholder="Up to 10 products, 4% transaction fee, Basic support" />
+              </div>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" id="newPlanPopular"
+                  checked={newPlan.isPopular}
+                  onChange={(e) => setNewPlan({ ...newPlan, isPopular: e.target.checked })}
+                  className="w-4 h-4" />
+                <label htmlFor="newPlanPopular" className="text-sm">Mark as Popular</label>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setShowCreatePlanModal(false)}
+                className="flex-1 py-2.5 border border-border rounded-lg hover:bg-accent transition-colors">
+                Cancel
+              </button>
+              <button onClick={handleCreatePlan}
+                className="flex-1 py-2.5 bg-gradient-to-r from-primary to-indigo-600 text-white rounded-lg hover:opacity-90 transition-opacity">
+                Create Plan
               </button>
             </div>
           </motion.div>

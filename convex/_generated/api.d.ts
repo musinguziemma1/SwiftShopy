@@ -10,6 +10,7 @@
 
 import type * as admin from "../admin.js";
 import type * as adminInvitations from "../adminInvitations.js";
+import type * as agent from "../agent.js";
 import type * as analytics from "../analytics.js";
 import type * as billing from "../billing.js";
 import type * as billingNotifications from "../billingNotifications.js";
@@ -25,6 +26,7 @@ import type * as order_tracking from "../order_tracking.js";
 import type * as orders from "../orders.js";
 import type * as payments from "../payments.js";
 import type * as payouts from "../payouts.js";
+import type * as plans from "../plans.js";
 import type * as platformSettings from "../platformSettings.js";
 import type * as products from "../products.js";
 import type * as promotions from "../promotions.js";
@@ -49,6 +51,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   adminInvitations: typeof adminInvitations;
+  agent: typeof agent;
   analytics: typeof analytics;
   billing: typeof billing;
   billingNotifications: typeof billingNotifications;
@@ -64,6 +67,7 @@ declare const fullApi: ApiFromModules<{
   orders: typeof orders;
   payments: typeof payments;
   payouts: typeof payouts;
+  plans: typeof plans;
   platformSettings: typeof platformSettings;
   products: typeof products;
   promotions: typeof promotions;

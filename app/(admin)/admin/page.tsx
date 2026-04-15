@@ -191,8 +191,9 @@ setNewPlan({
 
   const handleUpdatePlan = async () => {
     try {
-      console.log("Updating plan with:", { id: editingPlan._id, ...editingPlan })
-      const result = await updatePlan({ id: editingPlan._id, ...editingPlan })
+      const { _id, _creationTime, ...planData } = editingPlan
+      console.log("Updating plan with:", { id: _id, ...planData })
+      const result = await updatePlan({ id: _id, ...planData })
       console.log("Update result:", result)
       setShowPlanModal(false)
       setEditingPlan(null)
@@ -202,7 +203,7 @@ setNewPlan({
     }
   }
 
-  const handleTogglePlanActive = async (planId: any, isActive: boolean) => {
+  const handleTogglePlanActive = async (planId: string, isActive: boolean) => {
     try {
       await updatePlan({ id: planId, isActive })
     } catch (error) {

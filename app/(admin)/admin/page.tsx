@@ -157,7 +157,7 @@ function AdminDashboard() {
   const [editingPlan, setEditingPlan] = useState<any>(null)
   const [showPlanModal, setShowPlanModal] = useState(false)
   const [showCreatePlanModal, setShowCreatePlanModal] = useState(false)
-  const [newPlan, setNewPlan] = useState({ name: "", description: "", price: 0, currency: "UGX", interval: "monthly" as const, features: [], isPopular: false })
+  const [newPlan, setNewPlan] = useState<{name: string; description: string; price: number; currency: string; interval: "monthly" | "yearly" | "lifetime"; features: string[]; isPopular: boolean}>({ name: "", description: "", price: 0, currency: "UGX", interval: "monthly", features: [], isPopular: false })
 
   const handleCreatePlan = async () => {
     try {

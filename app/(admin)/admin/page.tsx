@@ -191,7 +191,20 @@ setNewPlan({
 
   const handleUpdatePlan = async () => {
     try {
-      const { _id, _creationTime, ...planData } = editingPlan
+      // Filter out internal Convex fields
+      const { _id, _creationTime, ...rest } = editingPlan
+      const planData = { 
+        name: rest.name, 
+        description: rest.description, 
+        price: rest.price, 
+        currency: rest.currency, 
+        interval: rest.interval, 
+        features: rest.features,
+        productLimit: rest.productLimit,
+        transactionFee: rest.transactionFee,
+        isPopular: rest.isPopular,
+        isActive: rest.isActive
+      }
       console.log("Updating plan with:", { id: _id, ...planData })
       const result = await updatePlan({ id: _id, ...planData })
       console.log("Update result:", result)

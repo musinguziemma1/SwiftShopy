@@ -164,6 +164,8 @@ function AdminDashboard() {
     currency: "UGX",
     interval: "monthly" as const,
     features: [] as string[],
+    productLimit: 10,
+    transactionFee: 4,
     isPopular: false,
   })
 
@@ -178,6 +180,8 @@ setNewPlan({
       currency: "UGX",
       interval: "monthly" as const,
       features: [] as string[],
+      productLimit: 10,
+      transactionFee: 4,
       isPopular: false,
     })
     } catch (error) {
@@ -1774,7 +1778,17 @@ setNewPlan({
                           </button>
                         </div>
                         <p className="text-3xl font-bold mb-1">{plan.currency} {plan.price.toLocaleString()}</p>
-                        <p className="text-sm text-muted-foreground mb-4">per {plan.interval}</p>
+                        <p className="text-sm text-muted-foreground mb-2">per {plan.interval}</p>
+                        {(plan.productLimit !== undefined || plan.transactionFee !== undefined) && (
+                          <div className="flex gap-4 text-xs text-muted-foreground mb-4">
+                            {plan.productLimit !== undefined && (
+                              <span>Limit: {plan.productLimit === -1 ? "∞" : plan.productLimit}</span>
+                            )}
+                            {plan.transactionFee !== undefined && (
+                              <span>Fee: {plan.transactionFee}%</span>
+                            )}
+                          </div>
+                        )}
                         <div className="space-y-2 text-sm mb-6">
                           {(plan.features || []).map((f: string, idx: number) => (
                             <div key={idx} className="flex items-center gap-2">
@@ -3801,6 +3815,22 @@ setNewPlan({
                   <option value="lifetime">Lifetime</option>
                 </select>
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Product Limit</label>
+                  <input type="number" value={editingPlan.productLimit ?? 0}
+                    onChange={(e) => setEditingPlan({ ...editingPlan, productLimit: parseInt(e.target.value) || 0 })}
+                    className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                    placeholder="-1 for unlimited" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Transaction Fee (%)</label>
+                  <input type="number" step="0.1" value={editingPlan.transactionFee ?? 0}
+                    onChange={(e) => setEditingPlan({ ...editingPlan, transactionFee: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                    placeholder="4" />
+                </div>
+              </div>
               <div>
                 <label className="block text-sm font-medium mb-2">Features (comma-separated)</label>
                 <textarea value={(editingPlan.features || []).join(", ")}
@@ -3885,6 +3915,22 @@ setNewPlan({
                   <option value="yearly">Yearly</option>
                   <option value="lifetime">Lifetime</option>
                 </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Product Limit</label>
+                  <input type="number" value={newPlan.productLimit}
+                    onChange={(e) => setNewPlan({ ...newPlan, productLimit: parseInt(e.target.value) || 0 })}
+                    className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                    placeholder="-1 for unlimited" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Transaction Fee (%)</label>
+                  <input type="number" step="0.1" value={newPlan.transactionFee}
+                    onChange={(e) => setNewPlan({ ...newPlan, transactionFee: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                    placeholder="4" />
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">Features (comma-separated)</label>

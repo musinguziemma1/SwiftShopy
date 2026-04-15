@@ -191,11 +191,14 @@ setNewPlan({
 
   const handleUpdatePlan = async () => {
     try {
-      await updatePlan({ id: editingPlan._id, ...editingPlan })
+      console.log("Updating plan with:", { id: editingPlan._id, ...editingPlan })
+      const result = await updatePlan({ id: editingPlan._id, ...editingPlan })
+      console.log("Update result:", result)
       setShowPlanModal(false)
       setEditingPlan(null)
     } catch (error) {
       console.error("Failed to update plan:", error)
+      alert("Failed to update plan. Check console for details.")
     }
   }
 
@@ -1779,16 +1782,10 @@ setNewPlan({
                         </div>
                         <p className="text-3xl font-bold mb-1">{plan.currency} {plan.price.toLocaleString()}</p>
                         <p className="text-sm text-muted-foreground mb-2">per {plan.interval}</p>
-                        {(plan.productLimit !== undefined || plan.transactionFee !== undefined) && (
-                          <div className="flex gap-4 text-xs text-muted-foreground mb-4">
-                            {plan.productLimit !== undefined && (
-                              <span>Limit: {plan.productLimit === -1 ? "∞" : plan.productLimit}</span>
-                            )}
-                            {plan.transactionFee !== undefined && (
-                              <span>Fee: {plan.transactionFee}%</span>
-                            )}
-                          </div>
-                        )}
+                        <div className="flex gap-4 text-xs text-muted-foreground mb-4">
+                          <span className="font-medium">Products: {plan.productLimit === -1 ? "Unlimited" : plan.productLimit}</span>
+                          <span className="font-medium">Fee: {plan.transactionFee}%</span>
+                        </div>
                         <div className="space-y-2 text-sm mb-6">
                           {(plan.features || []).map((f: string, idx: number) => (
                             <div key={idx} className="flex items-center gap-2">

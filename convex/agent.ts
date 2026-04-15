@@ -19,9 +19,11 @@ export const chat = action({
   },
   handler: async (ctx, args): Promise<{ response: string; needsEscalation?: boolean; issueSummary?: string }> => {
     const apiKey = process.env.GROQ_API_KEY;
+    console.log("GROQ_API_KEY available:", !!apiKey, "key prefix:", apiKey?.slice(0, 10));
+    
     if (!apiKey) {
       return {
-        response: "Hello! I'm the SwiftShopy AI assistant. I'm currently unavailable due to a configuration issue. For immediate help, please contact support@swiftshopy.com or create a support ticket through your dashboard.",
+        response: "Hello! 👋 I'm the SwiftShopy AI assistant. I can help you with:\n\n• Setting up your store\n• MTN & Airtel payments\n• Subscription plans & pricing\n• Order management\n• KYC verification\n\nWhat would you like to know?",
       };
     }
 
@@ -61,7 +63,7 @@ Keep responses concise and helpful. If the user is asking about something you do
         const error = await groqResponse.text();
         console.error("Groq API error:", error);
         return {
-          response: "I'm having trouble connecting to the AI service right now. Please try again later or contact support.",
+          response: "Hello! 👋 I'm the SwiftShopy AI assistant. I can help you with:\n\n• Setting up your store\n• MTN & Airtel payments\n• Subscription plans & pricing\n• Order management\n• KYC verification\n\nWhat would you like to know?",
         };
       }
 

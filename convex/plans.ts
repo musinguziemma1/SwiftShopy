@@ -38,6 +38,7 @@ export const updatePlan = mutation({
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
+    console.log("updatePlan handler called with id:", id, "updates:", updates);
     // Filter out undefined values
     const filteredUpdates: Record<string, any> = {};
     for (const [key, value] of Object.entries(updates)) {
@@ -45,6 +46,7 @@ export const updatePlan = mutation({
         filteredUpdates[key] = value;
       }
     }
+    console.log("filteredUpdates:", filteredUpdates);
     await ctx.db.patch(id, filteredUpdates);
     return { success: true };
   },

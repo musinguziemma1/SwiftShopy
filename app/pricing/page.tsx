@@ -149,7 +149,7 @@ export default function PricingPage() {
 
   const getDynamicPlans = (): Plan[] => {
     if (activePlans.length === 0) return getStaticPlans()
-    return activePlans.map((plan: any, idx: number) => ({
+    return activePlans.map((plan: any, idx: number): Plan => ({
       id: plan._id || String(idx),
       name: plan.name,
       price: plan.price,
@@ -162,8 +162,8 @@ export default function PricingPage() {
       color: ["gray", "blue", "purple", "orange", "green"][idx % 5],
       cta: plan.price === 0 ? "Start Free" : "Get Started",
       icon: <Zap className="w-6 h-6" />,
-      features: plan.features || [],
-      includes: plan.features ? [plan.name + " includes:"] as string[] : [],
+      features: Array.isArray(plan.features) ? plan.features : [],
+      includes: Array.isArray(plan.features) ? [plan.name + " includes:"] : [],
       featureDescription: plan.description || `Perfect plan for your business`,
     }))
   }

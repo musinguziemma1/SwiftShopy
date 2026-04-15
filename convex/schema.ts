@@ -14,10 +14,14 @@ export default defineSchema({
     twoFactorSecret: v.optional(v.string()),
     twoFactorBackupCodes: v.optional(v.array(v.string())),
     lastLoginAt: v.optional(v.number()),
+    // KYC fields
+    kycStatus: v.optional(v.union(v.literal("unverified"), v.literal("pending"), v.literal("verified"), v.literal("rejected"))),
+    kycTier: v.optional(v.union(v.literal("basic"), v.literal("verified"), v.literal("enterprise"))),
   })
     .index("by_email", ["email"])
     .index("by_role", ["role"])
-    .index("by_joinDate", ["joinDate"]),
+    .index("by_joinDate", ["joinDate"])
+    .index("by_kycStatus", ["kycStatus"]),
 
   stores: defineTable({
     userId: v.id("users"),
@@ -208,7 +212,7 @@ export default defineSchema({
     adminId: v.string(),
     adminName: v.string(),
     action: v.string(),
-    targetType: v.union(v.literal("user"), v.literal("seller"), v.literal("order"), v.literal("product"), v.literal("transaction"), v.literal("settings"), v.literal("system"), v.literal("ticket"), v.literal("payment")),
+    targetType: v.union(v.literal("user"), v.literal("seller"), v.literal("order"), v.literal("product"), v.literal("transaction"), v.literal("settings"), v.literal("system"), v.literal("ticket"), v.literal("payment"), v.literal("kyc")),
     targetId: v.string(),
     targetName: v.optional(v.string()),
     details: v.any(),
@@ -470,7 +474,11 @@ export default defineSchema({
       v.literal("support_ticket"),
       v.literal("ticket_update"),
       v.literal("ticket_reply"),
-      v.literal("support_ticket_created")
+      v.literal("support_ticket_created"),
+      v.literal("kyc_submitted"),
+      v.literal("kyc_approved"),
+      v.literal("kyc_rejected"),
+      v.literal("kyc_required")
     ),
     title: v.string(),
     message: v.string(),
@@ -880,4 +888,82 @@ export default defineSchema({
     .index("by_batch", ["batchId"])
     .index("by_status", ["status"])
     .index("by_date", ["createdAt"]),
+
+  // ─── KYC Verification ───────────────────────────────────────
+  users_kyc: defineTable({
+    userId: v.id("users"),
+    fullName: v.string(),
+    dateOfBirth: v.string(),
+    idType: v.union(v.literal("national_id"), v.literal("passport"), v.literal("drivers_license")),
+    idNumber: v.string(),
+    documentUrl: v.string(),
+    selfieUrl: v.string(),
+    businessName: v.string(),
+    phoneNumber: v.string(),
+    // Tier 3 fields (optional)
+    businessRegNumber: v.optional(v.string()),
+    tinNumber: v.optional(v.string()),
+    proofOfOwnershipUrl: v.optional(v.string()),
+    // Verification
+    status: v.union(v.literal("pending"), v.literal("verified"), v.literal("rejected")),
+    tier: v.union(v.literal("basic"), v.literal("verified"), v.literal("enterprise")),
+    riskScore: v.number(),
+    riskFlags: v.optional(v.array(v.string())),
+    // Automated check results
+    idFormatValid: v.optional(v.boolean()),
+    duplicateCheck: v.optional(v.boolean()),
+    phoneConsistencyCheck: v.optional(v.boolean()),
+    faceMatchScore: v.optional(v.number()),
+    livenessScore: v.optional(v.number()),
+    // Review
+    submittedAt: v.number(),
+    reviewedAt: v.optional(v.number()),
+    reviewedBy: v.optional(v.string()),
+    rejectionReason: v.optional(v.string()),
+    // Metadata
+    ipAddress: v.optional(v.string()),
+    userAgent: v.optional(v.string()),
+    submissionCount: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_status", ["status"])
+    .index("by_idNumber", ["idNumber"])
+    .index("by_phone", ["phoneNumber"])
+    .index("by_tier", ["tier"])
+    .index("by_submittedAt", ["submittedAt"]),
+
+  // ─── KYC Audit Trail ────────────────────────────────────────
+  kyc_audit_logs: defineTable({
+    kycId: v.id("users_kyc"),
+    userId: v.id("users"),
+    action: v.union(
+      v.literal("submitted"),
+      v.literal("auto_checked"),
+      v.literal("approved"),
+      v.literal("rejected"),
+      v.literal("resubmitted"),
+      v.literal("flagged"),
+      v.literal("escalated")
+    ),
+    performedBy: v.string(),
+    details: v.any(),
+    createdAt: v.number(),
+  })
+    .index("by_kyc", ["kycId"])
+    .index("by_user", ["userId"])
+    .index("by_action", ["action"])
+    .index("by_date", ["createdAt"]),
+
+  // ─── KYC Blacklist (Fraud Prevention) ───────────────────────
+  kyc_blacklist: defineTable({
+    type: v.union(v.literal("id_number"), v.literal("phone"), v.literal("ip_address"), v.literal("device")),
+    value: v.string(),
+    reason: v.string(),
+    addedBy: v.string(),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index("by_type", ["type"])
+    .index("by_value", ["value"])
+    .index("by_active", ["isActive"]),
 });

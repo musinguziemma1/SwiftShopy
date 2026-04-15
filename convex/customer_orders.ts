@@ -3,7 +3,7 @@ import { v } from "convex/values";
 
 export const create = mutation({
   args: {
-    userId: v.string(),
+    userId: v.id("users"),
     orderNumber: v.string(),
     trackingNumber: v.optional(v.string()),
     items: v.array(v.object({
@@ -12,8 +12,8 @@ export const create = mutation({
       price: v.number(),
       quantity: v.number(),
       total: v.number(),
-      storeId: v.string(),
-      sellerId: v.string(),
+      storeId: v.id("stores"),
+      sellerId: v.id("users"),
     })),
     subtotal: v.number(),
     total: v.number(),

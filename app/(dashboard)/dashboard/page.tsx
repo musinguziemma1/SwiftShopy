@@ -6,6 +6,8 @@ import { signOut, useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import NotificationsCenter from "@/components/ui/notifications-center";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { KYCBanner } from "@/components/ui/kyc-banner";
+import { VerifiedBadge } from "@/components/ui/verified-badge";
 import {
   ShoppingCart, Package, DollarSign, TrendingUp, Users, Search,
   Settings, LogOut, Menu, X, Plus, Edit, Trash2, Eye, Download,
@@ -18,6 +20,7 @@ import {
 } from "lucide-react";
 import { useSellerData, useStoreMutations, useProductMutations, useOrderMutations, useSubscriptionMutations, useReferralMutations } from "@/lib/hooks/useSellerData";
 import { useWhatsAppChat, useWhatsAppMessages } from "@/lib/hooks/useWhatsAppChat";
+import { useKYCData } from "@/lib/hooks/useKYCData";
 
 interface Product {
   id: string; name: string; price: number; stock: number; sales: number;
@@ -84,6 +87,9 @@ export default function SellerDashboardPage() {
   // Get seller store data from Convex using session email
   const userEmail = (session?.user as any)?.email;
   const { store, storeId, userId, products: convexProducts, orders: convexOrders, isLoading, subscription, billingInfo, referralStats, usageDiscount, payouts, tickets } = useSellerData(userEmail);
+
+  // KYC verification data
+  const { kyc, kycStatus, kycTier, isVerified: isKYCVerified } = useKYCData(userId ?? undefined);
 
   // Calculate stats from real data
   const totalRevenue = convexOrders?.filter(o => o.status === "paid").reduce((sum, o) => sum + o.total, 0) ?? 0;
@@ -491,6 +497,9 @@ export default function SellerDashboardPage() {
     { id: "whatsapp", label: "WhatsApp", icon: <MessageSquare className="w-5 h-5" /> },
   ];
 
+  // Show KYC status badge next to store name
+  const kycBadgeColor = kycStatus === "verified" ? "bg-emerald-500" : kycStatus === "pending" ? "bg-blue-500 animate-pulse" : "bg-amber-500 animate-pulse";
+
   return (
     <div className="min-h-screen bg-background">
       {/* Top Nav */}
@@ -573,6 +582,11 @@ export default function SellerDashboardPage() {
       {/* Main Content */}
       <main className={`pt-14 sm:pt-16 transition-all duration-300 ${mobileMenuOpen ? "ml-0" : sidebarOpen ? "ml-0 md:ml-64" : "ml-0 md:ml-20"}`}>
         <div className="p-4 sm:p-6">
+
+          {/* KYC Verification Banner */}
+          {kycStatus && kycStatus !== "verified" && (
+            <KYCBanner kycStatus={kycStatus} rejectionReason={kyc?.rejectionReason} />
+          )}
 
           {/* Quick Actions Bar */}
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}

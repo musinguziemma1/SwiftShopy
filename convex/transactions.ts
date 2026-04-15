@@ -16,11 +16,21 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     const now = Date.now();
+
+    // ── KYC VERIFICATION CHECK ──
+    // Block transactions if seller is not KYC verified
+    const store = await ctx.db.get(args.storeId);
+    if (store) {
+      const seller = await ctx.db.get(store.userId);
+      if (seller && seller.role === "seller" && seller.kycStatus !== "verified") {
+        throw new Error("KYC verification required before processing transactions. Please complete identity verification first.");
+      }
+    }
+
     const status = args.status ?? "pending";
     const transactionId = await ctx.db.insert("transactions", { ...args, status });
     
     // Get store and seller info
-    const store = await ctx.db.get(args.storeId);
     const sellerId = store?.userId;
     const providerName = args.provider === "mtn_momo" ? "MTN MoMo" : "Airtel Money";
 

@@ -3,7 +3,7 @@
 import React, { useState } from "react"
 import Link from "next/link"
 import { signOut, useSession } from "next-auth/react"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import NotificationsCenter from "@/components/ui/notifications-center"
 import {
   ShoppingCart,
@@ -59,6 +59,8 @@ import { useAdminData, useAdminMutations, useSupportTickets } from "@/lib/hooks/
 import { useMutation, useQuery } from "convex/react"
 import { api } from "@/convex/_generated/api"
 import { useAdminDashboardData } from "@/lib/hooks/useAdminDashboardData"
+import { useKYCAdminData, useKYCMutations } from "@/lib/hooks/useKYCData"
+import { VerifiedBadge, KYCTierBadge } from "@/components/ui/verified-badge"
 
 // Types
 interface Seller {
@@ -155,6 +157,13 @@ function AdminDashboard() {
   const [showPlanModal, setShowPlanModal] = useState(false)
   const [editingPromotion, setEditingPromotion] = useState<any>(null)
   const [showPromotionModal, setShowPromotionModal] = useState(false)
+  
+  // KYC state
+  const [kycStatusFilter, setKycStatusFilter] = useState<"pending" | "verified" | "rejected" | undefined>(undefined)
+  const [selectedKYC, setSelectedKYC] = useState<any>(null)
+  const [showKYCModal, setShowKYCModal] = useState(false)
+  const [kycRejectReason, setKycRejectReason] = useState("")
+  const [kycProcessing, setKycProcessing] = useState(false)
   
   // Settings state
   const [settingsSubTab, setSettingsSubTab] = useState("general")
@@ -345,6 +354,10 @@ function AdminDashboard() {
   const updatePromotion = useMutation(api.promotions.updatePromotion)
   const deletePromotion = useMutation(api.promotions.deletePromotion)
   const togglePromotionStatus = useMutation(api.promotions.togglePromotionStatus)
+
+  // KYC admin data
+  const { submissions: kycSubmissions, stats: kycStats, isLoading: kycLoading } = useKYCAdminData(kycStatusFilter)
+  const { approveKYC, rejectKYC } = useKYCMutations()
 
   // Calculate stats from real data
   const totalRevenue = orders?.filter(o => o.status === "paid").reduce((sum, o) => sum + o.total, 0) ?? 0
@@ -547,6 +560,7 @@ function AdminDashboard() {
           <SidebarButton icon={<Activity className="w-5 h-5" />} label="Analytics" active={activeTab === "analytics"} onClick={() => { setActiveTab("analytics"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
           <SidebarButton icon={<MessageSquare className="w-5 h-5" />} label="Support" active={activeTab === "support"} onClick={() => { setActiveTab("support"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
           <SidebarButton icon={<AlertCircle className="w-5 h-5" />} label="Disputes" active={activeTab === "disputes"} onClick={() => { setActiveTab("disputes"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
+          <SidebarButton icon={<Shield className="w-5 h-5" />} label={<span className="flex items-center gap-2">KYC{kycStats.pending > 0 && <span className="px-1.5 py-0.5 bg-amber-500 text-white text-[10px] font-bold rounded-full">{kycStats.pending}</span>}</span>} active={activeTab === "kyc"} onClick={() => { setActiveTab("kyc"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
           <SidebarButton icon={<FileText className="w-5 h-5" />} label="Audit Trail" active={activeTab === "audit"} onClick={() => { setActiveTab("audit"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
           <SidebarButton icon={<FileBarChart className="w-5 h-5" />} label="Reports" active={activeTab === "reports"} onClick={() => { setActiveTab("reports"); setMobileMenuOpen(false) }} collapsed={!sidebarOpen} />
           <div className="pt-4 mt-4 border-t border-border">
@@ -2820,6 +2834,270 @@ function AdminDashboard() {
             </motion.div>
           )}
 
+          {/* ── KYC Management Tab ── */}
+          {activeTab === "kyc" && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+              <div className="mb-8">
+                <h1 className="text-3xl font-bold mb-2">KYC Verification Management</h1>
+                <p className="text-muted-foreground">Review and manage seller identity verification submissions</p>
+              </div>
+
+              {/* KYC Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+                {[
+                  { label: "Total", value: kycStats.total, color: "text-foreground", bg: "bg-accent" },
+                  { label: "Pending", value: kycStats.pending, color: "text-amber-500", bg: "bg-amber-500/10" },
+                  { label: "Verified", value: kycStats.verified, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+                  { label: "Rejected", value: kycStats.rejected, color: "text-red-500", bg: "bg-red-500/10" },
+                  { label: "High Risk", value: kycStats.highRisk, color: "text-orange-500", bg: "bg-orange-500/10" },
+                  { label: "Avg Time", value: `${kycStats.avgProcessingTimeHours}h`, color: "text-blue-500", bg: "bg-blue-500/10" },
+                ].map((stat, i) => (
+                  <div key={i} className={`p-4 rounded-xl border border-border ${stat.bg}`}>
+                    <div className={`text-2xl font-bold ${stat.color}`}>{stat.value}</div>
+                    <div className="text-xs text-muted-foreground mt-1">{stat.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Status Filter */}
+              <div className="flex flex-wrap gap-2 mb-6">
+                {[
+                  { label: "All", value: undefined as any },
+                  { label: `Pending (${kycStats.pending})`, value: "pending" as const },
+                  { label: `Verified (${kycStats.verified})`, value: "verified" as const },
+                  { label: `Rejected (${kycStats.rejected})`, value: "rejected" as const },
+                ].map((f) => (
+                  <button key={f.label} onClick={() => setKycStatusFilter(f.value)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                      kycStatusFilter === f.value
+                        ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                        : "bg-card border border-border hover:bg-accent"
+                    }`}>{f.label}</button>
+                ))}
+              </div>
+
+              {/* Submissions Table */}
+              <div className="rounded-xl border border-border bg-card overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-border bg-accent/30">
+                        {["Seller", "Business", "ID Type", "Tier", "Risk", "Status", "Submitted", "Actions"].map(h => (
+                          <th key={h} className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {kycSubmissions.length === 0 && (
+                        <tr><td colSpan={8} className="py-12 text-center text-muted-foreground">No KYC submissions found</td></tr>
+                      )}
+                      {kycSubmissions.map((kyc: any) => (
+                        <tr key={kyc._id} className="border-b border-border hover:bg-accent/20 transition-colors">
+                          <td className="py-3 px-4">
+                            <div className="font-medium text-sm">{kyc.fullName}</div>
+                            <div className="text-xs text-muted-foreground">{kyc.userEmail}</div>
+                          </td>
+                          <td className="py-3 px-4 text-sm">{kyc.businessName}</td>
+                          <td className="py-3 px-4 text-sm capitalize">{kyc.idType?.replace("_", " ")}</td>
+                          <td className="py-3 px-4"><KYCTierBadge tier={kyc.tier} /></td>
+                          <td className="py-3 px-4">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold ${
+                              kyc.riskScore > 50 ? "bg-red-500/15 text-red-500" :
+                              kyc.riskScore > 25 ? "bg-amber-500/15 text-amber-500" :
+                              "bg-emerald-500/15 text-emerald-500"
+                            }`}>{kyc.riskScore}/100</span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${
+                              kyc.status === "verified" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" :
+                              kyc.status === "pending" ? "bg-amber-500/10 text-amber-500 border-amber-500/20" :
+                              "bg-red-500/10 text-red-500 border-red-500/20"
+                            }`}>
+                              {kyc.status === "verified" ? <Check className="w-3 h-3" /> : kyc.status === "pending" ? <Clock className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                              {kyc.status}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-xs text-muted-foreground">{new Date(kyc.submittedAt).toLocaleDateString()}</td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-1">
+                              <button onClick={() => { setSelectedKYC(kyc); setShowKYCModal(true); }}
+                                className="px-3 py-1 text-xs font-medium bg-accent rounded-lg hover:bg-accent/80 transition-all">Review</button>
+                              {kyc.status === "pending" && (
+                                <>
+                                  <button onClick={async () => {
+                                    setKycProcessing(true);
+                                    try {
+                                      await approveKYC({ kycId: kyc._id, adminId: session?.user?.email || "admin", adminName: session?.user?.name || "Admin" });
+                                    } catch (e: any) { alert(e.message); }
+                                    setKycProcessing(false);
+                                  }} disabled={kycProcessing}
+                                    className="px-3 py-1 text-xs font-medium bg-emerald-500/15 text-emerald-600 rounded-lg hover:bg-emerald-500/25 transition-all disabled:opacity-50">
+                                    Approve
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* KYC Detail Modal */}
+              <AnimatePresence>
+                {showKYCModal && selectedKYC && (
+                  <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowKYCModal(false)}>
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+                      onClick={e => e.stopPropagation()}
+                      className="bg-card border border-border rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl">
+                      <div className="p-6">
+                        <div className="flex items-center justify-between mb-6">
+                          <h2 className="text-xl font-bold flex items-center gap-2">
+                            <Shield className="w-5 h-5 text-purple-500" /> KYC Review
+                          </h2>
+                          <button onClick={() => setShowKYCModal(false)} className="p-2 hover:bg-accent rounded-lg"><X className="w-5 h-5" /></button>
+                        </div>
+
+                        {/* Status Badge */}
+                        <div className="flex items-center gap-3 mb-6">
+                          <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-bold border ${
+                            selectedKYC.status === "verified" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" :
+                            selectedKYC.status === "pending" ? "bg-amber-500/10 text-amber-500 border-amber-500/20" :
+                            "bg-red-500/10 text-red-500 border-red-500/20"
+                          }`}>{selectedKYC.status.toUpperCase()}</span>
+                          <KYCTierBadge tier={selectedKYC.tier} size="md" />
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                            selectedKYC.riskScore > 50 ? "bg-red-500/15 text-red-500" :
+                            selectedKYC.riskScore > 25 ? "bg-amber-500/15 text-amber-500" :
+                            "bg-emerald-500/15 text-emerald-500"
+                          }`}>Risk: {selectedKYC.riskScore}/100</span>
+                        </div>
+
+                        {/* Personal Info */}
+                        <div className="grid sm:grid-cols-2 gap-4 mb-6">
+                          {[
+                            { label: "Full Name", value: selectedKYC.fullName },
+                            { label: "Email", value: selectedKYC.userEmail },
+                            { label: "Date of Birth", value: selectedKYC.dateOfBirth },
+                            { label: "Phone Number", value: selectedKYC.phoneNumber },
+                            { label: "Business Name", value: selectedKYC.businessName },
+                            { label: "Store", value: selectedKYC.storeName },
+                            { label: "ID Type", value: selectedKYC.idType?.replace("_", " ") },
+                            { label: "ID Number", value: selectedKYC.idNumber },
+                          ].map((f, i) => (
+                            <div key={i} className="p-3 rounded-lg bg-accent/30">
+                              <div className="text-xs text-muted-foreground mb-1">{f.label}</div>
+                              <div className="text-sm font-medium capitalize">{f.value || "N/A"}</div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Enterprise fields if present */}
+                        {(selectedKYC.businessRegNumber || selectedKYC.tinNumber) && (
+                          <div className="mb-6 p-4 rounded-xl border border-purple-500/20 bg-purple-500/5">
+                            <h3 className="text-sm font-bold text-purple-500 mb-3">Enterprise Verification</h3>
+                            <div className="grid sm:grid-cols-2 gap-3">
+                              {selectedKYC.businessRegNumber && <div className="text-sm"><span className="text-muted-foreground">Reg Number:</span> <span className="font-medium">{selectedKYC.businessRegNumber}</span></div>}
+                              {selectedKYC.tinNumber && <div className="text-sm"><span className="text-muted-foreground">TIN:</span> <span className="font-medium">{selectedKYC.tinNumber}</span></div>}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Automated Checks */}
+                        <div className="mb-6 p-4 rounded-xl border border-border bg-accent/20">
+                          <h3 className="text-sm font-bold mb-3">Automated Verification Checks</h3>
+                          <div className="grid sm:grid-cols-3 gap-3">
+                            {[
+                              { label: "ID Format", passed: selectedKYC.idFormatValid },
+                              { label: "Duplicate Check", passed: selectedKYC.duplicateCheck },
+                              { label: "Phone Consistency", passed: selectedKYC.phoneConsistencyCheck },
+                            ].map((check, i) => (
+                              <div key={i} className={`p-2 rounded-lg flex items-center gap-2 text-sm ${
+                                check.passed ? "bg-emerald-500/10 text-emerald-500" : check.passed === false ? "bg-red-500/10 text-red-500" : "bg-gray-500/10 text-gray-500"
+                              }`}>
+                                {check.passed ? <CheckCircle className="w-4 h-4" /> : check.passed === false ? <XCircle className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
+                                {check.label}
+                              </div>
+                            ))}
+                          </div>
+                          {selectedKYC.riskFlags && selectedKYC.riskFlags.length > 0 && (
+                            <div className="mt-3">
+                              <p className="text-xs font-medium text-muted-foreground mb-2">Risk Flags:</p>
+                              <div className="flex flex-wrap gap-1">
+                                {selectedKYC.riskFlags.map((f: string, i: number) => (
+                                  <span key={i} className="px-2 py-0.5 bg-red-500/10 text-red-500 rounded text-xs font-medium">{f}</span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Rejection Reason (if rejected) */}
+                        {selectedKYC.status === "rejected" && selectedKYC.rejectionReason && (
+                          <div className="mb-6 p-4 rounded-xl border border-red-500/20 bg-red-500/5">
+                            <h3 className="text-sm font-bold text-red-500 mb-2">Rejection Reason</h3>
+                            <p className="text-sm">{selectedKYC.rejectionReason}</p>
+                          </div>
+                        )}
+
+                        {/* Actions */}
+                        {selectedKYC.status === "pending" && (
+                          <div className="space-y-4">
+                            <div>
+                              <label className="block text-sm font-medium mb-2">Rejection Reason (if rejecting)</label>
+                              <textarea value={kycRejectReason} onChange={e => setKycRejectReason(e.target.value)}
+                                placeholder="e.g. ID document is blurry, please upload a clearer image"
+                                rows={2}
+                                className="w-full px-4 py-3 rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm" />
+                            </div>
+                            <div className="flex gap-3">
+                              <button onClick={async () => {
+                                setKycProcessing(true);
+                                try {
+                                  await approveKYC({ kycId: selectedKYC._id, adminId: session?.user?.email || "admin", adminName: session?.user?.name || "Admin" });
+                                  setShowKYCModal(false);
+                                  setSelectedKYC(null);
+                                } catch (e: any) { alert(e.message); }
+                                setKycProcessing(false);
+                              }} disabled={kycProcessing}
+                                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold hover:shadow-lg transition-all disabled:opacity-50">
+                                {kycProcessing ? "Processing..." : "✓ Approve Verification"}
+                              </button>
+                              <button onClick={async () => {
+                                if (!kycRejectReason.trim()) { alert("Please provide a rejection reason"); return; }
+                                setKycProcessing(true);
+                                try {
+                                  await rejectKYC({ kycId: selectedKYC._id, adminId: session?.user?.email || "admin", adminName: session?.user?.name || "Admin", reason: kycRejectReason });
+                                  setShowKYCModal(false);
+                                  setSelectedKYC(null);
+                                  setKycRejectReason("");
+                                } catch (e: any) { alert(e.message); }
+                                setKycProcessing(false);
+                              }} disabled={kycProcessing || !kycRejectReason.trim()}
+                                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-red-500 to-rose-500 text-white font-bold hover:shadow-lg transition-all disabled:opacity-50">
+                                {kycProcessing ? "Processing..." : "✕ Reject Verification"}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Metadata */}
+                        <div className="mt-6 pt-4 border-t border-border text-xs text-muted-foreground space-y-1">
+                          <div>Submitted: {new Date(selectedKYC.submittedAt).toLocaleString()}</div>
+                          {selectedKYC.reviewedAt && <div>Reviewed: {new Date(selectedKYC.reviewedAt).toLocaleString()}</div>}
+                          {selectedKYC.reviewedBy && <div>Reviewed by: {selectedKYC.reviewedBy}</div>}
+                          <div>Submission count: {selectedKYC.submissionCount}</div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          )}
+
           {/* ── Settings Tab ── */}
           {activeTab === "settings" && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
@@ -3724,7 +4002,7 @@ function AdminDashboard() {
 // Helper Components
 interface SidebarButtonProps {
   icon: React.ReactNode
-  label: string
+  label: React.ReactNode
   active: boolean
   onClick: () => void
   collapsed: boolean

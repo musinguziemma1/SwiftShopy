@@ -24,7 +24,13 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const existing = await ctx.db.query("users").withIndex("by_email", q => q.eq("email", args.email)).first();
     if (existing) throw new Error("Email already registered");
-    const userId = await ctx.db.insert("users", { ...args, isActive: true, joinDate: Date.now() });
+    const userId = await ctx.db.insert("users", {
+      ...args,
+      isActive: true,
+      joinDate: Date.now(),
+      kycStatus: args.role === "seller" ? "unverified" : undefined,
+      kycTier: args.role === "seller" ? "basic" : undefined,
+    });
     
     const now = Date.now();
     

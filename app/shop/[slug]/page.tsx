@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingCart, MessageCircle, Phone, Star, Package, Search, Minus, Plus, X, Check, Loader, CreditCard } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { VerifiedBadge } from "@/components/ui/verified-badge";
 
 interface CartItem { id: string; name: string; price: number; quantity: number; image: string; storeId: string; sellerId: string; }
 
@@ -29,6 +30,10 @@ export default function StorefrontPage() {
 
   const store = useQuery(api.stores.getBySlug, { slug });
   const products = useQuery(api.products.getByStore, store?._id ? { storeId: store._id as any, activeOnly: true } : "skip");
+
+  // Fetch seller user to check KYC verification status
+  const sellerUser = useQuery(api.users.getById, store?.userId ? { id: store.userId as any } : "skip");
+  const isSellerVerified = sellerUser?.kycStatus === "verified";
 
   const productList = products ?? [];
   const categories = ["All", ...Array.from(new Set(productList.map((p: any) => p.category ?? "General")))];
@@ -190,7 +195,10 @@ export default function StorefrontPage() {
               </div>
             )}
             <div>
-              <h1 className="font-bold text-lg">{store.name}</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="font-bold text-lg">{store.name}</h1>
+                {isSellerVerified && <VerifiedBadge size="sm" />}
+              </div>
               <p className="text-xs text-muted-foreground">{store.description}</p>
             </div>
           </div>

@@ -157,13 +157,13 @@ function AdminDashboard() {
   const [editingPlan, setEditingPlan] = useState<any>(null)
   const [showPlanModal, setShowPlanModal] = useState(false)
   const [showCreatePlanModal, setShowCreatePlanModal] = useState(false)
-  const [newPlan, setNewPlan] = useState({
+  const [newPlan, setNewPlan] = useState<{name: string; description: string; price: number; currency: string; interval: "monthly" | "yearly" | "lifetime"; features: string[]; productLimit: number; transactionFee: number; isPopular: boolean}>({
     name: "",
     description: "",
     price: 0,
     currency: "UGX",
-    interval: "monthly" as const,
-    features: [] as string[],
+    interval: "monthly",
+    features: [],
     productLimit: 10,
     transactionFee: 4,
     isPopular: false,
@@ -1739,7 +1739,7 @@ setNewPlan({
                     <h3 className="text-lg font-semibold">Subscription Plans</h3>
                     <p className="text-sm text-muted-foreground">Manage pricing plans and features</p>
                   </div>
-                  <button onClick={() => { setNewPlan({ name: "", description: "", price: 0, currency: "UGX", interval: "monthly", features: [], isPopular: false }); setShowCreatePlanModal(true) }}
+                  <button onClick={() => { setNewPlan({ name: "", description: "", price: 0, currency: "UGX", interval: "monthly", features: [], productLimit: 10, transactionFee: 4, isPopular: false }); setShowCreatePlanModal(true) }}
                     className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-indigo-600 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">
                     <Plus className="w-4 h-4" /> Add Plan
                   </button>

@@ -900,39 +900,58 @@ export const seedPromotions = mutation({
 export const seedPlans = mutation({
   args: {},
   handler: async (ctx) => {
+    // Delete all existing plans first
     const existingPlans = await ctx.db.query("subscription_plans").collect();
-    if (existingPlans.length > 0) {
-      return { success: true, message: "Plans already exist, skipping seed", count: 0 };
+    for (const plan of existingPlans) {
+      await ctx.db.delete(plan._id);
     }
 
     const plans = [
       {
-        name: "Starter",
-        description: "Perfect for small businesses just getting started",
+        name: "FREE",
+        description: "Start Selling Instantly",
         price: 0,
         currency: "UGX",
         interval: "monthly" as const,
-        features: ["Up to 10 products", "MTN Mobile Money payments", "WhatsApp order button", "Basic analytics", "Email support"],
+        features: ["10 products", "WhatsApp store link", "Mobile money payments", "Basic dashboard", "Customer list"],
+        productLimit: 10,
+        transactionFee: 4,
         isPopular: false,
         isActive: true,
       },
       {
-        name: "Business",
-        description: "For growing businesses that need more",
-        price: 50000,
+        name: "PRO",
+        description: "Grow Faster & Look Professional",
+        price: 15000,
         currency: "UGX",
         interval: "monthly" as const,
-        features: ["Up to 50 products", "All payment methods", "Advanced analytics", "Priority support", "Custom branding", "Discounts & coupons"],
+        features: ["25 products", "Custom store link", "Auto payment confirmation", "Sales analytics", "Remove branding"],
+        productLimit: 25,
+        transactionFee: 2.5,
         isPopular: true,
         isActive: true,
       },
       {
-        name: "Enterprise",
-        description: "For large businesses with custom needs",
-        price: 150000,
+        name: "BUSINESS",
+        description: "Operate Like a Real Business",
+        price: 35000,
         currency: "UGX",
         interval: "monthly" as const,
-        features: ["Unlimited products", "API access", "Multi-store support", "Dedicated account manager", "White-label options", "Custom integrations"],
+        features: ["50+ products", "Inventory tracking", "Advanced analytics", "Coupons & discounts", "Custom branding"],
+        productLimit: 50,
+        transactionFee: 1.5,
+        isPopular: false,
+        isActive: true,
+      },
+      {
+        name: "ENTERPRISE",
+        description: "Scale Without Limits",
+        price: 0,
+        currency: "UGX",
+        interval: "lifetime" as const,
+        features: ["Unlimited products", "Multi-user accounts", "API access", "Dedicated support", "White-label options"],
+        productLimit: -1,
+        transactionFee: 1,
         isPopular: false,
         isActive: true,
       },

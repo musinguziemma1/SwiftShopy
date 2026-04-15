@@ -9,6 +9,8 @@ export const createPlan = mutation({
     currency: v.string(),
     interval: v.union(v.literal("monthly"), v.literal("yearly"), v.literal("lifetime")),
     features: v.array(v.string()),
+    productLimit: v.optional(v.number()),
+    transactionFee: v.optional(v.number()),
     isPopular: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
@@ -29,12 +31,21 @@ export const updatePlan = mutation({
     currency: v.optional(v.string()),
     interval: v.optional(v.union(v.literal("monthly"), v.literal("yearly"), v.literal("lifetime"))),
     features: v.optional(v.array(v.string())),
+    productLimit: v.optional(v.number()),
+    transactionFee: v.optional(v.number()),
     isPopular: v.optional(v.boolean()),
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
-    await ctx.db.patch(id, updates);
+    // Filter out undefined values
+    const filteredUpdates: Record<string, any> = {};
+    for (const [key, value] of Object.entries(updates)) {
+      if (value !== undefined) {
+        filteredUpdates[key] = value;
+      }
+    }
+    await ctx.db.patch(id, filteredUpdates);
     return { success: true };
   },
 });

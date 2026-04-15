@@ -975,6 +975,8 @@ export default defineSchema({
     currency: v.string(),
     interval: v.union(v.literal("monthly"), v.literal("yearly"), v.literal("lifetime")),
     features: v.array(v.string()),
+    productLimit: v.optional(v.number()),
+    transactionFee: v.optional(v.number()),
     isPopular: v.optional(v.boolean()),
     isActive: v.boolean(),
   })

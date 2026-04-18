@@ -153,7 +153,7 @@ export default function PricingPage() {
       id: plan._id || String(idx),
       name: plan.name,
       price: plan.price,
-      yearlyPrice: Math.round(plan.price * 9.9),
+      yearlyPrice: Math.round(plan.price * 9.8),
       priceDisplay: `${plan.currency} ${plan.price.toLocaleString()}`,
       period: plan.interval === "yearly" ? "/year" : plan.interval === "lifetime" ? "one-time" : "/month",
       transactionFee: plan.transactionFee ?? 0,

@@ -16,8 +16,9 @@ export const chat = action({
     ),
     userId: v.optional(v.string()),
     userName: v.optional(v.string()),
+    userEmail: v.optional(v.string()),
   },
-  handler: async (ctx, args): Promise<{ response: string; needsEscalation?: boolean; issueSummary?: string }> => {
+  handler: async (ctx, args): Promise<{ response: string; needsEscalation?: boolean; ticketCreated?: boolean; issueSummary?: string }> => {
     const apiKey = process.env.GROQ_API_KEY;
     console.log("GROQ_API_KEY available:", !!apiKey, "key prefix:", apiKey?.slice(0, 10));
     
@@ -77,17 +78,34 @@ Keep responses concise and helpful. If the user is asking about something you do
       if (assistantResponse.includes("[ESCALATE_TO_HUMAN]")) {
         const issueSummary = assistantResponse
           .replace("[ESCALATE_TO_HUMAN]", "")
-          .trim()
-          .slice(0, 500);
+          .trim();
+
+        // Create a support ticket if escalation is requested
+        let ticketCreated = false;
+        try {
+          await ctx.runMutation(api.support.createTicket, {
+            userId: args.userId || "guest_" + Date.now(),
+            userName: args.userName || "Guest User",
+            userEmail: args.userEmail || "support@swiftshopy.com",
+            subject: "AI Agent Escalation: " + issueSummary.slice(0, 50),
+            description: `User requested escalation.\n\nIssue Summary: ${issueSummary}\n\nChat History:\n${args.messages.map(m => `${m.role}: ${m.content}`).join("\n")}`,
+            priority: "medium",
+            category: "other",
+          });
+          ticketCreated = true;
+        } catch (ticketError) {
+          console.error("Failed to create escalation ticket:", ticketError);
+        }
 
         return {
-          response: issueSummary + "\n\nI've escalated your request to our support team. They will contact you shortly.",
+          response: "I've escalated your request to our support team. A ticket has been created and our team will contact you shortly.",
           needsEscalation: true,
+          ticketCreated,
           issueSummary,
         };
       }
 
-      return { response: assistantResponse };
+      return { response: assistantResponse, ticketCreated: false };
     } catch (error) {
       console.error("Agent error:", error);
       return {

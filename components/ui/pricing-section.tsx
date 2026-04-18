@@ -9,6 +9,27 @@ import { motion } from "framer-motion";
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+
+// Get dynamic plan data for product limits and fees
+const usePlanMetadata = () => {
+  const activePlans = useQuery(api.plans.getActivePlans) ?? [];
+  const metadata: Record<string, { productLimit: number; transactionFee: number }> = {};
+  activePlans.forEach((plan: any) => {
+    // Match by partial name (e.g., "FREE TRIAL" matches "Free")
+    const key = plan.name.toLowerCase().replace(" trial", "").replace(" plan", "").replace(" ", "");
+    const freeKey = plan.name.toLowerCase().includes("free") ? "free" : 
+                   plan.name.toLowerCase().includes("pro") ? "pro" :
+                   plan.name.toLowerCase().includes("business") ? "business" :
+                   plan.name.toLowerCase().includes("enterprise") ? "enterprise" : key;
+    metadata[freeKey] = {
+      productLimit: plan.productLimit,
+      transactionFee: plan.transactionFee,
+    };
+  });
+  return metadata;
+};
 
 const plans = [
   {
@@ -148,6 +169,25 @@ export default function PricingSectionNew() {
   const [isYearly, setIsYearly] = useState(false);
   const pricingRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  
+  // Get product limits and transaction fees from database
+  const planMetadata = usePlanMetadata();
+
+  // Merge metadata into static plans
+  const getPlanKey = (name: string) => {
+    const n = name.toLowerCase();
+    if (n.includes("free")) return "free";
+    if (n.includes("pro")) return "pro";
+    if (n.includes("business")) return "business";
+    if (n.includes("enterprise")) return "enterprise";
+    return n;
+  };
+  
+  const plansWithMeta = plans.map((plan) => {
+    const key = getPlanKey(plan.name);
+    const meta = planMetadata[key];
+    return meta ? { ...plan, ...meta } : plan;
+  });
 
   const revealVariants = {
     visible: (i: number) => ({
@@ -242,7 +282,7 @@ export default function PricingSectionNew() {
           customVariants={revealVariants}
           className="grid md:grid-cols-3 gap-6 mx-auto"
         >
-          {plans.map((plan, index) => (
+          {plansWithMeta.map((plan, index) => (
             <TimelineContent
               as="div"
               key={plan.name}
@@ -287,6 +327,12 @@ export default function PricingSectionNew() {
                         </span>
                       )}
                     </div>
+                    {plan.productLimit !== undefined && (
+                      <div className="flex gap-4 text-xs text-muted-foreground">
+                        <span>Products: {plan.productLimit === -1 ? "Unlimited" : plan.productLimit}</span>
+                        <span>Fee: {plan.transactionFee}%</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-3 mb-2">

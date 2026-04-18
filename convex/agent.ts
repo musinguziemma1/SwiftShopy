@@ -52,7 +52,7 @@ Keep responses concise and helpful. If the user is asking about something you do
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: "llama-3-70b-8192",
+          model: "llama-3-8b-8192",
           messages,
           temperature: 0.7,
           max_tokens: 1024,

@@ -5,7 +5,6 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { Logo } from "@/components/ui/logo";
 import {
   Shield, Upload, Camera, User, Phone, Briefcase, CreditCard,
   ArrowLeft, ArrowRight, Check, AlertCircle, Loader, FileText,
@@ -259,7 +258,10 @@ export default function KYCVerificationPage() {
               <p className="text-sm text-muted-foreground">Complete verification to start accepting payments</p>
             </div>
           </div>
-          <Logo className="h-8 w-32" />
+          <div className="flex items-center gap-2">
+            <Zap className="w-5 h-5 text-primary" />
+            <span className="text-sm font-semibold bg-gradient-to-r from-primary to-indigo-600 bg-clip-text text-transparent">SwiftShopy</span>
+          </div>
         </div>
       </div>
 

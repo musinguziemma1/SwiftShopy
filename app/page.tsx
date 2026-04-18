@@ -11,7 +11,6 @@ import { HeroMotionBackground } from "@/components/ui/hero-motion-background"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
 import PricingSectionNew from "@/components/ui/pricing-section"
 import AIChatCard from "@/components/ui/ai-chat"
-import { Logo } from "@/components/ui/logo"
 import {
   ShoppingCart,
   MessageCircle,
@@ -248,7 +247,14 @@ function SwiftShopyLanding({ className = "" }: SwiftShopyLandingProps) {
       <nav className="fixed top-0 w-full glass border-b border-border/50 z-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Logo />
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 bg-gradient-to-br from-primary to-indigo-600 rounded-xl flex items-center justify-center shadow-lg glow-primary">
+                <ShoppingCart className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-xl font-bold text-gradient">
+                SwiftShopy
+              </span>
+            </div>
 
             <div className="hidden md:flex items-center gap-6">
                 <a href="#features" className="text-sm font-medium hover:text-primary transition-all hover:scale-105">

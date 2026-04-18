@@ -31,13 +31,15 @@ const usePlanMetadata = () => {
   return metadata;
 };
 
-const plans = [
+const plans: (any)[] = [
   {
     name: "Free",
     description:
       "Perfect for getting started with online selling. Create your store and accept payments.",
     price: 0,
     yearlyPrice: 0,
+    productLimit: 10,
+    transactionFee: 4,
     buttonText: "Start Free",
     buttonVariant: "outline" as const,
     href: "/signup",
@@ -60,6 +62,8 @@ const plans = [
       "Best for growing businesses. Remove branding and unlock advanced analytics.",
     price: 15000,
     yearlyPrice: 144000,
+    productLimit: 25,
+    transactionFee: 2.5,
     buttonText: "Upgrade to Pro",
     buttonVariant: "outline" as const,
     href: "/pricing",
@@ -83,6 +87,8 @@ const plans = [
       "For established businesses scaling up with advanced features and inventory management.",
     price: 35000,
     yearlyPrice: 336000,
+    productLimit: 75,
+    transactionFee: 1.5,
     buttonText: "Get Business",
     buttonVariant: "outline" as const,
     href: "/pricing",

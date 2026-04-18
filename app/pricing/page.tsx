@@ -153,15 +153,15 @@ export default function PricingPage() {
       id: plan._id || String(idx),
       name: plan.name,
       price: plan.price,
-      yearlyPrice: Math.round(plan.price * 10),
+      yearlyPrice: Math.round(plan.price * 9.8),
       priceDisplay: `${plan.currency} ${plan.price.toLocaleString()}`,
       period: plan.interval === "yearly" ? "/year" : plan.interval === "lifetime" ? "one-time" : "/month",
-      transactionFee: 0,
-      productLimit: -1,
+      transactionFee: plan.transactionFee ?? 0,
+      productLimit: plan.productLimit ?? 0,
       highlighted: plan.isPopular || false,
       color: ["gray", "blue", "purple", "orange", "green"][idx % 5],
       cta: plan.price === 0 ? "Start Free" : "Get Started",
-      icon: <Zap className="w-6 h-6" />,
+      icon: idx === 3 ? <Crown className="w-6 h-6" /> : idx === 2 ? <TrendingUp className="w-6 h-6" /> : <Zap className="w-6 h-6" />,
       features: Array.isArray(plan.features) ? plan.features : [],
       includes: Array.isArray(plan.features) ? [plan.name + " includes:"] : [],
       featureDescription: plan.description || `Perfect plan for your business`,
@@ -181,12 +181,26 @@ export default function PricingPage() {
   }
 
   const comparisonFeatures: ComparisonFeature[] = [
-    { name: "Product Listings", free: "10 products", pro: "25 products", business: "50-75 products", enterprise: "Unlimited", category: "Store & Products" },
+    { 
+      name: "Product Listings", 
+      free: plans.find(p => p.name.toLowerCase().includes("free"))?.productLimit === -1 ? "Unlimited" : `${plans.find(p => p.name.toLowerCase().includes("free"))?.productLimit ?? 10} products`, 
+      pro: plans.find(p => p.name.toLowerCase().includes("pro"))?.productLimit === -1 ? "Unlimited" : `${plans.find(p => p.name.toLowerCase().includes("pro"))?.productLimit ?? 25} products`, 
+      business: plans.find(p => p.name.toLowerCase().includes("business"))?.productLimit === -1 ? "Unlimited" : `${plans.find(p => p.name.toLowerCase().includes("business"))?.productLimit ?? 75} products`, 
+      enterprise: plans.find(p => p.name.toLowerCase().includes("enterprise"))?.productLimit === -1 ? "Unlimited" : `${plans.find(p => p.name.toLowerCase().includes("enterprise"))?.productLimit ?? "Unlimited"} products`, 
+      category: "Store & Products" 
+    },
     { name: "Store Customization", free: "Basic", pro: "Advanced", business: "Full brand control", enterprise: "White-label", category: "Store & Products" },
     { name: "Custom Store Link", free: false, pro: true, business: true, enterprise: true, category: "Store & Products" },
     { name: "Bulk Product Upload", free: false, pro: false, business: true, enterprise: true, category: "Store & Products" },
     { name: "Inventory Management", free: false, pro: false, business: true, enterprise: true, category: "Store & Products" },
-    { name: "Transaction Fee", free: "4%", pro: "2.5%", business: "1.5%", enterprise: "1%", category: "Payments" },
+    { 
+      name: "Transaction Fee", 
+      free: `${plans.find(p => p.name.toLowerCase().includes("free"))?.transactionFee ?? 4}%`, 
+      pro: `${plans.find(p => p.name.toLowerCase().includes("pro"))?.transactionFee ?? 2.5}%`, 
+      business: `${plans.find(p => p.name.toLowerCase().includes("business"))?.transactionFee ?? 1.5}%`, 
+      enterprise: `${plans.find(p => p.name.toLowerCase().includes("enterprise"))?.transactionFee ?? 1}%`, 
+      category: "Payments" 
+    },
     { name: "MTN Mobile Money", free: true, pro: true, business: true, enterprise: true, category: "Payments" },
     { name: "Airtel Money", free: true, pro: true, business: true, enterprise: true, category: "Payments" },
     { name: "Auto Payment Confirmation", free: false, pro: true, business: true, enterprise: true, category: "Payments" },
@@ -454,7 +468,7 @@ export default function PricingPage() {
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <span>{plan.transactionFee}% fee</span>
                         <span className="text-border">|</span>
-                        <span>{plan.productLimit} products</span>
+                        <span>{plan.productLimit === -1 ? "Unlimited" : plan.productLimit} products</span>
                       </div>
                     </div>
 

@@ -56,6 +56,8 @@ export const useSellerData = (userEmail?: string | null) => {
     userId ? { userId: userId as string } : "skip"
   );
 
+  const activePlansTable = useQuery(api.plans.getActivePlans);
+
   return {
     store: store ?? null,
     storeId: storeId ?? null,
@@ -64,11 +66,12 @@ export const useSellerData = (userEmail?: string | null) => {
     orders: orders ?? [],
     subscription: subscription ?? null,
     billingInfo: billingInfo ?? null,
+    activePlans: activePlansTable ?? [],
     referralStats: referralStats ?? null,
     usageDiscount: usageDiscount ?? null,
     payouts: payouts ?? [],
     tickets: tickets ?? [],
-    isLoading: store === undefined || products === undefined || orders === undefined,
+    isLoading: store === undefined || products === undefined || orders === undefined || activePlansTable === undefined,
   };
 };
 

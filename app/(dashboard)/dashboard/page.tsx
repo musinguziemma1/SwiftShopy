@@ -86,7 +86,7 @@ export default function SellerDashboardPage() {
 
   // Get seller store data from Convex using session email
   const userEmail = (session?.user as any)?.email;
-  const { store, storeId, userId, products: convexProducts, orders: convexOrders, isLoading, subscription, billingInfo, referralStats, usageDiscount, payouts, tickets } = useSellerData(userEmail);
+  const { store, storeId, userId, products: convexProducts, orders: convexOrders, isLoading, subscription, billingInfo, activePlans, referralStats, usageDiscount, payouts, tickets } = useSellerData(userEmail);
 
   // KYC verification data
   const { kyc, kycStatus, kycTier, isVerified: isKYCVerified } = useKYCData(userId ?? undefined);
@@ -112,6 +112,35 @@ export default function SellerDashboardPage() {
     productsChange: -2.4,
     customersChange: 15.7,
   };
+
+  // Map active plans for the upgrade modal
+  const mappedPlans = activePlans && activePlans.length > 0 ? activePlans.map(plan => {
+    const nameLower = plan.name.toLowerCase();
+    const planId = nameLower.includes("free") ? "free" : 
+                   nameLower.includes("pro") ? "pro" :
+                   nameLower.includes("business") ? "business" :
+                   nameLower.includes("enterprise") ? "enterprise" : "free";
+    
+    const color = planId === "pro" ? "blue" : 
+                  planId === "business" ? "purple" : 
+                  planId === "enterprise" ? "orange" : "gray";
+                  
+    return {
+      id: planId,
+      name: plan.name,
+      price: plan.price,
+      period: plan.interval === "monthly" ? "/month" : plan.interval === "yearly" ? "/year" : plan.interval === "lifetime" ? " lifetime" : " Free forever",
+      productLimit: plan.productLimit ?? 0,
+      transactionFee: plan.transactionFee ?? 0,
+      color,
+      features: plan.features
+    };
+  }) : [
+    { id: "free", name: "Free", price: 0, period: "Free forever", productLimit: 10, transactionFee: 4, color: "gray", features: ["Up to 10 products", "4% transaction fee", "Basic support"] },
+    { id: "pro", name: "Pro", price: 15000, period: "/month", productLimit: 25, transactionFee: 2.5, color: "blue", features: ["Up to 25 products", "2.5% transaction fee", "Analytics", "WhatsApp integration"] },
+    { id: "business", name: "Business", price: 35000, period: "/month", productLimit: 38, transactionFee: 1.5, color: "purple", features: ["Up to 38 products", "1.5% transaction fee", "Priority support", "Custom domain"] },
+    { id: "enterprise", name: "Enterprise", price: 60000, period: "/month", productLimit: -1, transactionFee: 1, color: "orange", features: ["Unlimited products", "1% transaction fee", "Dedicated support", "API access"] },
+  ];
 
   // Map Convex products to display format
   const products: Product[] = convexProducts?.map(p => ({
@@ -1848,7 +1877,7 @@ export default function SellerDashboardPage() {
                           },
                           { 
                             title: "Usage Discount", 
-                            desc: "Get 10% off when you process UGX 2,000,000+ monthly",
+                            desc: `Get ${usageDiscount?.discountPercentage ?? 10}% off when you process ${fmt(usageDiscount?.threshold ?? 2000000)}+ monthly`,
                             icon: <TrendingUp className="w-5 h-5" />,
                             badge: usageDiscount?.eligible ? "Eligible!" : "Not eligible"
                           },
@@ -1970,11 +1999,11 @@ export default function SellerDashboardPage() {
                       <div className="space-y-3 text-sm">
                         <div className="flex items-center gap-2">
                           <Check className="w-4 h-4 text-green-500" />
-                          <span>Up to {billingInfo?.productLimit ?? 10} products</span>
+                          <span>Up to {billingInfo?.productLimit === -1 ? "Unlimited" : (billingInfo?.productLimit ?? 10)} products</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Check className="w-4 h-4 text-green-500" />
-                          <span>{billingInfo?.transactionFee ?? 4}% transaction fee</span>
+                          <span>{billingInfo?.transactionFee ?? 4}% platform fee</span>
                         </div>
                         {subscription?.plan !== "free" && (
                           <>
@@ -2073,17 +2102,17 @@ export default function SellerDashboardPage() {
                       <div className="space-y-4">
                         <div className="flex items-center justify-between p-4 bg-accent/50 rounded-xl">
                           <div>
-                            <div className="font-medium">Platform Commission</div>
-                            <div className="text-sm text-muted-foreground">Fee charged on each sale</div>
+                            <div className="font-medium">Platform Fee</div>
+                            <div className="text-sm text-muted-foreground">Commission on each sale</div>
                           </div>
-                          <div className="text-lg font-bold text-primary">10%</div>
+                          <div className="text-lg font-bold text-primary">{billingInfo?.transactionFee ?? 4}%</div>
                         </div>
                         <div className="flex items-center justify-between p-4 bg-accent/50 rounded-xl">
                           <div>
-                            <div className="font-medium">MTN MoMo Transaction Fee</div>
-                            <div className="text-sm text-muted-foreground">Charged by MTN per transaction</div>
+                            <div className="font-medium">Network Processing Fee</div>
+                            <div className="text-sm text-muted-foreground">Mobile money processing costs</div>
                           </div>
-                          <div className="text-lg font-bold text-muted-foreground">1.5%</div>
+                          <div className="text-lg font-bold text-muted-foreground">Included</div>
                         </div>
                           <div className="flex items-center justify-between p-4 bg-accent/50 rounded-xl">
                           <div>
@@ -2455,12 +2484,7 @@ export default function SellerDashboardPage() {
             <p className="text-muted-foreground mb-6">Select a plan that fits your business needs. All paid plans include a 30-day subscription.</p>
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {[
-                { id: "free", name: "Free", price: 0, period: "Free forever", productLimit: 10, transactionFee: 4, color: "gray", features: ["Up to 10 products", "4% transaction fee", "Basic support"] },
-                { id: "pro", name: "Pro", price: 15000, period: "/month", productLimit: 25, transactionFee: 2.5, color: "blue", features: ["Up to 25 products", "2.5% transaction fee", "Analytics", "WhatsApp integration"] },
-                { id: "business", name: "Business", price: 35000, period: "/month", productLimit: 38, transactionFee: 1.5, color: "purple", features: ["Up to 38 products", "1.5% transaction fee", "Priority support", "Custom domain"] },
-                { id: "enterprise", name: "Enterprise", price: 60000, period: "/month", productLimit: Infinity, transactionFee: 1, color: "orange", features: ["Unlimited products", "1% transaction fee", "Dedicated support", "API access"] },
-              ].map((plan) => {
+              {mappedPlans.map((plan) => {
                 const isCurrentPlan = subscription?.plan === plan.id;
                 const isLoading = false;
                 return (
@@ -2488,6 +2512,10 @@ export default function SellerDashboardPage() {
                       UGX {plan.price.toLocaleString()}
                       <span className="text-sm font-normal text-muted-foreground">{plan.period}</span>
                     </p>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-4">
+                      <span className="px-1.5 py-0.5 bg-accent rounded">{plan.transactionFee}% fee</span>
+                      <span className="px-1.5 py-0.5 bg-accent rounded">{plan.productLimit === -1 ? "Unlimited" : plan.productLimit} products</span>
+                    </div>
                     <ul className="space-y-2 mb-6 mt-4 text-sm">
                       {plan.features.map((f, i) => (
                         <li key={i} className="flex items-center gap-2">

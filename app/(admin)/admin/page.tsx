@@ -218,7 +218,7 @@ setNewPlan({
 
   const handleTogglePlanActive = async (planId: string, isActive: boolean) => {
     try {
-      await updatePlan({ id: planId, isActive })
+      await updatePlan({ id: planId as any, isActive })
     } catch (error) {
       console.error("Failed to toggle plan:", error)
     }
@@ -227,7 +227,7 @@ setNewPlan({
   const confirmDeletePlan = async (planId: any) => {
     if (confirm("Are you sure you want to delete this plan?")) {
       try {
-        await deletePlan({ id: planId })
+        await deletePlan({ id: planId as any })
       } catch (error) {
         console.error("Failed to delete plan:", error)
       }

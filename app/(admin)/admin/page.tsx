@@ -62,6 +62,7 @@ import { Id } from "@/convex/_generated/dataModel"
 import { useAdminDashboardData } from "@/lib/hooks/useAdminDashboardData"
 import { useKYCAdminData, useKYCMutations } from "@/lib/hooks/useKYCData"
 import { VerifiedBadge, KYCTierBadge } from "@/components/ui/verified-badge"
+import { Logo } from "@/components/ui/logo"
 
 // Types
 interface Seller {
@@ -580,17 +581,14 @@ setNewPlan({
                 {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
 
-              <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
-                  <Crown className="w-5 h-5 text-white" />
-                </div>
-                <div className="hidden sm:block">
+              <div className="flex items-center gap-4">
+                <Logo className="h-8 w-32" />
+                <div className="hidden sm:block border-l border-border pl-4">
                   <span className="text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                     Admin Panel
                   </span>
-                  <div className="text-xs text-muted-foreground">SwiftShopy</div>
                 </div>
-              </Link>
+              </div>
             </div>
 
             {/* Search Bar */}

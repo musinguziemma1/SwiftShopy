@@ -23,6 +23,7 @@ import { useWhatsAppChat, useWhatsAppMessages } from "@/lib/hooks/useWhatsAppCha
 import { useKYCData } from "@/lib/hooks/useKYCData";
 import { useConvex } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { Logo } from "@/components/ui/logo";
 
 interface Product {
   id: string; name: string; price: number; stock: number; sales: number;
@@ -548,12 +549,7 @@ export default function SellerDashboardPage() {
               }} className="p-2 rounded-lg hover:bg-accent/50 transition-colors">
                 {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
-              <Link href="/" className="flex items-center gap-2">
-                <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-primary to-indigo-600 rounded-lg flex items-center justify-center shadow-lg">
-                  <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
-                </div>
-                <span className="text-base sm:text-lg font-bold text-gradient hidden xs:inline">SwiftShopy</span>
-              </Link>
+              <Logo />
             </div>
 
             <div className="flex-1 max-w-xl mx-2 sm:mx-6 relative hidden md:block">

@@ -11,6 +11,7 @@ import { BackgroundPaths } from "@/components/ui/background-paths";
 import { DottedSurface } from "@/components/ui/dotted-surface";
 import { VerticalCutReveal } from "@/components/ui/vertical-cut-reveal";
 import { TimelineContent } from "@/components/ui/timeline-animation";
+import { Logo } from "@/components/ui/logo";
 import {
   ShoppingCart, Search, Filter, Grid, List, Star, Heart,
   ChevronDown, SlidersHorizontal, X, Package, Store,
@@ -219,12 +220,7 @@ export default function ShopPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-primary to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                <Zap className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-gradient">SwiftShopy</span>
-            </Link>
+            <Logo />
 
             {/* Search Bar */}
             <div className="hidden md:flex flex-1 max-w-xl mx-8">
@@ -773,12 +769,7 @@ export default function ShopPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-primary to-indigo-600 rounded-xl flex items-center justify-center">
-                  <Zap className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-xl font-bold">SwiftShopy</span>
-              </div>
+              <Logo className="mb-4" />
               <p className="text-muted-foreground text-sm">
                 Uganda's fastest growing e-commerce marketplace. Shop with confidence.
               </p>

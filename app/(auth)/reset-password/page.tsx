@@ -6,6 +6,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Zap, Lock, Eye, EyeOff, ArrowRight, CheckCircle, AlertCircle, ArrowLeft } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { Logo } from "@/components/ui/logo";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import bcrypt from "bcryptjs";
@@ -139,12 +140,7 @@ export default function ResetPasswordPage() {
             transition={{ duration: 0.6 }}
             className="relative z-10"
           >
-            <div className="flex items-center gap-3 mb-12">
-              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg">
-                <Zap className="w-6 h-6" />
-              </div>
-              <span className="text-2xl font-bold">SwiftShopy</span>
-            </div>
+            <Logo className="mb-12" />
             
             <h1 className="text-4xl lg:text-5xl font-bold leading-tight mb-6">
               Create New<br />

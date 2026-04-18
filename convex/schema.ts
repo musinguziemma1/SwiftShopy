@@ -162,7 +162,9 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_user", ["userId"])
-    .index("by_orderNumber", ["orderNumber"]),
+    .index("by_orderNumber", ["orderNumber"])
+    .index("by_tracking", ["trackingNumber"])
+    .index("by_status", ["status"]),
 
   transactions: defineTable({
     orderId: v.id("orders"),

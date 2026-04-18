@@ -83,9 +83,8 @@ export const useStoreMutations = () => {
   const createTicket = useMutation(api.support.createTicket as any);
   const updateTicketStatus = useMutation(api.support.updateTicketStatus as any);
   const addTicketMessage = useMutation(api.support.addTicketMessage as any);
-  const getTicketById = useMutation(api.support.getTicketById as any);
 
-  return { updateStore, createStore, updateStoreStatus, createPayout, createTicket, updateTicketStatus, addTicketMessage, getTicketById };
+  return { updateStore, createStore, updateStoreStatus, createPayout, createTicket, updateTicketStatus, addTicketMessage };
 };
 
 export const useProductMutations = () => {

@@ -21,6 +21,8 @@ import {
 import { useSellerData, useStoreMutations, useProductMutations, useOrderMutations, useSubscriptionMutations, useReferralMutations } from "@/lib/hooks/useSellerData";
 import { useWhatsAppChat, useWhatsAppMessages } from "@/lib/hooks/useWhatsAppChat";
 import { useKYCData } from "@/lib/hooks/useKYCData";
+import { useConvex } from "convex/react";
+import { api } from "@/convex/_generated/api";
 
 interface Product {
   id: string; name: string; price: number; stock: number; sales: number;
@@ -78,7 +80,8 @@ export default function SellerDashboardPage() {
   const itemsPerPage = 8;
 
   // Mutations
-  const { updateStore, createTicket, addTicketMessage, getTicketById } = useStoreMutations();
+  const convex = useConvex();
+  const { updateStore, createTicket, addTicketMessage } = useStoreMutations();
   const { createProduct, updateProduct, deleteProduct, toggleProduct } = useProductMutations();
   const { updateOrderStatus } = useOrderMutations();
   const { upgradePlan, renewSubscription, createSubscription } = useSubscriptionMutations();
@@ -2216,7 +2219,7 @@ export default function SellerDashboardPage() {
                                 setSelectedTicket(ticket); 
                                 setShowTicketDetailsModal(true);
                                 try {
-                                  const result = await getTicketById({ id: ticket._id as any });
+                                  const result: any = await convex.query(api.support.getTicketById, { id: ticket._id as any });
                                   setTicketMessages(result?.messages || []);
                                 } catch (e) {
                                   console.error("Failed to get ticket messages:", e);

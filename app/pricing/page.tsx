@@ -13,7 +13,7 @@ import { BackgroundPaths } from "@/components/ui/background-paths"
 import { DottedSurface } from "@/components/ui/dotted-surface"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { TimelineContent } from "@/components/ui/timeline-animation"
-import VerticalCutReveal from "@/components/ui/vertical-cut-reveal"
+import { VerticalCutReveal } from "@/components/ui/vertical-cut-reveal"
 import NumberFlow from "@number-flow/react"
 import { Logo } from "@/components/ui/logo"
 import {

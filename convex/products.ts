@@ -27,10 +27,31 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     const now = Date.now();
+    const store = await ctx.db.get(args.storeId);
+    if (!store) throw new Error("Store not found");
+
+    // ─── Plan Limit Gating ───
+    const subscription = await ctx.db.query("subscriptions")
+      .withIndex("by_user", q => q.eq("userId", store.userId))
+      .filter(q => q.eq(q.field("status"), "active"))
+      .first();
+    
+    const planLimits = { free: 10, pro: 25, business: 75, enterprise: -1 };
+    const plan = subscription?.plan || "free";
+    const limit = planLimits[plan as keyof typeof planLimits];
+
+    if (limit !== -1) {
+      const currentCount = (await ctx.db.query("products")
+        .withIndex("by_store", q => q.eq("storeId", args.storeId))
+        .collect()).length;
+      if (currentCount >= limit) {
+        throw new Error(`Your ${plan} plan product limit of ${limit} has been reached.`);
+      }
+    }
+
     const productId = await ctx.db.insert("products", { ...args, isActive: true, sales: args.sales ?? 0, category: args.category ?? "" });
     
     // Get store info
-    const store = await ctx.db.get(args.storeId);
     const sellerId = store?.userId;
 
     // Notify seller about new product

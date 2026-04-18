@@ -162,14 +162,14 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_user", ["userId"])
-    .index("by_orderNumber", ["orderNumber"])
-    .index("by_tracking", ["trackingNumber"])
-    .index("by_status", ["status"]),
+    .index("by_orderNumber", ["orderNumber"]),
 
   transactions: defineTable({
     orderId: v.id("orders"),
     storeId: v.id("stores"),
     amount: v.number(),
+    feeAmount: v.optional(v.number()),
+    netAmount: v.optional(v.number()),
     currency: v.string(),
     provider: v.union(v.literal("mtn_momo"), v.literal("airtel_money")),
     providerRef: v.string(),

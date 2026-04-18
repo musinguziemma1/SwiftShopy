@@ -17,18 +17,44 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const now = Date.now();
 
-    // ── KYC VERIFICATION CHECK ──
-    // Block transactions if seller is not KYC verified
+    // ── KYC & SUBSCRIPTION ENFORCEMENT ──
     const store = await ctx.db.get(args.storeId);
-    if (store) {
-      const seller = await ctx.db.get(store.userId);
-      if (seller && seller.role === "seller" && seller.kycStatus !== "verified") {
-        throw new Error("KYC verification required before processing transactions. Please complete identity verification first.");
-      }
+    if (!store) throw new Error("Store not found");
+
+    const seller = await ctx.db.get(store.userId);
+    if (!seller || seller.role !== "seller") {
+      throw new Error("Invalid seller account");
     }
 
+    // 1. KYC Check
+    if (seller.kycStatus !== "verified") {
+      throw new Error("KYC verification required. Please verify your identity to process payments.");
+    }
+
+    // 2. Subscription Status Check
+    const subscription = await ctx.db.query("subscriptions")
+      .withIndex("by_user", q => q.eq("userId", store.userId))
+      .filter(q => q.eq(q.field("status"), "active"))
+      .first();
+    
+    if (!subscription) {
+      throw new Error("Active subscription required to process store transactions.");
+    }
+
+    // 3. Fee Calculation
+    const planFees = { free: 4, pro: 2.5, business: 1.8, enterprise: 1 };
+    const plan = subscription.plan as keyof typeof planFees;
+    const feePercent = planFees[plan];
+    const feeAmount = Math.round((args.amount * feePercent) / 100);
+    const netAmount = args.amount - feeAmount;
+
     const status = args.status ?? "pending";
-    const transactionId = await ctx.db.insert("transactions", { ...args, status });
+    const transactionId = await ctx.db.insert("transactions", { 
+      ...args, 
+      status,
+      feeAmount,
+      netAmount 
+    });
     
     // Get store and seller info
     const sellerId = store?.userId;

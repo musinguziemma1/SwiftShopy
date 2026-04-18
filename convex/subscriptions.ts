@@ -7,7 +7,7 @@ export type SubscriptionStatus = "active" | "expired" | "cancelled";
 export const PLAN_LIMITS: Record<SubscriptionPlan, { productLimit: number; monthlyFee: number; transactionFee: number }> = {
   free: { productLimit: 10, monthlyFee: 0, transactionFee: 4 },
   pro: { productLimit: 25, monthlyFee: 15000, transactionFee: 2.5 },
-  business: { productLimit: 75, monthlyFee: 35000, transactionFee: 1.5 },
+  business: { productLimit: 75, monthlyFee: 35000, transactionFee: 1.8 },
   enterprise: { productLimit: -1, monthlyFee: 60000, transactionFee: 1 },
 };
 
